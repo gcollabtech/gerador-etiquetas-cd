@@ -1,0 +1,276 @@
+/* Grupo Collab DS → shadcn/ui (Tailwind v4 + CSS variables).
+   Tema padrão ESCURO (versão principal da marca). Valores 1:1 com tokens/colors.css do DS. */
+@import "tailwindcss";
+
+/* Login: largura do split e altura da composição do painel de marca */
+@custom-variant split (@media (min-width: 1040px));
+@custom-variant mid (@media (min-height: 620px));
+@custom-variant tall (@media (min-height: 800px));
+
+@font-face { font-family: "Agrandir"; src: url("/fonts/Agrandir-Regular.otf") format("opentype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Agrandir"; src: url("/fonts/Agrandir-TextBold.otf") format("opentype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Agrandir Grand"; src: url("/fonts/Agrandir-GrandLight.otf") format("opentype"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Agrandir Grand"; src: url("/fonts/Agrandir-GrandHeavy.otf") format("opentype"); font-weight: 800; font-display: swap; }
+@font-face { font-family: "Montserrat"; src: url("/fonts/Montserrat-VariableFont_wght.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
+
+:root {
+  /* primitivas da marca */
+  --collab-mostarda: #C09100;
+  --collab-off-black: #080808;
+  --collab-carvao: #1E1E1E;
+  --collab-cinza-medio: #B1B1B1;
+  --collab-off-white: #F2F2F2;
+  --mostarda-300: #D6AE3A;
+  --mostarda-700: #8A6900;
+
+  /* shadcn semantic tokens (dark default) */
+  --background: #080808;          /* surface-page */
+  --foreground: #F2F2F2;          /* text-primary */
+  --card: #080808;                /* cards transparentes c/ borda */
+  --card-foreground: #F2F2F2;
+  --popover: #1E1E1E;             /* surface-raised */
+  --popover-foreground: #F2F2F2;
+  --primary: #C09100;             /* mostarda — 1 CTA por vista */
+  --primary-foreground: #080808;
+  --secondary: #2A2A2A;           /* surface-overlay */
+  --secondary-foreground: #F2F2F2;
+  --muted: #111111;               /* surface-section */
+  --muted-foreground: #B1B1B1;    /* text-secondary */
+  --accent: #1E1E1E;              /* hover de linha/item */
+  --accent-foreground: #F2F2F2;
+  --destructive: #D0634E;
+  --destructive-foreground: #080808;
+  --success: #5FA77A;
+  --border: rgba(242, 242, 242, 0.16);
+  --border-subtle: rgba(242, 242, 242, 0.08);
+  --input: rgba(242, 242, 242, 0.16);
+  --ring: #C09100;
+  --radius: 2px;                  /* arquitetura reta: 0–4px */
+
+  --brand-tint: rgba(192, 145, 0, 0.14);
+  --brand-text: #C09100;
+  /* textura de ruído do DS (painel de marca do login) */
+  --texture-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url%28%23n%29'/></svg>");
+  --texture-opacity: 0.14;
+  --input-bg: #111111;           /* fundo dos campos do login no escuro */
+  --success-tint: rgba(95, 167, 122, 0.14);
+  --destructive-tint: rgba(208, 99, 78, 0.14);
+  --scrim: rgba(8, 8, 8, 0.72);
+
+  --sidebar: #080808;
+  --sidebar-foreground: #B1B1B1;
+  --sidebar-primary: #C09100;
+  --sidebar-primary-foreground: #080808;
+  --sidebar-accent: #1E1E1E;
+  --sidebar-accent-foreground: #F2F2F2;
+  --sidebar-border: rgba(242, 242, 242, 0.08);
+  --sidebar-ring: #C09100;
+
+  --chart-1: #C09100; /* saldo / saídas */
+  --chart-2: #F2F2F2; /* entradas */
+  --chart-3: #D0634E; /* caixa mínimo */
+  --chart-4: #808080;
+  --chart-5: #5FA77A;
+}
+
+/* Tema CLARO — DS [data-theme="light"] + feedback escurecido p/ contraste AA sobre branco.
+   Com next-themes: <ThemeProvider attribute="data-theme" defaultTheme="dark" themes={["dark","light"]}> */
+[data-theme="light"] {
+  --background: #F2F2F2;
+  --foreground: #080808;
+  --card: #F2F2F2;
+  --card-foreground: #080808;
+  --popover: #FFFFFF;
+  --popover-foreground: #080808;
+  --primary: #C09100;
+  --primary-foreground: #080808;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #080808;
+  --muted: #EAEAEA;
+  --muted-foreground: #5C5C5C;
+  --accent: #FFFFFF;
+  --accent-foreground: #080808;
+  --destructive: #B4432F;
+  --success: #2F7A4F;
+  --border: rgba(8, 8, 8, 0.16);
+  --border-subtle: rgba(8, 8, 8, 0.08);
+  --input: rgba(8, 8, 8, 0.16);
+  --brand-tint: rgba(192, 145, 0, 0.16);
+  --success-tint: rgba(47, 122, 79, 0.12);
+  --destructive-tint: rgba(180, 67, 47, 0.10);
+  --scrim: rgba(8, 8, 8, 0.56);
+  --sidebar: #F2F2F2;
+  --sidebar-foreground: #5C5C5C;
+  --sidebar-accent: #FFFFFF;
+  --sidebar-accent-foreground: #080808;
+  --sidebar-border: rgba(8, 8, 8, 0.08);
+  --chart-2: #080808;
+  --brand-text: #8A6900; /* texto mostarda sobre claro (eyebrows, links, badges brand) */
+  --input-bg: #FFFFFF;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-brand-text: var(--brand-text);
+  --color-input-bg: var(--input-bg);
+  --font-sans: "Agrandir", "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Agrandir", "Montserrat", sans-serif;      /* 700 = Text Bold */
+  --font-display: "Agrandir Grand", "Montserrat", sans-serif; /* 800 eyebrows/badges, 300 números editoriais */
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--collab-mostarda);
+  --color-brand-hover: var(--mostarda-300);
+  --color-brand-press: var(--mostarda-700);
+  --color-brand-tint: var(--brand-tint);
+  --color-success-tint: var(--success-tint);
+  --color-destructive-tint: var(--destructive-tint);
+  --color-tertiary: #808080;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+
+  --shadow-overlay: 0 24px 72px rgba(0, 0, 0, 0.56);
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { color-scheme: dark; }
+  body { @apply bg-background text-foreground font-sans antialiased; font-size: 14px; line-height: 1.5; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  ::selection { background: var(--collab-mostarda); color: var(--collab-off-black); }
+}
+
+@layer components {
+  /* Padrões recorrentes da marca */
+  .eyebrow { font-family: var(--font-display); font-weight: 800; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-text); }
+  .th-label { font-family: var(--font-display); font-weight: 800; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-foreground); }
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  @keyframes au-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes au-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes au-pulse { 0% { transform: scale(.92); opacity: .9; } 100% { transform: scale(1.4); opacity: 0; } }
+  @keyframes au-bar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+  .animate-au-in { animation: au-in 240ms cubic-bezier(.2,0,0,1) both; }
+  .animate-au-float-7 { animation: au-float 7s ease-in-out infinite; }
+  .animate-au-float-8 { animation: au-float 8s ease-in-out -1.5s infinite; }
+  .animate-au-float-9 { animation: au-float 9s ease-in-out -3s infinite; }
+  .animate-au-pulse { animation: au-pulse 1.6s cubic-bezier(.2,0,0,1) infinite; }
+  .animate-au-bar { animation: au-bar 1100ms cubic-bezier(.4,0,.2,1) infinite; }
+  .bg-arch-grid {
+    background-image: linear-gradient(rgba(242,242,242,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(242,242,242,.05) 1px, transparent 1px);
+    background-size: 56px 56px; background-position: -1px -1px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 65% at 38% 42%, #000 25%, transparent 100%);
+            mask-image: radial-gradient(ellipse 75% 65% at 38% 42%, #000 25%, transparent 100%);
+  }
+  .bg-noise { background-image: var(--texture-noise); opacity: var(--texture-opacity); mix-blend-mode: overlay; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-au-in, .animate-au-float-7, .animate-au-float-8, .animate-au-float-9, .animate-au-pulse, .animate-au-bar { animation: none; }
+  }
+}
+
+@layer utilities {
+  /* Abas de linha: o base-ui emite data-orientation, então os seletores group-data-horizontal/tabs do ui/tabs nunca casam. */
+  [data-slot="tabs-list"][data-variant="line"] {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  [data-slot="tabs-list"][data-variant="line"] > [data-slot="tabs-trigger"] {
+    height: 44px;
+    flex: none;
+    padding: 0 12px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+  }
+
+  [data-slot="tabs-list"][data-variant="line"] > [data-slot="tabs-trigger"]::after {
+    inset: auto 0 -1px 0;
+    height: 2px;
+    background: var(--collab-mostarda);
+  }
+
+  [data-slot="tabs-list"][data-variant="line"] > [data-slot="tabs-trigger"][data-active] {
+    color: var(--foreground);
+  }
+}
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-desktop: 820px;
+  --breakpoint-wide: 1180px;
+  --text-9-5: 9.5px;
+  --text-10: 10px;
+  --text-10-5: 10.5px;
+  --text-11: 11px;
+  --text-12-5: 12.5px;
+  --text-13: 13px;
+  --text-13-5: 13.5px;
+  --text-15: 15px;
+  --text-22: 22px;
+  --text-28: 28px;
+  --text-32: 32px;
+  --text-34: 34px;
+  --text-40: 40px;
+  --text-56: 56px;
+  --container-copy: 72ch;
+  --leading-title: 1.1;
+  --leading-badge: 1.4;
+  --tracking-label: 0.06em;
+  --tracking-title: -0.015em;
+}
+
+@utility grid-split {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+@utility grid-stats {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+@utility grid-panels {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+}
+
+@utility grid-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+}

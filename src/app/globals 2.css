@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Agrandir";
+  src: url("/fonts/Agrandir-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Agrandir";
+  src: url("/fonts/Agrandir-TextBold.otf") format("opentype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Montserrat";
+  src: url("/fonts/Montserrat-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  /* Identidade Visual Big Master / Collab CD */
+  --collab-mostarda: #C09100;
+  --mostarda-300: #D6AE3A;
+  --mostarda-700: #8A6900;
+
+  --background: #0D0E12;
+  --foreground: #F2F2F2;
+  --card: #15171E;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --secondary: #1F222B;
+  --muted: #8E929E;
+  --accent: #C09100;
+  --danger: #E5484D;
+  --warning: #F5A623;
+  --success: #30A46C;
+}
+
+[data-theme="light"] {
+  --background: #F4F5F7;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-border: #E2E8F0;
+  --secondary: #E5E7EB;
+  --muted: #6B7280;
+  --accent: #B08200;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --success: #16A34A;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: "Agrandir", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   REGRAS ESPECÍFICAS DE IMPRESSÃO TÉRMICA E PADRÃO 100 x 50 mm
+   ========================================================================== */
+
+@page {
+  /* Dimensão física exata da etiqueta em escala 100% */
+  size: 100mm 50mm;
+  margin: 0;
+}
+
+@media print {
+  /* Oculta toda a interface do sistema */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100mm !important;
+    height: 50mm !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Cada etiqueta ocupa exatamente 100 x 50 mm com quebra de página */
+  .printable-label-page {
+    width: 100mm !important;
+    height: 50mm !important;
+    max-width: 100mm !important;
+    max-height: 50mm !important;
+    box-sizing: border-box !important;
+    padding: 10mm !important; /* Margens de segurança de 1 cm */
+    page-break-after: always !important;
+    break-after: page !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+  }
+
+  /* Área útil central de 80 x 30 mm */
+  .printable-label-content {
+    width: 80mm !important;
+    height: 30mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
