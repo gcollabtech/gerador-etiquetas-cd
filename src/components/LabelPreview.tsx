@@ -11,10 +11,21 @@ import {
 interface LabelPreviewProps {
   address: StorageAddress | null;
   includeLogo?: boolean;
+  larguraCm?: number | "";
+  alturaCm?: number | "";
 }
 
-export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps) {
+export function LabelPreview({
+  address,
+  includeLogo = true,
+  larguraCm = 10,
+  alturaCm = 5,
+}: LabelPreviewProps) {
   const [showGuides, setShowGuides] = useState(true);
+
+  const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
+  const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
+  const aspectRatio = `${wCm} / ${hCm}`;
 
   const sampleAddress: StorageAddress = address || {
     id: "sample",
@@ -41,7 +52,7 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
         <div>
           <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
             <Eye size={15} className="text-[var(--collab-mostarda)]" />
-            <span>6. Pré-visualização da Etiqueta em Escala Proporcional (10 × 5 cm)</span>
+            <span>3. Pré-visualização da Etiqueta em Escala Proporcional ({wCm} × {hCm} cm)</span>
           </div>
           <p className="text-xs text-[var(--muted)]">
             Endereço atual: <strong className="text-[var(--foreground)] font-mono">{sampleAddress.code}</strong>{" "}
@@ -49,7 +60,7 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
             <strong className="text-[var(--collab-mostarda)] uppercase">
               {sampleAddress.arrowDirection === "down" ? "Baixo (↓)" : "Cima (↑)"}
             </strong>
-            )
+            ) • Formato: <span className="font-semibold text-[var(--foreground)]">{wCm} cm larg. × {hCm} cm alt.</span>
           </p>
         </div>
 
@@ -63,26 +74,30 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
           }`}
         >
           <Ruler size={13} />
-          <span>{showGuides ? "Ocultar Guias 10mm" : "Exibir Guias (10mm)"}</span>
+          <span>{showGuides ? "Ocultar Guias" : "Exibir Guias"}</span>
         </button>
       </div>
 
       <div className="flex flex-col items-center justify-center p-6 bg-[var(--background)] rounded-lg border border-[var(--card-border)] overflow-x-auto">
-        <div className="w-full max-w-[500px] flex items-center justify-between text-[11px] font-mono text-[var(--muted)] mb-1 px-1">
+        <div className="w-full max-w-[520px] flex items-center justify-between text-[11px] font-mono text-[var(--muted)] mb-1 px-1">
           <span>0 cm</span>
-          <span>◄─── Largura Total: 10 cm (100 mm) ───►</span>
-          <span>10 cm</span>
+          <span>◄─── Largura Nominal: {wCm} cm ({wCm * 10} mm) ───►</span>
+          <span>{wCm} cm</span>
         </div>
 
         {/* Outer orange frame */}
         <div
-          className="relative w-full max-w-[500px] aspect-[2/1] select-none"
+          className="relative select-none transition-all duration-200"
           style={{
             backgroundColor: "#FF6400",
-            borderRadius: "14px",
-            padding: "5%",
+            borderRadius: `${Math.max(10, Math.min(20, wCm * 1.5))}px`,
+            padding: `${Math.max(3.5, Math.min(6, (hCm / wCm) * 6))}%`,
             boxSizing: "border-box",
             fontFamily: "Helvetica, Arial, sans-serif",
+            aspectRatio: aspectRatio,
+            width: "100%",
+            maxWidth: wCm >= hCm ? "520px" : "360px",
+            maxHeight: "360px",
           }}
         >
           {/* Inner white area */}
@@ -200,10 +215,10 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
           </div>
         </div>
 
-        <div className="w-full max-w-[500px] flex items-center justify-between text-[11px] font-mono text-[var(--muted)] mt-1 px-1">
-          <span>Altura: 5 cm (50 mm)</span>
-          <span>Frame laranja • Interior branco</span>
-          <span>Collab® | Barcode | Seta</span>
+        <div className="w-full max-w-[520px] flex items-center justify-between text-[11px] font-mono text-[var(--muted)] mt-2 px-1">
+          <span>Largura: <strong className="text-[var(--foreground)]">{wCm} cm</strong> ({wCm * 10} mm)</span>
+          <span>Altura: <strong className="text-[var(--foreground)]">{hCm} cm</strong> ({hCm * 10} mm)</span>
+          <span>Proporção: <strong className="text-[var(--collab-mostarda)]">{(wCm / hCm).toFixed(2)} : 1</strong></span>
         </div>
       </div>
 

@@ -81,6 +81,24 @@ export function validateAddressParams(params: AddressParams): ValidationResult {
     }
   }
 
+  if (params.larguraCm !== undefined && params.larguraCm !== "") {
+    const w = Number(params.larguraCm);
+    if (isNaN(w) || w <= 0) {
+      errors.push("A largura da etiqueta deve ser um número maior que zero.");
+    } else if (w < 3 || w > 30) {
+      warnings.push(`Largura informada (${w} cm): os padrões térmicos e de bobinas usuais variam entre 3 cm e 22 cm.`);
+    }
+  }
+
+  if (params.alturaCm !== undefined && params.alturaCm !== "") {
+    const h = Number(params.alturaCm);
+    if (isNaN(h) || h <= 0) {
+      errors.push("A altura da etiqueta deve ser um número maior que zero.");
+    } else if (h < 2 || h > 30) {
+      warnings.push(`Altura informada (${h} cm): os padrões térmicos e de bobinas usuais variam entre 2 cm e 30 cm.`);
+    }
+  }
+
   const total = (rFim - rIni + 1) * (pFim - pIni + 1) * calcAptos * calcNiveis;
   if (total > 3000) {
     warnings.push(

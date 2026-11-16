@@ -1,4 +1,4 @@
-import { StorageAddress, PrintConfig } from "./types";
+import { StorageAddress, PrintConfig, PrintLayoutMode, A4GridLayout } from "./types";
 import { getCode128Rectangles } from "./code128";
 import {
   COLLAB_LOGO_JPEG_BASE64,
@@ -6,7 +6,12 @@ import {
   COLLAB_LOGO_HEIGHT,
 } from "./logoBase64";
 
-const MM_TO_PT = 72 / 25.4;
+export const MM_TO_PT = 72 / 25.4;
+
+export const A4_WIDTH_MM = 210;
+export const A4_HEIGHT_MM = 297;
+export const A4_WIDTH_PT = A4_WIDTH_MM * MM_TO_PT;
+export const A4_HEIGHT_PT = A4_HEIGHT_MM * MM_TO_PT;
 
 export const LABEL_WIDTH_MM = 100;
 export const LABEL_HEIGHT_MM = 50;
@@ -20,12 +25,176 @@ export const MARGIN_PT = MARGIN_MM * MM_TO_PT;
 export const USEFUL_WIDTH_PT = USEFUL_WIDTH_MM * MM_TO_PT;
 export const USEFUL_HEIGHT_PT = USEFUL_HEIGHT_MM * MM_TO_PT;
 
+export function calculateA4GridLayout(
+  larguraCm: number,
+  alturaCm: number,
+  totalCount: number,
+  gapMm: number = 0
+): A4GridLayout {
+  const w = larguraCm > 0 ? larguraCm * 10 : 100;
+  const h = alturaCm > 0 ? alturaCm * 10 : 50;
+
+  const minMarginX = 4;
+  const minMarginY = 4;
+
+  const availW = Math.max(w, A4_WIDTH_MM - minMarginX * 2);
+  const availH = Math.max(h, A4_HEIGHT_MM - minMarginY * 2);
+
+  const cols = Math.max(1, Math.floor((availW + gapMm) / (w + gapMm)));
+  const rows = Math.max(1, Math.floor((availH + gapMm) / (h + gapMm)));
+
+  const totalGridW = cols * w + (cols - 1) * gapMm;
+  const totalGridH = rows * h + (rows - 1) * gapMm;
+
+  const marginLeftMm = Math.max(0, (A4_WIDTH_MM - totalGridW) / 2);
+  const marginTopMm = Math.max(0, (A4_HEIGHT_MM - totalGridH) / 2);
+
+  const labelsPerPage = cols * rows;
+  const totalPages = Math.max(1, Math.ceil(Math.max(1, totalCount) / labelsPerPage));
+
+  return {
+    cols,
+    rows,
+    labelsPerPage,
+    totalPages,
+    marginLeftMm,
+    marginTopMm,
+    gapMm,
+    labelWidthMm: w,
+    labelHeightMm: h,
+  };
+}
+
+function drawSingleLabel(
+  sc: string[],
+  addr: StorageAddress,
+  originX: number,
+  originY: number,
+  labelWidthPt: number,
+  labelHeightPt: number,
+  includeLogo: boolean,
+  showCutBorders: boolean,
+  logoXObjNum: number
+) {
+  sc.push("q");
+  // Translate coordinate origin to this label's bottom-left position
+  sc.push(`1 0 0 1 ${originX.toFixed(2)} ${originY.toFixed(2)} cm`);
+
+  // Orange outer background (#FF6400)
+  sc.push("1.0 0.392 0.0 rg");
+  sc.push(`0 0 ${labelWidthPt.toFixed(2)} ${labelHeightPt.toFixed(2)} re f`);
+
+  // White inner rectangle (proportional inset)
+  const framePt = Math.max(6, Math.min(labelWidthPt, labelHeightPt) * 0.08);
+  const innerX = framePt;
+  const innerY = framePt;
+  const innerW = labelWidthPt - framePt * 2;
+  const innerH = labelHeightPt - framePt * 2;
+  sc.push("1 1 1 rg");
+  sc.push(`${innerX.toFixed(2)} ${innerY.toFixed(2)} ${innerW.toFixed(2)} ${innerH.toFixed(2)} re f`);
+
+  const xU = innerX, yU = innerY, wU = innerW, hU = innerH;
+
+  if (showCutBorders) {
+    // Light gray dashed cut line around the label
+    sc.push("0.7 0.7 0.7 RG 0.5 w [2 2] 0 d");
+    sc.push(`0 0 ${labelWidthPt.toFixed(2)} ${labelHeightPt.toFixed(2)} re S`);
+    sc.push("[] 0 d");
+  }
+
+  // Left brand column (vertical logo): ~15% width
+  const BRAND_COL_W = wU * 0.15;
+  const RED_LINE_X = xU + BRAND_COL_W;
+
+  let barcodeStartX: number;
+  let barcodeWidth: number;
+
+  if (includeLogo) {
+    barcodeStartX = RED_LINE_X + 4;
+    barcodeWidth = wU - BRAND_COL_W - 4 - wU * 0.18;
+
+    if (logoXObjNum > 0) {
+      // Draw vertical logo centered in left column
+      const maxW = BRAND_COL_W - 4;
+      const maxH = hU - 8;
+      const scale = Math.min(maxW / COLLAB_LOGO_WIDTH, maxH / COLLAB_LOGO_HEIGHT);
+      const logoDrawW = COLLAB_LOGO_WIDTH * scale;
+      const logoDrawH = COLLAB_LOGO_HEIGHT * scale;
+      const logoDrawX = xU + (BRAND_COL_W - logoDrawW) / 2;
+      const logoDrawY = yU + (hU - logoDrawH) / 2;
+
+      sc.push("q");
+      sc.push(`${logoDrawW.toFixed(2)} 0 0 ${logoDrawH.toFixed(2)} ${logoDrawX.toFixed(2)} ${logoDrawY.toFixed(2)} cm`);
+      sc.push(`/Im1 Do`);
+      sc.push("Q");
+    } else {
+      // Fallback vertical text
+      sc.push("0 0 0 rg q");
+      const colCX = xU + BRAND_COL_W / 2;
+      const colCY = yU + hU / 2;
+      sc.push(`0 1 -1 0 ${colCX.toFixed(2)} ${colCY.toFixed(2)} cm`);
+      sc.push("BT /F3 11 Tf");
+      const tw = "Collab".length * 7;
+      sc.push(`${(-tw / 2).toFixed(2)} -4 Td (Collab) Tj ET Q`);
+    }
+
+    // Red separator line
+    sc.push("0.8 0 0 RG 1.5 w");
+    sc.push(`${RED_LINE_X.toFixed(2)} ${yU.toFixed(2)} m`);
+    sc.push(`${RED_LINE_X.toFixed(2)} ${(yU + hU).toFixed(2)} l S`);
+    sc.push("0 0 0 RG");
+  } else {
+    barcodeStartX = xU;
+    barcodeWidth = wU - wU * 0.18;
+  }
+
+  // Barcode in center
+  const barcodeHeight = hU * 0.60;
+  const barcodeY = yU + hU - barcodeHeight - 3;
+
+  const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 8);
+  sc.push("0 0 0 rg");
+  for (const r of rects) {
+    sc.push(`${r.x.toFixed(2)} ${r.y.toFixed(2)} ${r.width.toFixed(2)} ${r.height.toFixed(2)} re f`);
+  }
+
+  // Address text centered below barcode (scaled proportionally)
+  const fontPt = Math.max(8, Math.min(18, Math.round(innerH * 0.13)));
+  const textY = barcodeY - (fontPt * 1.15);
+  const charW = fontPt * 0.55;
+  const textW = addr.code.length * charW;
+  const textX = barcodeStartX + (barcodeWidth - textW) / 2;
+  sc.push("BT");
+  sc.push(`/F1 ${fontPt} Tf`);
+  sc.push(`${Math.max(barcodeStartX, textX).toFixed(2)} ${textY.toFixed(2)} Td`);
+  sc.push(`(${escapePdfString(addr.code)}) Tj`);
+  sc.push("ET");
+
+  // Right column: Directional arrow (~19% width, very bold)
+  const arrowBoxW = wU * 0.19;
+  const arrowBoxX = xU + wU - arrowBoxW - 3;
+  const arrowBoxY = yU + 3;
+  const arrowBoxH = hU - 6;
+  drawVectorArrow(sc, arrowBoxX, arrowBoxY, arrowBoxW, arrowBoxH, addr.arrowDirection);
+
+  sc.push("Q");
+}
+
 export function buildLabelsPdf(
   addresses: StorageAddress[],
   config: Partial<PrintConfig> = {}
 ): Uint8Array {
   const showCutBorders = config.showCutBorders ?? false;
   const includeLogo = config.includeCompanyLogo ?? true;
+  const larguraCm = Number(config.larguraCm) > 0 ? Number(config.larguraCm) : 10;
+  const alturaCm = Number(config.alturaCm) > 0 ? Number(config.alturaCm) : 5;
+  const mode: PrintLayoutMode = config.mode || config.layoutMode || "a4_grid";
+  const gapMm = config.gapMm ?? 0;
+
+  const labelWidthMm = larguraCm * 10;
+  const labelHeightMm = alturaCm * 10;
+  const labelWidthPt = labelWidthMm * MM_TO_PT;
+  const labelHeightPt = labelHeightMm * MM_TO_PT;
 
   type Chunk = string | Uint8Array;
   const chunks: Chunk[] = [];
@@ -35,6 +204,9 @@ export function buildLabelsPdf(
     chunks.push(s);
     byteOffset += Buffer.byteLength(s, "binary");
   }
+
+  // PDF Header (MUST BE THE FIRST BYTES IN THE FILE)
+  writeStr("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
 
   const objOffsets: number[] = [];
   let nextObjNum = 1;
@@ -82,131 +254,105 @@ export function buildLabelsPdf(
 
   // ── Pages ─────────────────────────────────────────────────────────────
   const pageNums: number[] = [];
+  const xobjEntry = logoXObjNum > 0
+    ? ` /XObject << /Im1 ${logoXObjNum} 0 R >>`
+    : "";
+  const resources =
+    `<< /Font << /F1 ${fontBoldNum} 0 R /F2 ${fontRegularNum} 0 R /F3 ${fontBoldObliqueNum} 0 R >>${xobjEntry} >>`;
 
-  for (const addr of addresses) {
-    const sc: string[] = [];
+  const grid = calculateA4GridLayout(larguraCm, alturaCm, addresses.length, gapMm);
+  const totalPages = mode === "a4_grid" ? Math.max(1, grid.totalPages) : Math.max(1, addresses.length);
+  // Each page creates 2 objects: content stream and page dictionary.
+  // Therefore, the /Type /Pages object number will be nextObjNum + totalPages * 2.
+  const pagesObjNum = nextObjNum + totalPages * 2;
 
-    sc.push("q");
+  if (mode === "a4_grid") {
+    // ── Múltiplas etiquetas por folha A4 ─────────────────────────────────
+    for (let p = 0; p < totalPages; p++) {
+      const sc: string[] = [];
+      const slice = addresses.slice(p * grid.labelsPerPage, (p + 1) * grid.labelsPerPage);
 
-    // Orange outer background (#FF6400)
-    sc.push("1.0 0.392 0.0 rg");
-    sc.push(`0 0 ${LABEL_WIDTH_PT.toFixed(2)} ${LABEL_HEIGHT_PT.toFixed(2)} re f`);
+      for (let i = 0; i < slice.length; i++) {
+        const addr = slice[i];
+        if (!addr) continue;
+        const row = Math.floor(i / grid.cols);
+        const col = i % grid.cols;
 
-    // White inner rounded rectangle (approximated with inset rect)
-    const FRAME_PT = MARGIN_PT * 0.55;
-    const innerX = FRAME_PT;
-    const innerY = FRAME_PT;
-    const innerW = LABEL_WIDTH_PT - FRAME_PT * 2;
-    const innerH = LABEL_HEIGHT_PT - FRAME_PT * 2;
-    sc.push("1 1 1 rg");
-    sc.push(`${innerX.toFixed(2)} ${innerY.toFixed(2)} ${innerW.toFixed(2)} ${innerH.toFixed(2)} re f`);
+        const originX = (grid.marginLeftMm + col * (grid.labelWidthMm + grid.gapMm)) * MM_TO_PT;
+        const topFromPageTopMm = grid.marginTopMm + row * (grid.labelHeightMm + grid.gapMm);
+        const topPt = (A4_HEIGHT_MM - topFromPageTopMm) * MM_TO_PT;
+        const originY = topPt - labelHeightPt;
 
-    const xU = innerX, yU = innerY, wU = innerW, hU = innerH;
-
-    if (showCutBorders) {
-      sc.push("0.75 0.75 0.75 RG 0.5 w [2 2] 0 d");
-      sc.push(`${xU.toFixed(2)} ${yU.toFixed(2)} ${wU.toFixed(2)} ${hU.toFixed(2)} re S`);
-      sc.push("[] 0 d");
-    }
-
-    // Left brand column (vertical logo): ~15% width
-    const BRAND_COL_W = wU * 0.15;
-    const RED_LINE_X = xU + BRAND_COL_W;
-
-    let barcodeStartX: number;
-    let barcodeWidth: number;
-
-    if (includeLogo) {
-      barcodeStartX = RED_LINE_X + 4;
-      barcodeWidth = wU - BRAND_COL_W - 4 - wU * 0.18;
-
-      if (logoXObjNum > 0) {
-        // Draw vertical logo centered in left column
-        const maxW = BRAND_COL_W - 4;
-        const maxH = hU - 8;
-        const scale = Math.min(maxW / COLLAB_LOGO_WIDTH, maxH / COLLAB_LOGO_HEIGHT);
-        const logoDrawW = COLLAB_LOGO_WIDTH * scale;
-        const logoDrawH = COLLAB_LOGO_HEIGHT * scale;
-        const logoDrawX = xU + (BRAND_COL_W - logoDrawW) / 2;
-        const logoDrawY = yU + (hU - logoDrawH) / 2;
-
-        sc.push("q");
-        sc.push(`${logoDrawW.toFixed(2)} 0 0 ${logoDrawH.toFixed(2)} ${logoDrawX.toFixed(2)} ${logoDrawY.toFixed(2)} cm`);
-        sc.push(`/Im1 Do`);
-        sc.push("Q");
-      } else {
-        // Fallback vertical text
-        sc.push("0 0 0 rg q");
-        const colCX = xU + BRAND_COL_W / 2;
-        const colCY = yU + hU / 2;
-        sc.push(`0 1 -1 0 ${colCX.toFixed(2)} ${colCY.toFixed(2)} cm`);
-        sc.push("BT /F3 11 Tf");
-        const tw = "Collab".length * 7;
-        sc.push(`${(-tw / 2).toFixed(2)} -4 Td (Collab) Tj ET Q`);
+        drawSingleLabel(
+          sc,
+          addr,
+          originX,
+          originY,
+          labelWidthPt,
+          labelHeightPt,
+          includeLogo,
+          showCutBorders,
+          logoXObjNum
+        );
       }
 
-      // Red separator line
-      sc.push("0.8 0 0 RG 1.5 w");
-      sc.push(`${RED_LINE_X.toFixed(2)} ${yU.toFixed(2)} m`);
-      sc.push(`${RED_LINE_X.toFixed(2)} ${(yU + hU).toFixed(2)} l S`);
-      sc.push("0 0 0 RG");
-    } else {
-      barcodeStartX = xU;
-      barcodeWidth = wU - wU * 0.18;
+      // Rodapé da folha A4
+      sc.push("BT /F2 8 Tf 0.45 0.45 0.45 rg");
+      const footerText = `Collab CD • Folha ${p + 1} de ${totalPages} (${slice.length} etiquetas • ${larguraCm} x ${alturaCm} cm) • Imprimir em Escala 100% (Sem Ajuste)`;
+      sc.push(`15 15 Td (${escapePdfString(footerText)}) Tj ET`);
+      sc.push("0 0 0 rg");
+
+      const streamText = sc.join("\n");
+      const streamLen = Buffer.byteLength(streamText, "utf8");
+
+      const contentNum = beginObj();
+      writeStr(`<< /Length ${streamLen} >>\nstream\n${streamText}\nendstream\n`);
+      endObj();
+
+      const pageNum = beginObj();
+      writeStr(
+        `<< /Type /Page /Parent ${pagesObjNum} 0 R` +
+        ` /MediaBox [0 0 ${A4_WIDTH_PT.toFixed(2)} ${A4_HEIGHT_PT.toFixed(2)}]` +
+        ` /Contents ${contentNum} 0 R /Resources ${resources} >>\n`
+      );
+      endObj();
+
+      pageNums.push(pageNum);
     }
+  } else {
+    // ── Modo Bobina Térmica (1 etiqueta por página individual) ────────────
+    for (const addr of addresses) {
+      const sc: string[] = [];
 
-    // Barcode in center
-    const barcodeHeight = hU * 0.62;
-    const barcodeY = yU + hU - barcodeHeight - 3;
+      drawSingleLabel(
+        sc,
+        addr,
+        0,
+        0,
+        labelWidthPt,
+        labelHeightPt,
+        includeLogo,
+        showCutBorders,
+        logoXObjNum
+      );
 
-    const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 8);
-    sc.push("0 0 0 rg");
-    for (const r of rects) {
-      sc.push(`${r.x.toFixed(2)} ${r.y.toFixed(2)} ${r.width.toFixed(2)} ${r.height.toFixed(2)} re f`);
+      const streamText = sc.join("\n");
+      const streamLen = Buffer.byteLength(streamText, "utf8");
+
+      const contentNum = beginObj();
+      writeStr(`<< /Length ${streamLen} >>\nstream\n${streamText}\nendstream\n`);
+      endObj();
+
+      const pageNum = beginObj();
+      writeStr(
+        `<< /Type /Page /Parent ${pagesObjNum} 0 R` +
+        ` /MediaBox [0 0 ${labelWidthPt.toFixed(2)} ${labelHeightPt.toFixed(2)}]` +
+        ` /Contents ${contentNum} 0 R /Resources ${resources} >>\n`
+      );
+      endObj();
+
+      pageNums.push(pageNum);
     }
-
-    // Address text centered below barcode
-    const textY = barcodeY - 14;
-    const charW = 7.5;
-    const textW = addr.code.length * charW;
-    const textX = barcodeStartX + (barcodeWidth - textW) / 2;
-    sc.push("BT");
-    sc.push(`/F1 13 Tf`);
-    sc.push(`${Math.max(barcodeStartX, textX).toFixed(2)} ${textY.toFixed(2)} Td`);
-    sc.push(`(${escapePdfString(addr.code)}) Tj`);
-    sc.push("ET");
-
-    // Right column: Directional arrow (~19% width, very bold)
-    const arrowBoxW = wU * 0.19;
-    const arrowBoxX = xU + wU - arrowBoxW - 3;
-    const arrowBoxY = yU + 3;
-    const arrowBoxH = hU - 6;
-    drawVectorArrow(sc, arrowBoxX, arrowBoxY, arrowBoxW, arrowBoxH, addr.arrowDirection);
-
-    sc.push("Q");
-
-    const streamText = sc.join("\n");
-    const streamLen = Buffer.byteLength(streamText, "utf8");
-
-    const xobjEntry = logoXObjNum > 0
-      ? ` /XObject << /Im1 ${logoXObjNum} 0 R >>`
-      : "";
-    const resources =
-      `<< /Font << /F1 ${fontBoldNum} 0 R /F2 ${fontRegularNum} 0 R /F3 ${fontBoldObliqueNum} 0 R >>${xobjEntry} >>`;
-
-    const contentNum = beginObj();
-    writeStr(`<< /Length ${streamLen} >>\nstream\n${streamText}\nendstream\n`);
-    endObj();
-
-    const pageNum = beginObj();
-    writeStr(
-      `<< /Type /Page /Parent ${nextObjNum + pageNums.length} 0 R` +
-      ` /MediaBox [0 0 ${LABEL_WIDTH_PT.toFixed(2)} ${LABEL_HEIGHT_PT.toFixed(2)}]` +
-      ` /Contents ${contentNum} 0 R /Resources ${resources} >>\n`
-    );
-    endObj();
-
-    pageNums.push(pageNum);
   }
 
   // Pages dictionary
@@ -321,8 +467,17 @@ export function downloadLabelsPdf(
   const a = document.createElement("a");
   const first = addresses[0]?.code || "inicio";
   const last = addresses[addresses.length - 1]?.code || "fim";
-  a.href = url;
-  a.download = `etiquetas_cd_${first}_a_${last}_${addresses.length}un.pdf`;
+  const w = Number(config.larguraCm) > 0 ? Number(config.larguraCm) : 10;
+  const h = Number(config.alturaCm) > 0 ? Number(config.alturaCm) : 5;
+  const mode: PrintLayoutMode = config.mode || config.layoutMode || "a4_grid";
+
+  if (mode === "a4_grid") {
+    const grid = calculateA4GridLayout(w, h, addresses.length, config.gapMm ?? 0);
+    a.download = `etiquetas_cd_A4_${w}x${h}cm_${first}_a_${last}_${addresses.length}un_${grid.totalPages}folhas.pdf`;
+  } else {
+    a.download = `etiquetas_cd_bobina_${w}x${h}cm_${first}_a_${last}_${addresses.length}un.pdf`;
+  }
+
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {

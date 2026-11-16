@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Bookmark,
   Plus,
+  Ruler,
+  Maximize2,
 } from "lucide-react";
 
 interface ConfigPanelProps {
@@ -239,11 +241,8 @@ export function ConfigPanel({
       </div>
 
       <div className="pt-4 border-t border-[var(--card-border)]">
-        <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center justify-between">
-          <span>3.2. Quantidade de Apartamentos e Níveis (Controle de Validação)</span>
-          <span className="text-[11px] font-normal text-[var(--muted)]">
-            utilizado para validação cruzada do lote
-          </span>
+        <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3">
+          3.2. Quantidade de Apartamentos e Níveis (Controle de Validação)
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -293,6 +292,115 @@ export function ConfigPanel({
               placeholder="4"
               className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
             />
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-[var(--card-border)]">
+        <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Ruler size={14} className="text-[var(--collab-mostarda)]" />
+            <span>3.3. Dimensões Físicas da Etiqueta (Parametrizável em cm)</span>
+          </span>
+          <span className="text-[11px] font-mono text-[var(--collab-mostarda)] font-semibold">
+            {Number(params.larguraCm || 10)} × {Number(params.alturaCm || 5)} cm ({(Number(params.larguraCm || 10) * 10)} × {(Number(params.alturaCm || 5) * 10)} mm)
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg flex items-center justify-between gap-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
+                  Largura da Etiqueta (cm)
+                </label>
+                <p className="text-[11px] text-[var(--muted)]">
+                  Padrão CD: <strong>10 cm</strong> (100 mm)
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="2"
+                  max="30"
+                  value={params.larguraCm ?? 10}
+                  onChange={(e) =>
+                    onChange({
+                      ...params,
+                      larguraCm: e.target.value === "" ? "" : parseFloat(e.target.value),
+                    })
+                  }
+                  placeholder="10"
+                  className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+                <span className="text-xs font-mono font-bold text-[var(--muted)]">cm</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg flex items-center justify-between gap-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
+                  Altura da Etiqueta (cm)
+                </label>
+                <p className="text-[11px] text-[var(--muted)]">
+                  Padrão CD: <strong>5 cm</strong> (50 mm)
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="2"
+                  max="30"
+                  value={params.alturaCm ?? 5}
+                  onChange={(e) =>
+                    onChange({
+                      ...params,
+                      alturaCm: e.target.value === "" ? "" : parseFloat(e.target.value),
+                    })
+                  }
+                  placeholder="5"
+                  className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+                <span className="text-xs font-mono font-bold text-[var(--muted)]">cm</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Dimension Presets */}
+          <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+            <span className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
+              <Maximize2 size={12} />
+              <span>Tamanhos Comuns:</span>
+            </span>
+
+            {[
+              { label: "10 × 5 cm (Padrão CD)", w: 10, h: 5 },
+              { label: "10 × 7 cm (Média)", w: 10, h: 7 },
+              { label: "10 × 15 cm (Transporte)", w: 10, h: 15 },
+              { label: "7 × 4 cm (Prateleira)", w: 7, h: 4 },
+              { label: "5 × 3 cm (Caixas)", w: 5, h: 3 },
+            ].map((dim) => {
+              const isSelected =
+                (Number(params.larguraCm || 10) === dim.w) &&
+                (Number(params.alturaCm || 5) === dim.h);
+
+              return (
+                <button
+                  key={dim.label}
+                  type="button"
+                  onClick={() => onChange({ ...params, larguraCm: dim.w, alturaCm: dim.h })}
+                  className={`px-2.5 py-1 rounded text-xs font-medium border transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)] shadow-sm"
+                      : "bg-[var(--secondary)] border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)]"
+                  }`}
+                >
+                  {dim.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { StorageAddress } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { StorageAddress, PrintLayoutMode } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
+  calculateA4GridLayout,
   LABEL_WIDTH_MM,
   LABEL_HEIGHT_MM,
   USEFUL_WIDTH_MM,
@@ -19,34 +20,79 @@ import {
   Sliders,
   Sparkles,
   Info,
+  Grid,
+  ExternalLink,
 } from "lucide-react";
 
 interface PrintPortalViewProps {
   addresses: StorageAddress[];
   selectedAddresses: StorageAddress[];
   onOpenPrintModal: (selectedOnly: boolean) => void;
+  larguraCm?: number | "";
+  alturaCm?: number | "";
 }
 
 export function PrintPortalView({
   addresses,
   selectedAddresses,
   onOpenPrintModal,
+  larguraCm = 10,
+  alturaCm = 5,
 }: PrintPortalViewProps) {
   const [printScope, setPrintScope] = useState<"all" | "selected">("all");
+  const [mode, setMode] = useState<PrintLayoutMode>("a4_grid");
   const [showCutBorders, setShowCutBorders] = useState(false);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
+  const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
 
   const targetBatch =
     printScope === "selected" && selectedAddresses.length > 0
       ? selectedAddresses
       : addresses;
 
+  const grid = calculateA4GridLayout(wCm, hCm, targetBatch.length);
+
+  useEffect(() => {
+    let active = true;
+    setIsGeneratingPdf(true);
+
+    try {
+      const blob = createLabelsPdfBlob(targetBatch, {
+        mode,
+        showCutBorders,
+        includeCompanyLogo,
+        larguraCm: wCm,
+        alturaCm: hCm,
+      });
+      const url = URL.createObjectURL(blob);
+      if (active) {
+        setPdfPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+        setIsGeneratingPdf(false);
+      }
+    } catch (e) {
+      console.error("Erro ao gerar PDF:", e);
+      if (active) setIsGeneratingPdf(false);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [targetBatch, mode, showCutBorders, includeCompanyLogo, wCm, hCm]);
+
   const handleDownloadPdf = () => {
     downloadLabelsPdf(targetBatch, {
+      mode,
       showCutBorders,
       includeCompanyLogo,
+      larguraCm: wCm,
+      alturaCm: hCm,
     });
   };
 
@@ -57,13 +103,16 @@ export function PrintPortalView({
         URL.revokeObjectURL(pdfPreviewUrl);
       }
       const blob = createLabelsPdfBlob(targetBatch, {
+        mode,
         showCutBorders,
         includeCompanyLogo,
+        larguraCm: wCm,
+        alturaCm: hCm,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
       setIsGeneratingPdf(false);
-    }, 100);
+    }, 50);
   };
 
   return (
@@ -75,11 +124,19 @@ export function PrintPortalView({
             <span>Central de Impressão de Etiquetas & Exportação de PDF</span>
           </div>
           <h2 className="font-heading text-lg font-bold text-[var(--foreground)] mt-0.5">
-            Impressoras Térmicas e Convencionais • Escala 100%
+            {mode === "a4_grid"
+              ? `Folha A4: ${grid.labelsPerPage} etiquetas/folha (${grid.cols} colunas × ${grid.rows} linhas)`
+              : `Impressão Térmica: Bobina ${wCm} × ${hCm} cm`}
           </h2>
           <p className="text-xs text-[var(--muted)]">
-            Lote preparado: <strong className="text-[var(--foreground)] font-mono">{targetBatch.length} etiquetas</strong>{" "}
-            ({printScope === "selected" ? "somente selecionadas" : "todas as geradas"}).
+            Lote: <strong className="text-[var(--foreground)] font-mono">{targetBatch.length} etiquetas</strong> •{" "}
+            {mode === "a4_grid" ? (
+              <span className="text-[var(--collab-mostarda)] font-semibold">
+                {grid.totalPages} folha{grid.totalPages > 1 ? "s" : ""} A4 necessária{grid.totalPages > 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span>bobina individual</span>
+            )}
           </p>
         </div>
 
@@ -90,7 +147,11 @@ export function PrintPortalView({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-95 shadow-sm transition-all cursor-pointer"
           >
             <FileDown size={14} />
-            <span>Baixar PDF ({targetBatch.length} un)</span>
+            <span>
+              {mode === "a4_grid"
+                ? `Baixar PDF A4 (${grid.totalPages} folha${grid.totalPages > 1 ? "s" : ""})`
+                : `Baixar PDF (${targetBatch.length} un)`}
+            </span>
           </button>
 
           <button
@@ -105,35 +166,48 @@ export function PrintPortalView({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Scope selector */}
+        {/* Layout & Scope selector */}
         <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-3">
           <label className="text-xs font-bold text-[var(--foreground)] block">
-            Escopo da Impressão
+            Formato de Impressão do PDF
           </label>
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
+            <label className="flex items-start gap-2 text-xs text-[var(--foreground)] cursor-pointer">
               <input
                 type="radio"
-                name="portalPrintScope"
-                checked={printScope === "all"}
-                onChange={() => setPrintScope("all")}
-                className="accent-[var(--collab-mostarda)]"
+                name="portalMode"
+                checked={mode === "a4_grid"}
+                onChange={() => {
+                  setMode("a4_grid");
+                  setPdfPreviewUrl(null);
+                }}
+                className="accent-[var(--collab-mostarda)] mt-0.5"
               />
-              <span>Todas as etiquetas geradas ({addresses.length} un)</span>
+              <div>
+                <strong className="block">Folha A4 (Múltiplas Etiquetas)</strong>
+                <span className="text-[11px] text-[var(--muted)]">
+                  {grid.labelsPerPage} por folha ({grid.cols}x{grid.rows})
+                </span>
+              </div>
             </label>
 
-            <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
+            <label className="flex items-start gap-2 text-xs text-[var(--foreground)] cursor-pointer">
               <input
                 type="radio"
-                name="portalPrintScope"
-                checked={printScope === "selected"}
-                onChange={() => setPrintScope("selected")}
-                disabled={selectedAddresses.length === 0}
-                className="accent-[var(--collab-mostarda)]"
+                name="portalMode"
+                checked={mode === "thermal"}
+                onChange={() => {
+                  setMode("thermal");
+                  setPdfPreviewUrl(null);
+                }}
+                className="accent-[var(--collab-mostarda)] mt-0.5"
               />
-              <span className={selectedAddresses.length === 0 ? "opacity-50" : ""}>
-                Somente etiquetas selecionadas ({selectedAddresses.length} un)
-              </span>
+              <div>
+                <strong className="block">Bobina Térmica Contínua</strong>
+                <span className="text-[11px] text-[var(--muted)]">
+                  1 por página ({wCm} × {hCm} cm)
+                </span>
+              </div>
             </label>
           </div>
 
@@ -142,7 +216,10 @@ export function PrintPortalView({
               <input
                 type="checkbox"
                 checked={showCutBorders}
-                onChange={(e) => setShowCutBorders(e.target.checked)}
+                onChange={(e) => {
+                  setShowCutBorders(e.target.checked);
+                  setPdfPreviewUrl(null);
+                }}
                 className="accent-[var(--collab-mostarda)]"
               />
               <span>Exibir guias pontilhadas de corte</span>
@@ -152,10 +229,13 @@ export function PrintPortalView({
               <input
                 type="checkbox"
                 checked={includeCompanyLogo}
-                onChange={(e) => setIncludeCompanyLogo(e.target.checked)}
+                onChange={(e) => {
+                  setIncludeCompanyLogo(e.target.checked);
+                  setPdfPreviewUrl(null);
+                }}
                 className="accent-[var(--collab-mostarda)]"
               />
-              <span>Incluir logo Collab na coluna lateral</span>
+              <span>Incluir logo Collab vertical</span>
             </label>
           </div>
         </div>
@@ -164,22 +244,35 @@ export function PrintPortalView({
         <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-2.5">
           <div className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
             <Info size={14} className="text-[var(--collab-mostarda)]" />
-            <span>Especificações Físicas do PDF</span>
+            <span>Especificações do Documento PDF</span>
           </div>
 
           <ul className="text-xs space-y-1.5 text-[var(--muted)]">
             <li className="flex justify-between">
-              <span>Dimensão da Etiqueta:</span>
-              <strong className="font-mono text-[var(--foreground)]">100 × 50 mm</strong>
+              <span>Dimensões da Etiqueta:</span>
+              <strong className="font-mono text-[var(--collab-mostarda)]">{wCm} × {hCm} cm</strong>
             </li>
             <li className="flex justify-between">
-              <span>Margens de Segurança:</span>
-              <strong className="font-mono text-[var(--foreground)]">10 mm (1 cm)</strong>
+              <span>Formato do Arquivo:</span>
+              <strong className="font-mono text-[var(--foreground)]">{mode === "a4_grid" ? "Folha A4 (210×297 mm)" : "Rolo / Bobina"}</strong>
             </li>
-            <li className="flex justify-between">
-              <span>Área Útil Central:</span>
-              <strong className="font-mono text-[var(--foreground)]">80 × 30 mm</strong>
-            </li>
+            {mode === "a4_grid" ? (
+              <>
+                <li className="flex justify-between">
+                  <span>Capacidade por Folha:</span>
+                  <strong className="font-mono text-[var(--collab-mostarda)]">{grid.labelsPerPage} etiquetas ({grid.cols} col × {grid.rows} lin)</strong>
+                </li>
+                <li className="flex justify-between">
+                  <span>Total de Folhas A4:</span>
+                  <strong className="font-mono text-[var(--foreground)]">{grid.totalPages} folha{grid.totalPages > 1 ? "s" : ""}</strong>
+                </li>
+              </>
+            ) : (
+              <li className="flex justify-between">
+                <span>Páginas no PDF:</span>
+                <strong className="font-mono text-[var(--collab-mostarda)]">{targetBatch.length} páginas</strong>
+              </li>
+            )}
             <li className="flex justify-between">
               <span>Padrão do Código:</span>
               <strong className="font-mono text-[var(--foreground)]">CODE 128 (Subset B)</strong>
@@ -191,66 +284,116 @@ export function PrintPortalView({
           </ul>
         </div>
 
-        {/* Quick thermal printing advice */}
-        <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-2">
-          <div className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
-            <Sparkles size={14} className="text-[var(--collab-mostarda)]" />
-            <span>Impressoras Térmicas Compatíveis</span>
+        {/* Scope selector */}
+        <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-3">
+          <label className="text-xs font-bold text-[var(--foreground)] block">
+            Escopo da Impressão
+          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
+              <input
+                type="radio"
+                name="portalPrintScope"
+                checked={printScope === "all"}
+                onChange={() => {
+                  setPrintScope("all");
+                  setPdfPreviewUrl(null);
+                }}
+                className="accent-[var(--collab-mostarda)]"
+              />
+              <span>Todas as etiquetas geradas ({addresses.length} un)</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
+              <input
+                type="radio"
+                name="portalPrintScope"
+                checked={printScope === "selected"}
+                onChange={() => {
+                  setPrintScope("selected");
+                  setPdfPreviewUrl(null);
+                }}
+                disabled={selectedAddresses.length === 0}
+                className="accent-[var(--collab-mostarda)]"
+              />
+              <span className={selectedAddresses.length === 0 ? "opacity-50" : ""}>
+                Somente selecionadas ({selectedAddresses.length} un)
+              </span>
+            </label>
           </div>
-          <p className="text-[11px] text-[var(--muted)] leading-relaxed">
-            Compatível com bobinas contínuas ou gap de 100 × 50 mm:
-            <br />
-            <strong>• Zebra</strong> (ZD220, ZD230, GC420t, GK420t)
-            <br />
-            <strong>• Argox</strong> (OS-214 Plus, CP-2140)
-            <br />
-            <strong>• Datamax / Honeywell</strong> (E-Class Mark III)
-            <br />
-            <strong>• Elgin</strong> (L42 Pro)
-          </p>
+          <div className="p-2.5 rounded bg-[var(--collab-mostarda)]/10 border border-[var(--collab-mostarda)]/25 text-[11px] text-[var(--foreground)]">
+            💡 <strong>Dica de Impressão:</strong> Ao imprimir o PDF baixado ou na visualização, certifique-se de selecionar a opção <em>&ldquo;Tamanho Real&rdquo;</em> ou <em>&ldquo;Escala 100%&rdquo;</em> para preservar os {wCm} × {hCm} cm exatos.
+          </div>
         </div>
       </div>
 
       {/* PDF Preview Area */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
-            <Eye size={14} className="text-[var(--collab-mostarda)]" />
-            <span>Pré-visualização do Documento PDF Gerado</span>
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
+              <Eye size={14} className="text-[var(--collab-mostarda)]" />
+              <span>Pré-visualização do Documento PDF Gerado</span>
+            </span>
+            <p className="text-[11px] text-[var(--muted)] mt-0.5">
+              {mode === "a4_grid"
+                ? `Exibindo folha A4 com grade de ${grid.labelsPerPage} etiquetas (${grid.cols}×${grid.rows})`
+                : `Exibindo etiqueta individual para bobina (${wCm} × ${hCm} cm)`}
+            </p>
+          </div>
 
-          <button
-            type="button"
-            onClick={handleLoadPdfPreview}
-            disabled={isGeneratingPdf}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
-          >
-            <Eye size={13} />
-            <span>{isGeneratingPdf ? "Gerando..." : "Atualizar Pré-visualização do PDF"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {pdfPreviewUrl && (
+              <button
+                type="button"
+                onClick={() => window.open(pdfPreviewUrl, "_blank")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+                title="Abrir PDF em nova guia do navegador"
+              >
+                <ExternalLink size={13} />
+                <span>Abrir em Nova Guia</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleLoadPdfPreview}
+              disabled={isGeneratingPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+            >
+              <Eye size={13} />
+              <span>{isGeneratingPdf ? "Atualizando..." : "Atualizar Pré-visualização"}</span>
+            </button>
+          </div>
         </div>
 
         {pdfPreviewUrl ? (
-          <div className="w-full h-96 rounded-lg border border-[var(--card-border)] overflow-hidden bg-gray-100">
-            <iframe
-              src={pdfPreviewUrl}
-              title="Pré-visualização do PDF"
-              className="w-full h-full border-0"
-            />
+          <div className="w-full h-[650px] rounded-lg border border-[var(--card-border)] overflow-hidden bg-white shadow-inner relative">
+            {isGeneratingPdf && (
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-10">
+                <span className="text-xs font-bold text-[var(--foreground)] animate-pulse">
+                  Gerando prévia do PDF em alta resolução...
+                </span>
+              </div>
+            )}
+            <object
+              data={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
+              type="application/pdf"
+              className="w-full h-full"
+            >
+              <iframe
+                src={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
+                title="Pré-visualização do PDF"
+                className="w-full h-full border-0"
+              />
+            </object>
           </div>
         ) : (
           <div className="w-full h-44 rounded-lg border border-dashed border-[var(--card-border)] bg-[var(--background)] flex flex-col items-center justify-center p-6 text-center space-y-2">
             <FileDown size={28} className="text-[var(--muted)] opacity-60" />
             <p className="text-xs text-[var(--muted)]">
-              Clique no botão acima para carregar a prévia visual interativa do PDF aqui na tela.
+              {isGeneratingPdf ? "Gerando pré-visualização do PDF..." : "Carregando documento PDF..."}
             </p>
-            <button
-              type="button"
-              onClick={handleLoadPdfPreview}
-              className="px-3 py-1.5 text-xs font-semibold rounded bg-[var(--collab-mostarda)] text-black cursor-pointer hover:opacity-90"
-            >
-              Carregar Prévia Agora
-            </button>
           </div>
         )}
       </div>

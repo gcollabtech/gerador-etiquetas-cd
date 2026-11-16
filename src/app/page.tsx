@@ -60,6 +60,8 @@ export default function Home() {
     nivelFim: "N04",
     qtdAptos: 10,
     qtdNiveis: 4,
+    larguraCm: 10,
+    alturaCm: 5,
   });
 
   const [addresses, setAddresses] = useState<StorageAddress[]>([]);
@@ -244,6 +246,8 @@ export default function Home() {
           onToggleMobile={() => setIsMobileOpen(!isMobileOpen)}
           theme={theme}
           onToggleTheme={toggleTheme}
+          larguraCm={params.larguraCm}
+          alturaCm={params.alturaCm}
         />
 
         {/* Right Main Content Area */}
@@ -388,6 +392,8 @@ export default function Home() {
                 <LabelPreview
                   address={previewAddress || addresses[0] || null}
                   includeLogo={true}
+                  larguraCm={params.larguraCm}
+                  alturaCm={params.alturaCm}
                 />
 
                 {addresses.length > 1 && (
@@ -463,6 +469,8 @@ export default function Home() {
                     setPrintSelectedOnly(selectedOnly);
                     setIsPrintModalOpen(true);
                   }}
+                  larguraCm={params.larguraCm}
+                  alturaCm={params.alturaCm}
                 />
               </div>
             )}
@@ -511,6 +519,8 @@ export default function Home() {
                 <LabelPreview
                   address={previewAddress || addresses[0] || null}
                   includeLogo={true}
+                  larguraCm={params.larguraCm}
+                  alturaCm={params.alturaCm}
                 />
 
                 <LabelsGrid
@@ -536,7 +546,7 @@ export default function Home() {
               Portal Logístico Collab — Sistema de Endereçamento e Etiquetas CODE 128 (Centro de Distribuição)
             </p>
             <p className="mt-1 font-mono text-[11px] text-[var(--collab-mostarda)]">
-              Dimensões: 100 × 50 mm • Margens: 10 mm • Área Central: 80 × 30 mm • Padrão: R01-P01-A01-N01
+              Dimensões: {Number(params.larguraCm || 10)} × {Number(params.alturaCm || 5)} cm ({(Number(params.larguraCm || 10) * 10)} × {(Number(params.alturaCm || 5) * 10)} mm) • Padrão: R01-P01-A01-N01
             </p>
           </footer>
         </div>
@@ -549,7 +559,38 @@ export default function Home() {
         allAddresses={addresses}
         selectedAddresses={selectedAddresses}
         defaultSelectedOnly={printSelectedOnly}
+        larguraCm={params.larguraCm}
+        alturaCm={params.alturaCm}
       />
+
+      {/* Dynamic browser print styles based on parameterized dimensions (A4 multiple labels grid) */}
+      <style>{`
+        @page {
+          size: A4 portrait !important;
+          margin: 10mm 5mm !important;
+        }
+        @media print {
+          .print-only {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            align-content: flex-start !important;
+            gap: 2mm !important;
+          }
+          .printable-label-page {
+            width: ${Number(params.larguraCm || 10)}cm !important;
+            height: ${Number(params.alturaCm || 5)}cm !important;
+            max-width: ${Number(params.larguraCm || 10)}cm !important;
+            max-height: ${Number(params.alturaCm || 5)}cm !important;
+            page-break-after: auto !important;
+            break-after: auto !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 !important;
+            padding: ${Math.max(2, Math.min(Number(params.larguraCm || 10), Number(params.alturaCm || 5)) * 0.45)}mm !important;
+          }
+        }
+      `}</style>
 
       {/* History Drawer Modal */}
       <HistoryDrawer

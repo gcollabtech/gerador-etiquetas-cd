@@ -9,6 +9,8 @@ export interface AddressParams {
   nivelFim: string;
   qtdAptos?: number | "";
   qtdNiveis?: number | "";
+  larguraCm?: number | "";
+  alturaCm?: number | "";
 }
 
 export type ArrowDirection = "down" | "up";
@@ -46,13 +48,29 @@ export interface ValidationResult {
 
 export type PrintLayoutMode = "thermal" | "a4_grid";
 
+export interface A4GridLayout {
+  cols: number;
+  rows: number;
+  labelsPerPage: number;
+  totalPages: number;
+  marginLeftMm: number;
+  marginTopMm: number;
+  gapMm: number;
+  labelWidthMm: number;
+  labelHeightMm: number;
+}
+
 export interface PrintConfig {
-  mode: PrintLayoutMode;
-  labelsPerA4Page: 8 | 10;
+  mode?: PrintLayoutMode;
+  layoutMode?: PrintLayoutMode;
+  labelsPerA4Page?: number;
   showCutBorders: boolean;
   includeCompanyLogo: boolean;
   companyName: string;
   scalePercent: 100;
+  larguraCm?: number | "";
+  alturaCm?: number | "";
+  gapMm?: number;
 }
 
 export interface GenerationHistoryItem {

@@ -46,6 +46,8 @@ interface SidebarProps {
   onToggleMobile: () => void;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  larguraCm?: number | "";
+  alturaCm?: number | "";
 }
 
 export function Sidebar({
@@ -57,7 +59,12 @@ export function Sidebar({
   onToggleMobile,
   theme,
   onToggleTheme,
+  larguraCm = 10,
+  alturaCm = 5,
 }: SidebarProps) {
+  const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
+  const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
+
   const navItems: NavItem[] = [
     {
       id: "config",
@@ -75,7 +82,7 @@ export function Sidebar({
     {
       id: "preview",
       title: "3. Prévia da Etiqueta",
-      subtitle: "Escala real 10 × 5 cm e setas",
+      subtitle: `${wCm} × ${hCm} cm e setas`,
       icon: Eye,
       highlight: true,
     },
@@ -169,7 +176,7 @@ export function Sidebar({
             </span>
           </div>
           <span className="text-[10px] font-mono font-bold bg-[#FF6400]/15 text-[#FF6400] px-1.5 py-0.5 rounded">
-            100 × 50 mm
+            {wCm} × {hCm} cm
           </span>
         </div>
 

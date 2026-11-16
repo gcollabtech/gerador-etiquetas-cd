@@ -5,6 +5,7 @@ import { StorageAddress, PrintConfig } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
+  calculateA4GridLayout,
   LABEL_WIDTH_MM,
   LABEL_HEIGHT_MM,
 } from "@/lib/pdfGenerator";
@@ -14,6 +15,8 @@ import {
   Eye,
   X,
   FileCheck,
+  Grid,
+  ExternalLink,
 } from "lucide-react";
 
 interface PrintModalProps {
@@ -22,6 +25,8 @@ interface PrintModalProps {
   allAddresses: StorageAddress[];
   selectedAddresses: StorageAddress[];
   defaultSelectedOnly: boolean;
+  larguraCm?: number | "";
+  alturaCm?: number | "";
 }
 
 export function PrintModal({
@@ -30,15 +35,21 @@ export function PrintModal({
   allAddresses,
   selectedAddresses,
   defaultSelectedOnly,
+  larguraCm = 10,
+  alturaCm = 5,
 }: PrintModalProps) {
   const [printSelectedOnly, setPrintSelectedOnly] = useState(defaultSelectedOnly);
-  const [mode, setMode] = useState<"thermal" | "a4_grid">("thermal");
+  const [mode, setMode] = useState<"thermal" | "a4_grid">("a4_grid");
   const [showCutBorders, setShowCutBorders] = useState(false);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
+  const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
+
   const targetAddresses = printSelectedOnly ? selectedAddresses : allAddresses;
+  const grid = calculateA4GridLayout(wCm, hCm, targetAddresses.length);
 
   useEffect(() => {
     setPrintSelectedOnly(defaultSelectedOnly);
@@ -46,12 +57,41 @@ export function PrintModal({
 
   useEffect(() => {
     if (!isOpen) {
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
-        setPdfPreviewUrl(null);
-      }
+      setPdfPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      return;
     }
-  }, [isOpen]);
+
+    let active = true;
+    setLoading(true);
+
+    try {
+      const blob = createLabelsPdfBlob(targetAddresses, {
+        mode,
+        showCutBorders,
+        includeCompanyLogo,
+        larguraCm: wCm,
+        alturaCm: hCm,
+      });
+      const url = URL.createObjectURL(blob);
+      if (active) {
+        setPdfPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      if (active) setLoading(false);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, targetAddresses, mode, showCutBorders, includeCompanyLogo, wCm, hCm]);
 
   if (!isOpen) return null;
 
@@ -62,19 +102,25 @@ export function PrintModal({
         URL.revokeObjectURL(pdfPreviewUrl);
       }
       const blob = createLabelsPdfBlob(targetAddresses, {
+        mode,
         showCutBorders,
         includeCompanyLogo,
+        larguraCm: wCm,
+        alturaCm: hCm,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
       setLoading(false);
-    }, 100);
+    }, 50);
   };
 
   const handleDownloadPdf = () => {
     downloadLabelsPdf(targetAddresses, {
+      mode,
       showCutBorders,
       includeCompanyLogo,
+      larguraCm: wCm,
+      alturaCm: hCm,
     });
   };
 
@@ -179,28 +225,45 @@ export function PrintModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-[var(--background)] border border-[var(--card-border)] rounded-xl space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                2. Destino de Impressão
+                2. Formato do PDF & Dispositivo
               </label>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
-                  <input
-                    type="radio"
-                    name="printMode"
-                    checked={mode === "thermal"}
-                    onChange={() => setMode("thermal")}
-                    className="accent-[var(--collab-mostarda)]"
-                  />
-                  <span>Impressora Térmica (Bobina 100 × 50 mm contínua)</span>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[var(--foreground)] cursor-pointer">
+                <label className="flex items-start gap-2.5 text-xs text-[var(--foreground)] cursor-pointer p-2 rounded-lg hover:bg-[var(--secondary)] transition-all">
                   <input
                     type="radio"
                     name="printMode"
                     checked={mode === "a4_grid"}
-                    onChange={() => setMode("a4_grid")}
-                    className="accent-[var(--collab-mostarda)]"
+                    onChange={() => {
+                      setMode("a4_grid");
+                      setPdfPreviewUrl(null);
+                    }}
+                    className="accent-[var(--collab-mostarda)] mt-0.5"
                   />
-                  <span>Impressora Convencional (Folha A4)</span>
+                  <div>
+                    <span className="font-bold block">Folha A4 — Múltiplas Etiquetas (Grade)</span>
+                    <span className="text-[11px] text-[var(--muted)]">
+                      {grid.cols} colunas × {grid.rows} linhas = <strong>{grid.labelsPerPage} etiquetas/folha</strong> ({grid.totalPages} folha{grid.totalPages > 1 ? "s" : ""} no total)
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 text-xs text-[var(--foreground)] cursor-pointer p-2 rounded-lg hover:bg-[var(--secondary)] transition-all">
+                  <input
+                    type="radio"
+                    name="printMode"
+                    checked={mode === "thermal"}
+                    onChange={() => {
+                      setMode("thermal");
+                      setPdfPreviewUrl(null);
+                    }}
+                    className="accent-[var(--collab-mostarda)] mt-0.5"
+                  />
+                  <div>
+                    <span className="font-bold block">Bobina Térmica — 1 Etiqueta por Página</span>
+                    <span className="text-[11px] text-[var(--muted)]">
+                      Rolo contínuo no formato individual ({wCm} × {hCm} cm)
+                    </span>
+                  </div>
                 </label>
               </div>
             </div>
@@ -246,29 +309,49 @@ export function PrintModal({
                 <span>Pré-visualização do PDF Vetorial Real</span>
               </span>
 
-              <button
-                type="button"
-                onClick={handleGeneratePdfPreview}
-                disabled={loading || targetAddresses.length === 0}
-                className="px-3 py-1.5 text-xs font-bold bg-[var(--secondary)] hover:border-[var(--collab-mostarda)] border border-[var(--card-border)] rounded text-[var(--foreground)] transition-all cursor-pointer"
-              >
-                {loading ? "Gerando PDF..." : "Carregar Prévia do PDF"}
-              </button>
+              <div className="flex items-center gap-2">
+                {pdfPreviewUrl && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(pdfPreviewUrl, "_blank")}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] rounded transition-all cursor-pointer"
+                    title="Abrir PDF em nova aba do navegador"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Abrir em Nova Aba</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleGeneratePdfPreview}
+                  disabled={loading || targetAddresses.length === 0}
+                  className="px-3 py-1.5 text-xs font-bold bg-[var(--secondary)] hover:border-[var(--collab-mostarda)] border border-[var(--card-border)] rounded text-[var(--foreground)] transition-all cursor-pointer"
+                >
+                  {loading ? "Gerando PDF..." : "Atualizar Prévia"}
+                </button>
+              </div>
             </div>
 
             {pdfPreviewUrl ? (
-              <div className="w-full h-80 rounded border border-[var(--card-border)] overflow-hidden bg-gray-100">
-                <iframe
-                  src={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
-                  title="Pré-visualização do PDF"
-                  className="w-full h-full border-0"
-                />
+              <div className="w-full h-80 rounded-lg border border-[var(--card-border)] overflow-hidden bg-white shadow-inner">
+                <object
+                  data={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
+                  type="application/pdf"
+                  className="w-full h-full"
+                >
+                  <iframe
+                    src={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
+                    title="Pré-visualização do PDF"
+                    className="w-full h-full border-0"
+                  />
+                </object>
               </div>
             ) : (
               <div className="py-12 border-2 border-dashed border-[var(--card-border)] rounded-lg flex flex-col items-center justify-center text-center p-4">
                 <FileCheck size={36} className="text-[var(--muted)] mb-2" />
                 <p className="text-xs text-[var(--muted)]">
-                  Clique em &ldquo;Carregar Prévia do PDF&rdquo; para visualizar as {targetAddresses.length} etiquetas montadas em alta resolução vetorial.
+                  {loading ? "Renderizando documento PDF..." : "Carregando pré-visualização das etiquetas..."}
                 </p>
               </div>
             )}
@@ -299,7 +382,11 @@ export function PrintModal({
               className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] text-xs font-bold uppercase tracking-wider rounded-lg shadow transition-all cursor-pointer"
             >
               <Download size={15} />
-              <span>Baixar PDF (100 × 50 mm)</span>
+              <span>
+                {mode === "a4_grid"
+                  ? `Baixar PDF A4 (${grid.totalPages} folha${grid.totalPages > 1 ? "s" : ""})`
+                  : `Baixar PDF Bobina (${targetAddresses.length} un)`}
+              </span>
             </button>
           </div>
         </div>
