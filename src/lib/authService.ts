@@ -243,6 +243,85 @@ export function authenticate(
   return { success: true, session };
 }
 
+export function authenticateWithGoogle(
+  googleProfile: {
+    email: string;
+    name?: string;
+    avatar?: string;
+  },
+  remember: boolean = true
+): { success: boolean; session?: AuthSession; error?: string } {
+  const cleanEmail = googleProfile.email.trim().toLowerCase();
+  if (!cleanEmail) {
+    return { success: false, error: "E-mail do Google inválido." };
+  }
+
+  const users = getUsers();
+  let user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (!user) {
+    // Cadastro automático de conta corporativa Google Workspace
+    const userPrefix = cleanEmail.split("@")[0] || "usuario";
+    const formattedName =
+      googleProfile.name ||
+      userPrefix
+        .split(".")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+
+    const newUser: PortalUser = {
+      id: `usr-g-${Date.now()}`,
+      name: formattedName,
+      email: cleanEmail,
+      role: cleanEmail.includes("admin") ? "admin" : "operador",
+      cargo: cleanEmail.includes("admin")
+        ? "Administrador Geral (Google Workspace)"
+        : "Operador Logístico (Google Workspace)",
+      status: "ativo",
+      permissions: cleanEmail.includes("admin")
+        ? ["dashboard", "wms", "rastreamento", "etiquetas", "usuarios", "configuracoes"]
+        : ["dashboard", "wms", "rastreamento", "etiquetas"],
+      avatar: googleProfile.avatar,
+      unidadeCd: "CD Matriz — Big Master",
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+    };
+    saveUser(newUser);
+    user = newUser;
+  } else {
+    if (user.status !== "ativo") {
+      return {
+        success: false,
+        error: "Este usuário está temporariamente desativado. Contate o administrador do sistema.",
+      };
+    }
+    const updatedUser: PortalUser = {
+      ...user,
+      avatar: googleProfile.avatar || user.avatar,
+      lastLogin: new Date().toISOString(),
+    };
+    saveUser(updatedUser);
+    user = updatedUser;
+  }
+
+  const session: AuthSession = {
+    user,
+    token: `google-sso-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    loginTime: new Date().toISOString(),
+    remember,
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    } catch (e) {
+      console.error("Erro ao salvar sessão:", e);
+    }
+  }
+
+  return { success: true, session };
+}
+
 export function logout(): void {
   if (typeof window === "undefined") return;
   try {

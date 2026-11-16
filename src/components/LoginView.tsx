@@ -3,10 +3,12 @@
 import { useState } from "react";
 import {
   authenticate,
+  authenticateWithGoogle,
+  getUsers,
   requestPasswordReset,
   resetPasswordWithCode,
 } from "@/lib/authService";
-import { AuthSession, PasswordResetRequest } from "@/lib/authTypes";
+import { AuthSession, PasswordResetRequest, PortalUser } from "@/lib/authTypes";
 import {
   Lock,
   Mail,
@@ -25,7 +27,33 @@ import {
   Copy,
   Check,
   RotateCcw,
+  X,
+  UserPlus,
+  ChevronRight,
 } from "lucide-react";
+
+function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+      />
+    </svg>
+  );
+}
 
 interface LoginViewProps {
   onLoginSuccess: (session: AuthSession) => void;
@@ -49,6 +77,13 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Google SSO state
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
+  const [customGoogleName, setCustomGoogleName] = useState("");
+  const [isUsingCustomAccount, setIsUsingCustomAccount] = useState(false);
 
   // Forgot password & reset state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -76,6 +111,32 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }, 350);
   };
 
+  const handleGoogleLogin = (profile: { email: string; name?: string }) => {
+    setLoadingGoogle(true);
+    setError(null);
+
+    setTimeout(() => {
+      const res = authenticateWithGoogle(profile, remember);
+      setLoadingGoogle(false);
+      if (res.success && res.session) {
+        setShowGoogleModal(false);
+        onLoginSuccess(res.session);
+      } else {
+        setError(res.error || "Falha ao autenticar com o Google.");
+        setShowGoogleModal(false);
+      }
+    }, 500);
+  };
+
+  const handleCustomGoogleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customGoogleEmail.trim()) return;
+    handleGoogleLogin({
+      email: customGoogleEmail.trim(),
+      name: customGoogleName.trim() || undefined,
+    });
+  };
+
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -86,7 +147,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       setLoading(false);
       if (res.success && res.resetData) {
         setResetData(res.resetData);
-        setResetCode(res.resetData.code); // Pré-carrega o código para conveniência
+        setResetCode(res.resetData.code);
         setViewMode("email_sent");
       } else {
         setError(res.error || "Não foi possível solicitar a redefinição de senha.");
@@ -114,7 +175,6 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       const res = resetPasswordWithCode(forgotEmail, resetCode, newPassword);
       setLoading(false);
       if (res.success) {
-        // Sucesso! Atualiza o email para o login e limpa senhas
         setEmail(forgotEmail);
         setPassword("");
         setNewPassword("");
@@ -133,6 +193,10 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       setTimeout(() => setCopiedCode(false), 2000);
     }
   };
+
+  // Usuários sugeridos no seletor de contas do Google
+  const existingUsers: PortalUser[] = typeof window !== "undefined" ? getUsers() : [];
+  const googleSuggestedAccounts = existingUsers.slice(0, 3);
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-[var(--background)] text-[var(--foreground)] relative overflow-hidden select-none">
@@ -272,7 +336,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || loadingGoogle}
                     className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] font-heading font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
@@ -285,6 +349,29 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                     )}
                   </button>
                 </form>
+
+                {/* Divisor "ou" */}
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-[var(--card-border)]"></div>
+                  <span className="flex-shrink mx-3 text-[11px] text-[var(--muted)] uppercase font-semibold">
+                    ou
+                  </span>
+                  <div className="flex-grow border-t border-[var(--card-border)]"></div>
+                </div>
+
+                {/* Botão de Login com Google */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setShowGoogleModal(true);
+                  }}
+                  disabled={loading || loadingGoogle}
+                  className="w-full inline-flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg border border-[var(--card-border)] bg-[var(--background)] hover:bg-[var(--card)] hover:border-gray-400 dark:hover:border-gray-600 text-[var(--foreground)] text-xs font-semibold shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <GoogleIcon className="w-4 h-4 shrink-0" />
+                  <span>Continuar com o Google</span>
+                </button>
               </div>
             )}
 
@@ -619,6 +706,154 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
           </div>
         </div>
       </main>
+
+      {/* MODAL DE AUTENTICAÇÃO COM O GOOGLE */}
+      {showGoogleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--card)] border border-[var(--card-border)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header com o Logo do Google */}
+            <div className="p-6 border-b border-[var(--card-border)] relative text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGoogleModal(false);
+                  setIsUsingCustomAccount(false);
+                }}
+                className="absolute right-4 top-4 p-1 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex justify-center mb-2">
+                <GoogleIcon className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-bold text-[var(--foreground)] font-heading">
+                Fazer login com o Google
+              </h3>
+              <p className="text-xs text-[var(--muted)] mt-1">
+                Escolha uma conta para continuar para o <strong>Collab Log</strong>
+              </p>
+            </div>
+
+            {/* Modal Body: Contas ou Formulário Customizado */}
+            <div className="p-6 space-y-4">
+              {loadingGoogle ? (
+                <div className="py-8 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-8 h-8 border-3 border-[var(--collab-mostarda)] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-[var(--muted)] font-medium animate-pulse">
+                    Autenticando via Google Workspace...
+                  </p>
+                </div>
+              ) : isUsingCustomAccount ? (
+                <form onSubmit={handleCustomGoogleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[var(--foreground)] block">
+                      Nome Completo:
+                    </label>
+                    <input
+                      type="text"
+                      value={customGoogleName}
+                      onChange={(e) => setCustomGoogleName(e.target.value)}
+                      placeholder="Ex: João Silva"
+                      className="w-full px-3.5 py-2.5 text-xs bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[var(--foreground)] block">
+                      E-mail do Google (Workspace ou Gmail):
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={customGoogleEmail}
+                      onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                      placeholder="usuario@collab.com.br ou @gmail.com"
+                      className="w-full px-3.5 py-2.5 text-xs bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsUsingCustomAccount(false)}
+                      className="flex-1 py-2 text-xs font-semibold rounded-lg border border-[var(--card-border)] hover:bg-[var(--background)] text-[var(--muted)] transition-colors cursor-pointer"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer shadow-sm"
+                    >
+                      Conectar Conta
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] block pb-1">
+                    Contas Detectadas no Domínio Collab:
+                  </span>
+
+                  {googleSuggestedAccounts.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() =>
+                        handleGoogleLogin({
+                          email: acc.email,
+                          name: acc.name,
+                        })
+                      }
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-[var(--collab-mostarda)]/20 border border-[var(--collab-mostarda)]/40 text-[var(--collab-mostarda)] flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
+                          {acc.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join("")}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-[var(--foreground)] truncate">
+                            {acc.name}
+                          </p>
+                          <p className="text-[11px] text-[var(--muted)] truncate">
+                            {acc.email}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight
+                        size={15}
+                        className="text-[var(--muted)] group-hover:text-blue-500 shrink-0 transition-colors"
+                      />
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsUsingCustomAccount(true)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-[var(--card-border)] hover:border-gray-400 dark:hover:border-gray-600 hover:bg-[var(--background)] transition-all text-left cursor-pointer mt-1"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[var(--background)] border border-[var(--card-border)] text-[var(--muted)] flex items-center justify-center shrink-0">
+                      <UserPlus size={15} />
+                    </div>
+                    <div className="text-xs font-semibold text-[var(--muted)] hover:text-[var(--foreground)]">
+                      Usar outra conta do Google...
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="p-4 border-t border-[var(--card-border)] bg-[var(--background)]/60 text-[11px] text-[var(--muted)] text-center leading-relaxed">
+              Para prosseguir, o Google compartilhará seu nome, e-mail e foto do perfil com o Collab Log conforme a Política de Privacidade corporativa.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="px-6 py-4 border-t border-[var(--card-border)] bg-[var(--card)]/80 text-center text-[11px] text-[var(--muted)] z-10">
