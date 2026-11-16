@@ -453,7 +453,7 @@ export default function Home() {
                   }}
                   onOpenPrintModal={(selectedOnly) => {
                     setPrintSelectedOnly(selectedOnly);
-                    setActiveTopic("print");
+                    setIsPrintModalOpen(true);
                   }}
                 />
               </div>
@@ -465,6 +465,8 @@ export default function Home() {
                 <PrintPortalView
                   addresses={addresses}
                   selectedAddresses={selectedAddresses}
+                  defaultSelectedOnly={printSelectedOnly}
+                  onScopeChange={(selectedOnly) => setPrintSelectedOnly(selectedOnly)}
                   onOpenPrintModal={(selectedOnly) => {
                     setPrintSelectedOnly(selectedOnly);
                     setIsPrintModalOpen(true);

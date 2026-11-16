@@ -48,12 +48,14 @@ export function PrintModal({
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
 
-  const targetAddresses = printSelectedOnly ? selectedAddresses : allAddresses;
+  const targetAddresses = printSelectedOnly && selectedAddresses.length > 0 ? selectedAddresses : allAddresses;
   const grid = calculateA4GridLayout(wCm, hCm, targetAddresses.length);
 
   useEffect(() => {
-    setPrintSelectedOnly(defaultSelectedOnly);
-  }, [defaultSelectedOnly]);
+    if (isOpen) {
+      setPrintSelectedOnly(Boolean(defaultSelectedOnly && selectedAddresses.length > 0));
+    }
+  }, [isOpen, defaultSelectedOnly, selectedAddresses.length]);
 
   useEffect(() => {
     if (!isOpen) {

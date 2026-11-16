@@ -27,6 +27,8 @@ import {
 interface PrintPortalViewProps {
   addresses: StorageAddress[];
   selectedAddresses: StorageAddress[];
+  defaultSelectedOnly?: boolean;
+  onScopeChange?: (selectedOnly: boolean) => void;
   onOpenPrintModal: (selectedOnly: boolean) => void;
   larguraCm?: number | "";
   alturaCm?: number | "";
@@ -35,11 +37,15 @@ interface PrintPortalViewProps {
 export function PrintPortalView({
   addresses,
   selectedAddresses,
+  defaultSelectedOnly = false,
+  onScopeChange,
   onOpenPrintModal,
   larguraCm = 10,
   alturaCm = 5,
 }: PrintPortalViewProps) {
-  const [printScope, setPrintScope] = useState<"all" | "selected">("all");
+  const [printScope, setPrintScope] = useState<"all" | "selected">(() => {
+    return defaultSelectedOnly && selectedAddresses.length > 0 ? "selected" : "all";
+  });
   const [mode, setMode] = useState<PrintLayoutMode>("a4_grid");
   const [showCutBorders, setShowCutBorders] = useState(false);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
@@ -49,12 +55,26 @@ export function PrintPortalView({
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
 
+  useEffect(() => {
+    if (defaultSelectedOnly && selectedAddresses.length > 0) {
+      setPrintScope("selected");
+    } else if (!defaultSelectedOnly && selectedAddresses.length === 0) {
+      setPrintScope("all");
+    }
+  }, [defaultSelectedOnly, selectedAddresses.length]);
+
   const targetBatch =
     printScope === "selected" && selectedAddresses.length > 0
       ? selectedAddresses
       : addresses;
 
   const grid = calculateA4GridLayout(wCm, hCm, targetBatch.length);
+
+  const handleScopeChange = (newScope: "all" | "selected") => {
+    setPrintScope(newScope);
+    setPdfPreviewUrl(null);
+    onScopeChange?.(newScope === "selected");
+  };
 
   useEffect(() => {
     let active = true;
@@ -295,10 +315,7 @@ export function PrintPortalView({
                 type="radio"
                 name="portalPrintScope"
                 checked={printScope === "all"}
-                onChange={() => {
-                  setPrintScope("all");
-                  setPdfPreviewUrl(null);
-                }}
+                onChange={() => handleScopeChange("all")}
                 className="accent-[var(--collab-mostarda)]"
               />
               <span>Todas as etiquetas geradas ({addresses.length} un)</span>
@@ -309,10 +326,7 @@ export function PrintPortalView({
                 type="radio"
                 name="portalPrintScope"
                 checked={printScope === "selected"}
-                onChange={() => {
-                  setPrintScope("selected");
-                  setPdfPreviewUrl(null);
-                }}
+                onChange={() => handleScopeChange("selected")}
                 disabled={selectedAddresses.length === 0}
                 className="accent-[var(--collab-mostarda)]"
               />
