@@ -17,6 +17,7 @@ import {
   Plus,
   Ruler,
   Maximize2,
+  Type,
 } from "lucide-react";
 
 interface ConfigPanelProps {
@@ -401,6 +402,123 @@ export function ConfigPanel({
                 </button>
               );
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3.3. Tipografia das Etiquetas (Fonte e Tamanho das Letras e Números) */}
+      <div className="pt-2 border-t border-[var(--card-border)]">
+        <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Type size={14} className="text-[var(--collab-mostarda)]" />
+            <span>3.3. Tipografia das Etiquetas (Ruas, Andares/Prédios, Aptos e Níveis)</span>
+          </span>
+          <span className="text-[11px] font-normal lowercase text-[var(--muted)]">
+            ex: R01-P01-A01-N01
+          </span>
+        </div>
+
+        <div className="p-4 bg-[var(--background)] border border-[var(--card-border)] rounded-lg space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Família da Fonte */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[var(--foreground)] block">
+                Família da Fonte:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "Helvetica", label: "Helvetica", desc: "Sans padrão" },
+                  { id: "Courier", label: "Courier", desc: "Monoespaçada" },
+                  { id: "Times", label: "Times", desc: "Com serifa" },
+                ].map((f) => {
+                  const isSelected = (params.fonteFamilia || "Helvetica") === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...params,
+                          fonteFamilia: f.id as "Helvetica" | "Courier" | "Times",
+                        })
+                      }
+                      className={`px-2 py-2 text-xs rounded border text-center transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)] shadow-sm"
+                          : "bg-[var(--card)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                      }`}
+                    >
+                      <span className="block font-medium">{f.label}</span>
+                      <span className="text-[10px] opacity-75 block">{f.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tamanho da Fonte (pt) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[var(--foreground)] flex items-center justify-between">
+                <span>Tamanho das Letras e Números:</span>
+                <span className="text-[11px] font-mono text-[var(--collab-mostarda)]">
+                  {params.tamanhoFontePt && Number(params.tamanhoFontePt) > 0
+                    ? `${params.tamanhoFontePt} pt`
+                    : "Automático proporcional"}
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="8"
+                  max="36"
+                  step="1"
+                  value={params.tamanhoFontePt ?? 16}
+                  onChange={(e) =>
+                    onChange({
+                      ...params,
+                      tamanhoFontePt: e.target.value === "" ? "" : parseInt(e.target.value, 10),
+                    })
+                  }
+                  placeholder="16"
+                  className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+                <span className="text-xs font-mono font-bold text-[var(--muted)]">pt</span>
+
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...params, tamanhoFontePt: "" })}
+                  className={`px-2.5 py-2 text-xs rounded border transition-all cursor-pointer ${
+                    !params.tamanhoFontePt
+                      ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                      : "bg-[var(--card)] border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                  title="Ajustar automaticamente conforme altura da etiqueta"
+                >
+                  Auto
+                </button>
+              </div>
+
+              {/* Quick Font Size Presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                {[12, 14, 16, 18, 20, 24].map((sz) => {
+                  const isSelected = Number(params.tamanhoFontePt) === sz;
+                  return (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => onChange({ ...params, tamanhoFontePt: sz })}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                          : "bg-[var(--secondary)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                      }`}
+                    >
+                      {sz}pt
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>

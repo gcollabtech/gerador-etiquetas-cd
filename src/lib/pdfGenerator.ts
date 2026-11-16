@@ -74,7 +74,8 @@ function drawSingleLabel(
   labelHeightPt: number,
   includeLogo: boolean,
   showCutBorders: boolean,
-  logoXObjNum: number
+  logoXObjNum: number,
+  config: Partial<PrintConfig> = {}
 ) {
   sc.push("q");
   // Translate coordinate origin to this label's bottom-left position
@@ -102,16 +103,20 @@ function drawSingleLabel(
     sc.push("[] 0 d");
   }
 
-  // Left brand column (vertical logo): ~15% width
-  const BRAND_COL_W = wU * 0.15;
+  // Left brand column (vertical logo): ~14% width
+  const BRAND_COL_W = wU * 0.14;
   const RED_LINE_X = xU + BRAND_COL_W;
+
+  // Right column: Directional arrow (~22% width, enlarged by additional 50% and centered)
+  const arrowColW = wU * 0.22;
+  const arrowColX = xU + wU - arrowColW;
 
   let barcodeStartX: number;
   let barcodeWidth: number;
 
   if (includeLogo) {
-    barcodeStartX = RED_LINE_X + 4;
-    barcodeWidth = wU - BRAND_COL_W - 4 - wU * 0.18;
+    barcodeStartX = RED_LINE_X + 6;
+    barcodeWidth = arrowColX - barcodeStartX - 4;
 
     if (logoXObjNum > 0) {
       // Draw vertical logo centered in left column
@@ -144,13 +149,34 @@ function drawSingleLabel(
     sc.push(`${RED_LINE_X.toFixed(2)} ${(yU + hU).toFixed(2)} l S`);
     sc.push("0 0 0 RG");
   } else {
-    barcodeStartX = xU;
-    barcodeWidth = wU - wU * 0.18;
+    barcodeStartX = xU + 6;
+    barcodeWidth = arrowColX - barcodeStartX - 4;
   }
 
-  // Barcode in center
-  const barcodeHeight = hU * 0.60;
-  const barcodeY = yU + hU - barcodeHeight - 3;
+  // Typography for address text (Ruas, Prédios/Andares, Apartamentos, Níveis)
+  const fontFamily = config.fonteFamilia || config.fontFamily || "Helvetica";
+  let fontResource = "/F1"; // Helvetica-Bold
+  let charWidthFactor = 0.55;
+
+  if (fontFamily === "Courier") {
+    fontResource = "/F4"; // Courier-Bold
+    charWidthFactor = 0.60;
+  } else if (fontFamily === "Times") {
+    fontResource = "/F6"; // Times-Bold
+    charWidthFactor = 0.52;
+  }
+
+  const customFontPt = Number(config.tamanhoFontePt || config.fontSizePt);
+  const defaultFontPt = Math.max(9, Math.min(22, Math.round(innerH * 0.14)));
+  const fontPt = customFontPt > 0 ? customFontPt : defaultFontPt;
+
+  // Vertical layout: barcode on top, address text below
+  const textLineHeight = fontPt * 1.15;
+  const textBottomMargin = Math.max(3, innerH * 0.04);
+  const textY = yU + textBottomMargin;
+
+  const barcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 8);
+  const barcodeY = textY + textLineHeight + 3;
 
   const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 8);
   sc.push("0 0 0 rg");
@@ -158,24 +184,21 @@ function drawSingleLabel(
     sc.push(`${r.x.toFixed(2)} ${r.y.toFixed(2)} ${r.width.toFixed(2)} ${r.height.toFixed(2)} re f`);
   }
 
-  // Address text centered below barcode (scaled proportionally)
-  const fontPt = Math.max(8, Math.min(18, Math.round(innerH * 0.13)));
-  const textY = barcodeY - (fontPt * 1.15);
-  const charW = fontPt * 0.55;
-  const textW = addr.code.length * charW;
+  // Address text centered horizontally below barcode
+  const textW = addr.code.length * (fontPt * charWidthFactor);
   const textX = barcodeStartX + (barcodeWidth - textW) / 2;
   sc.push("BT");
-  sc.push(`/F1 ${fontPt} Tf`);
+  sc.push(`${fontResource} ${fontPt} Tf`);
   sc.push(`${Math.max(barcodeStartX, textX).toFixed(2)} ${textY.toFixed(2)} Td`);
   sc.push(`(${escapePdfString(addr.code)}) Tj`);
   sc.push("ET");
 
-  // Right column: Directional arrow (~19% width, very bold)
-  const arrowBoxW = wU * 0.19;
-  const arrowBoxX = xU + wU - arrowBoxW - 3;
-  const arrowBoxY = yU + 3;
-  const arrowBoxH = hU - 6;
-  drawVectorArrow(sc, arrowBoxX, arrowBoxY, arrowBoxW, arrowBoxH, addr.arrowDirection);
+  // Directional arrow: increased by an additional 50% while keeping perfectly centered
+  const arrowH = Math.round(Math.min(hU * 0.90, 112));
+  const arrowW = Math.round(Math.min(arrowColW * 0.88, arrowH * 0.58));
+  const arrowX = arrowColX + (arrowColW - arrowW) / 2; // centered horizontally
+  const arrowY = yU + (hU - arrowH) / 2; // centered vertically
+  drawVectorArrow(sc, arrowX, arrowY, arrowW, arrowH, addr.arrowDirection);
 
   sc.push("Q");
 }
@@ -234,6 +257,22 @@ export function buildLabelsPdf(
   writeStr("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique /Encoding /WinAnsiEncoding >>\n");
   endObj();
 
+  const fontCourierBoldNum = beginObj();
+  writeStr("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>\n");
+  endObj();
+
+  const fontCourierNum = beginObj();
+  writeStr("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>\n");
+  endObj();
+
+  const fontTimesBoldNum = beginObj();
+  writeStr("<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>\n");
+  endObj();
+
+  const fontTimesNum = beginObj();
+  writeStr("<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>\n");
+  endObj();
+
   // ── Logo JPEG XObject (Vertical) ─────────────────────────────────────
   let logoXObjNum = 0;
   if (includeLogo && COLLAB_LOGO_JPEG_BASE64) {
@@ -258,7 +297,7 @@ export function buildLabelsPdf(
     ? ` /XObject << /Im1 ${logoXObjNum} 0 R >>`
     : "";
   const resources =
-    `<< /Font << /F1 ${fontBoldNum} 0 R /F2 ${fontRegularNum} 0 R /F3 ${fontBoldObliqueNum} 0 R >>${xobjEntry} >>`;
+    `<< /Font << /F1 ${fontBoldNum} 0 R /F2 ${fontRegularNum} 0 R /F3 ${fontBoldObliqueNum} 0 R /F4 ${fontCourierBoldNum} 0 R /F5 ${fontCourierNum} 0 R /F6 ${fontTimesBoldNum} 0 R /F7 ${fontTimesNum} 0 R >>${xobjEntry} >>`;
 
   const grid = calculateA4GridLayout(larguraCm, alturaCm, addresses.length, gapMm);
   const totalPages = mode === "a4_grid" ? Math.max(1, grid.totalPages) : Math.max(1, addresses.length);
@@ -292,7 +331,8 @@ export function buildLabelsPdf(
           labelHeightPt,
           includeLogo,
           showCutBorders,
-          logoXObjNum
+          logoXObjNum,
+          config
         );
       }
 
@@ -333,7 +373,8 @@ export function buildLabelsPdf(
         labelHeightPt,
         includeLogo,
         showCutBorders,
-        logoXObjNum
+        logoXObjNum,
+        config
       );
 
       const streamText = sc.join("\n");
@@ -407,9 +448,9 @@ function drawVectorArrow(
   cmds.push("0 0 0 rg");
 
   const midX = x + w / 2;
-  const stemWidth = w * 0.54; // wide and bold stem
+  const stemWidth = Math.max(4, w * 0.44); // bold and prominent stem
   const stemX = midX - stemWidth / 2;
-  const headHeight = h * 0.44;
+  const headHeight = h * 0.45;
 
   if (direction === "down") {
     const stemTop = y + h;

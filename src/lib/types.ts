@@ -1,3 +1,5 @@
+export type LabelFontFamily = "Helvetica" | "Courier" | "Times";
+
 export interface AddressParams {
   ruaInicio: string;
   ruaFim: string;
@@ -11,6 +13,8 @@ export interface AddressParams {
   qtdNiveis?: number | "";
   larguraCm?: number | "";
   alturaCm?: number | "";
+  fonteFamilia?: LabelFontFamily;
+  tamanhoFontePt?: number | "";
 }
 
 export type ArrowDirection = "down" | "up";
@@ -71,6 +75,10 @@ export interface PrintConfig {
   larguraCm?: number | "";
   alturaCm?: number | "";
   gapMm?: number;
+  fonteFamilia?: LabelFontFamily;
+  tamanhoFontePt?: number | "";
+  fontFamily?: LabelFontFamily;
+  fontSizePt?: number | "";
 }
 
 export interface GenerationHistoryItem {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { StorageAddress, PrintConfig } from "@/lib/types";
+import { StorageAddress, PrintConfig, LabelFontFamily } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
@@ -18,6 +18,7 @@ import {
   FileCheck,
   Grid,
   ExternalLink,
+  Type,
 } from "lucide-react";
 
 interface PrintModalProps {
@@ -28,6 +29,8 @@ interface PrintModalProps {
   defaultSelectedOnly: boolean;
   larguraCm?: number | "";
   alturaCm?: number | "";
+  fonteFamilia?: LabelFontFamily;
+  tamanhoFontePt?: number | "";
 }
 
 export function PrintModal({
@@ -38,11 +41,15 @@ export function PrintModal({
   defaultSelectedOnly,
   larguraCm = 10,
   alturaCm = 5,
+  fonteFamilia: initialFonteFamilia = "Helvetica",
+  tamanhoFontePt: initialTamanhoFontePt = 16,
 }: PrintModalProps) {
   const [printSelectedOnly, setPrintSelectedOnly] = useState(defaultSelectedOnly);
   const [mode, setMode] = useState<"thermal" | "a4_grid">("a4_grid");
   const [showCutBorders, setShowCutBorders] = useState(false);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
+  const [fonteFamilia, setFonteFamilia] = useState<LabelFontFamily>(initialFonteFamilia);
+  const [tamanhoFontePt, setTamanhoFontePt] = useState<number | "">(initialTamanhoFontePt);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -55,8 +62,10 @@ export function PrintModal({
   useEffect(() => {
     if (isOpen) {
       setPrintSelectedOnly(Boolean(defaultSelectedOnly && selectedAddresses.length > 0));
+      if (initialFonteFamilia) setFonteFamilia(initialFonteFamilia);
+      if (initialTamanhoFontePt !== undefined) setTamanhoFontePt(initialTamanhoFontePt);
     }
-  }, [isOpen, defaultSelectedOnly, selectedAddresses.length]);
+  }, [isOpen, defaultSelectedOnly, selectedAddresses.length, initialFonteFamilia, initialTamanhoFontePt]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -77,6 +86,8 @@ export function PrintModal({
         includeCompanyLogo,
         larguraCm: wCm,
         alturaCm: hCm,
+        fonteFamilia,
+        tamanhoFontePt,
       });
       const url = URL.createObjectURL(blob);
       if (active) {
@@ -94,7 +105,7 @@ export function PrintModal({
     return () => {
       active = false;
     };
-  }, [isOpen, targetAddresses, mode, showCutBorders, includeCompanyLogo, wCm, hCm]);
+  }, [isOpen, targetAddresses, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt]);
 
   if (!isOpen) return null;
 
@@ -110,6 +121,8 @@ export function PrintModal({
         includeCompanyLogo,
         larguraCm: wCm,
         alturaCm: hCm,
+        fonteFamilia,
+        tamanhoFontePt,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
@@ -124,6 +137,8 @@ export function PrintModal({
       includeCompanyLogo,
       larguraCm: wCm,
       alturaCm: hCm,
+      fonteFamilia,
+      tamanhoFontePt,
     });
   };
 
@@ -134,6 +149,8 @@ export function PrintModal({
       includeCompanyLogo,
       larguraCm: wCm,
       alturaCm: hCm,
+      fonteFamilia,
+      tamanhoFontePt,
     });
   };
 
@@ -305,8 +322,81 @@ export function PrintModal({
                     }}
                     className="accent-[var(--collab-mostarda)]"
                   />
-                  <span>Exibir linha guia pontilhada da área útil (80 × 30 mm)</span>
+                  <span>Exibir linha guia pontilhada da área útil</span>
                 </label>
+              </div>
+            </div>
+
+            <div className="p-4 bg-[var(--background)] border border-[var(--card-border)] rounded-xl space-y-2.5 sm:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                <Type size={14} className="text-[var(--collab-mostarda)]" />
+                <span>4. Tipografia da Etiqueta (Ruas, Andares/Prédios, Aptos e Níveis)</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <span className="text-xs text-[var(--foreground)] font-medium block">Família da Fonte:</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["Helvetica", "Courier", "Times"] as const).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => {
+                          setFonteFamilia(f);
+                          setPdfPreviewUrl(null);
+                        }}
+                        className={`px-2 py-1.5 text-xs rounded border text-center transition-all cursor-pointer ${
+                          fonteFamilia === f
+                            ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                            : "bg-[var(--card)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-[var(--foreground)]">Tamanho das Letras/Números:</span>
+                    <span className="font-mono text-[var(--collab-mostarda)]">
+                      {tamanhoFontePt && Number(tamanhoFontePt) > 0 ? `${tamanhoFontePt} pt` : "Automático"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTamanhoFontePt("");
+                        setPdfPreviewUrl(null);
+                      }}
+                      className={`px-2.5 py-1 text-xs rounded border transition-all cursor-pointer ${
+                        !tamanhoFontePt
+                          ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                          : "bg-[var(--card)] border-[var(--card-border)] text-[var(--muted)]"
+                      }`}
+                    >
+                      Auto
+                    </button>
+                    {[12, 14, 16, 18, 20, 24].map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          setTamanhoFontePt(sz);
+                          setPdfPreviewUrl(null);
+                        }}
+                        className={`px-2 py-1 text-xs font-mono rounded border transition-all cursor-pointer ${
+                          Number(tamanhoFontePt) === sz
+                            ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                            : "bg-[var(--card)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                        }`}
+                      >
+                        {sz}pt
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

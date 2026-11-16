@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { StorageAddress, PrintLayoutMode } from "@/lib/types";
+import { StorageAddress, PrintLayoutMode, LabelFontFamily } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
@@ -23,6 +23,7 @@ import {
   Info,
   Grid,
   ExternalLink,
+  Type,
 } from "lucide-react";
 
 interface PrintPortalViewProps {
@@ -33,6 +34,8 @@ interface PrintPortalViewProps {
   onOpenPrintModal: (selectedOnly: boolean) => void;
   larguraCm?: number | "";
   alturaCm?: number | "";
+  fonteFamilia?: LabelFontFamily;
+  tamanhoFontePt?: number | "";
 }
 
 export function PrintPortalView({
@@ -43,6 +46,8 @@ export function PrintPortalView({
   onOpenPrintModal,
   larguraCm = 10,
   alturaCm = 5,
+  fonteFamilia: initialFonteFamilia = "Helvetica",
+  tamanhoFontePt: initialTamanhoFontePt = 16,
 }: PrintPortalViewProps) {
   const [printScope, setPrintScope] = useState<"all" | "selected">(() => {
     return defaultSelectedOnly && selectedAddresses.length > 0 ? "selected" : "all";
@@ -50,11 +55,21 @@ export function PrintPortalView({
   const [mode, setMode] = useState<PrintLayoutMode>("a4_grid");
   const [showCutBorders, setShowCutBorders] = useState(false);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
+  const [fonteFamilia, setFonteFamilia] = useState<LabelFontFamily>(initialFonteFamilia);
+  const [tamanhoFontePt, setTamanhoFontePt] = useState<number | "">(initialTamanhoFontePt);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
+
+  useEffect(() => {
+    if (initialFonteFamilia) setFonteFamilia(initialFonteFamilia);
+  }, [initialFonteFamilia]);
+
+  useEffect(() => {
+    if (initialTamanhoFontePt !== undefined) setTamanhoFontePt(initialTamanhoFontePt);
+  }, [initialTamanhoFontePt]);
 
   useEffect(() => {
     if (defaultSelectedOnly && selectedAddresses.length > 0) {
@@ -88,6 +103,8 @@ export function PrintPortalView({
         includeCompanyLogo,
         larguraCm: wCm,
         alturaCm: hCm,
+        fonteFamilia,
+        tamanhoFontePt,
       });
       const url = URL.createObjectURL(blob);
       if (active) {
@@ -105,7 +122,7 @@ export function PrintPortalView({
     return () => {
       active = false;
     };
-  }, [targetBatch, mode, showCutBorders, includeCompanyLogo, wCm, hCm]);
+  }, [targetBatch, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt]);
 
   const handleDownloadPdf = () => {
     downloadLabelsPdf(targetBatch, {
@@ -114,6 +131,8 @@ export function PrintPortalView({
       includeCompanyLogo,
       larguraCm: wCm,
       alturaCm: hCm,
+      fonteFamilia,
+      tamanhoFontePt,
     });
   };
 
@@ -124,6 +143,8 @@ export function PrintPortalView({
       includeCompanyLogo,
       larguraCm: wCm,
       alturaCm: hCm,
+      fonteFamilia,
+      tamanhoFontePt,
     });
   };
 
@@ -139,6 +160,8 @@ export function PrintPortalView({
         includeCompanyLogo,
         larguraCm: wCm,
         alturaCm: hCm,
+        fonteFamilia,
+        tamanhoFontePt,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
@@ -207,7 +230,7 @@ export function PrintPortalView({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Layout & Scope selector */}
         <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-3">
           <label className="text-xs font-bold text-[var(--foreground)] block">
@@ -282,6 +305,79 @@ export function PrintPortalView({
           </div>
         </div>
 
+        {/* Typography (Fonte e Tamanho) */}
+        <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-3">
+          <label className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+            <Type size={14} className="text-[var(--collab-mostarda)]" />
+            <span>Fonte e Tamanho das Letras</span>
+          </label>
+
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-[var(--muted)]">Família Tipográfica:</span>
+            <div className="grid grid-cols-3 gap-1">
+              {(["Helvetica", "Courier", "Times"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => {
+                    setFonteFamilia(f);
+                    setPdfPreviewUrl(null);
+                  }}
+                  className={`px-1.5 py-1 text-xs rounded border text-center transition-all cursor-pointer ${
+                    fonteFamilia === f
+                      ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                      : "bg-[var(--card)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5 pt-1 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[11px] font-semibold text-[var(--muted)]">Tamanho:</span>
+              <span className="text-[11px] font-mono text-[var(--collab-mostarda)]">
+                {tamanhoFontePt && Number(tamanhoFontePt) > 0 ? `${tamanhoFontePt} pt` : "Auto"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setTamanhoFontePt("");
+                  setPdfPreviewUrl(null);
+                }}
+                className={`px-2 py-0.5 text-[11px] rounded border transition-all cursor-pointer ${
+                  !tamanhoFontePt
+                    ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                    : "bg-[var(--card)] border-[var(--card-border)] text-[var(--muted)]"
+                }`}
+              >
+                Auto
+              </button>
+              {[12, 14, 16, 18, 20, 24].map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => {
+                    setTamanhoFontePt(sz);
+                    setPdfPreviewUrl(null);
+                  }}
+                  className={`px-1.5 py-0.5 text-[11px] font-mono rounded border transition-all cursor-pointer ${
+                    Number(tamanhoFontePt) === sz
+                      ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                      : "bg-[var(--card)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                  }`}
+                >
+                  {sz}pt
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Technical Specs */}
         <div className="p-4 rounded-lg bg-[var(--background)] border border-[var(--card-border)] space-y-2.5">
           <div className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
@@ -295,17 +391,21 @@ export function PrintPortalView({
               <strong className="font-mono text-[var(--collab-mostarda)]">{wCm} × {hCm} cm</strong>
             </li>
             <li className="flex justify-between">
+              <span>Fonte / Tamanho:</span>
+              <strong className="font-mono text-[var(--foreground)]">{fonteFamilia} • {tamanhoFontePt ? `${tamanhoFontePt}pt` : "Auto"}</strong>
+            </li>
+            <li className="flex justify-between">
               <span>Formato do Arquivo:</span>
-              <strong className="font-mono text-[var(--foreground)]">{mode === "a4_grid" ? "Folha A4 (210×297 mm)" : "Rolo / Bobina"}</strong>
+              <strong className="font-mono text-[var(--foreground)]">{mode === "a4_grid" ? "Folha A4" : "Rolo / Bobina"}</strong>
             </li>
             {mode === "a4_grid" ? (
               <>
                 <li className="flex justify-between">
-                  <span>Capacidade por Folha:</span>
-                  <strong className="font-mono text-[var(--collab-mostarda)]">{grid.labelsPerPage} etiquetas ({grid.cols} col × {grid.rows} lin)</strong>
+                  <span>Capacidade / Folha:</span>
+                  <strong className="font-mono text-[var(--collab-mostarda)]">{grid.labelsPerPage} etiq. ({grid.cols}x{grid.rows})</strong>
                 </li>
                 <li className="flex justify-between">
-                  <span>Total de Folhas A4:</span>
+                  <span>Total de Folhas:</span>
                   <strong className="font-mono text-[var(--foreground)]">{grid.totalPages} folha{grid.totalPages > 1 ? "s" : ""}</strong>
                 </li>
               </>
@@ -318,10 +418,6 @@ export function PrintPortalView({
             <li className="flex justify-between">
               <span>Padrão do Código:</span>
               <strong className="font-mono text-[var(--foreground)]">CODE 128 (Subset B)</strong>
-            </li>
-            <li className="flex justify-between">
-              <span>Escala Obrigatória:</span>
-              <strong className="font-mono text-[var(--collab-mostarda)]">100% (Sem Ajuste)</strong>
             </li>
           </ul>
         </div>

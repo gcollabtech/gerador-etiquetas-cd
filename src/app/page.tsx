@@ -62,6 +62,8 @@ export default function Home() {
     qtdNiveis: 4,
     larguraCm: 10,
     alturaCm: 5,
+    fonteFamilia: "Helvetica",
+    tamanhoFontePt: 16,
   });
 
   const [addresses, setAddresses] = useState<StorageAddress[]>([]);
@@ -394,6 +396,8 @@ export default function Home() {
                   includeLogo={true}
                   larguraCm={params.larguraCm}
                   alturaCm={params.alturaCm}
+                  fonteFamilia={params.fonteFamilia}
+                  tamanhoFontePt={params.tamanhoFontePt}
                 />
 
                 {addresses.length > 1 && (
@@ -473,6 +477,8 @@ export default function Home() {
                   }}
                   larguraCm={params.larguraCm}
                   alturaCm={params.alturaCm}
+                  fonteFamilia={params.fonteFamilia}
+                  tamanhoFontePt={params.tamanhoFontePt}
                 />
               </div>
             )}
@@ -523,6 +529,8 @@ export default function Home() {
                   includeLogo={true}
                   larguraCm={params.larguraCm}
                   alturaCm={params.alturaCm}
+                  fonteFamilia={params.fonteFamilia}
+                  tamanhoFontePt={params.tamanhoFontePt}
                 />
 
                 <LabelsGrid
@@ -563,6 +571,8 @@ export default function Home() {
         defaultSelectedOnly={printSelectedOnly}
         larguraCm={params.larguraCm}
         alturaCm={params.alturaCm}
+        fonteFamilia={params.fonteFamilia}
+        tamanhoFontePt={params.tamanhoFontePt}
       />
 
       {/* Dynamic browser print styles based on parameterized dimensions (A4 multiple labels grid) */}

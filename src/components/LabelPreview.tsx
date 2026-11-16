@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { StorageAddress } from "@/lib/types";
+import { StorageAddress, LabelFontFamily } from "@/lib/types";
 import { generateCode128Svg } from "@/lib/code128";
 import {
   Eye,
@@ -13,6 +13,8 @@ interface LabelPreviewProps {
   includeLogo?: boolean;
   larguraCm?: number | "";
   alturaCm?: number | "";
+  fonteFamilia?: LabelFontFamily;
+  tamanhoFontePt?: number | "";
 }
 
 export function LabelPreview({
@@ -20,12 +22,26 @@ export function LabelPreview({
   includeLogo = true,
   larguraCm = 10,
   alturaCm = 5,
+  fonteFamilia = "Helvetica",
+  tamanhoFontePt,
 }: LabelPreviewProps) {
   const [showGuides, setShowGuides] = useState(true);
 
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
   const aspectRatio = `${wCm} / ${hCm}`;
+
+  const resolvedFontFamily =
+    fonteFamilia === "Courier"
+      ? "'Courier New', Courier, monospace"
+      : fonteFamilia === "Times"
+      ? "'Times New Roman', Times, serif"
+      : "Helvetica, Arial, sans-serif";
+
+  const resolvedFontSize =
+    tamanhoFontePt && Number(tamanhoFontePt) > 0
+      ? `${Number(tamanhoFontePt)}px`
+      : "clamp(11px, 3vw, 20px)";
 
   const sampleAddress: StorageAddress = address || {
     id: "sample",
@@ -173,9 +189,9 @@ export function LabelPreview({
               />
               <div
                 style={{
-                  fontFamily: "monospace, Helvetica, Arial",
+                  fontFamily: resolvedFontFamily,
                   fontWeight: 900,
-                  fontSize: "clamp(11px, 3vw, 20px)",
+                  fontSize: resolvedFontSize,
                   color: "#000000",
                   letterSpacing: "0.04em",
                   textAlign: "center",
@@ -187,10 +203,10 @@ export function LabelPreview({
               </div>
             </div>
 
-            {/* Right column — wide bold arrow */}
+            {/* Right column — directional arrow (+50% larger, centered) */}
             <div
               style={{
-                width: "20%",
+                width: "22%",
                 height: "100%",
                 display: "flex",
                 alignItems: "center",
@@ -201,14 +217,22 @@ export function LabelPreview({
               }}
             >
               {sampleAddress.arrowDirection === "down" ? (
-                <svg viewBox="0 0 48 80" style={{ width: "88%", height: "88%", maxHeight: "92%" }} fill="#000000">
-                  <rect x="11" y="2" width="26" height="42" />
-                  <polygon points="24,78 0,42 48,42" />
+                <svg
+                  viewBox="0 0 42 64"
+                  style={{ width: "95%", height: "94%", maxHeight: "96%" }}
+                  fill="#000000"
+                >
+                  <rect x="12" y="2" width="18" height="34" />
+                  <polygon points="21,62 1,32 41,32" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 48 80" style={{ width: "88%", height: "88%", maxHeight: "92%" }} fill="#000000">
-                  <polygon points="24,2 0,38 48,38" />
-                  <rect x="11" y="36" width="26" height="42" />
+                <svg
+                  viewBox="0 0 42 64"
+                  style={{ width: "95%", height: "94%", maxHeight: "96%" }}
+                  fill="#000000"
+                >
+                  <polygon points="21,2 1,32 41,32" />
+                  <rect x="12" y="28" width="18" height="34" />
                 </svg>
               )}
             </div>
