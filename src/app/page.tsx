@@ -767,7 +767,7 @@ export default function Home() {
           return (
             <div key={`print_${addr.id}`} className="printable-label-page">
               <div className="printable-label-content">
-                {/* Left — Collab logo vertical */}
+                {/* Left — Collab logo vertical (14% para simetria) */}
                 <div
                   style={{
                     width: "14%",
@@ -775,9 +775,9 @@ export default function Home() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRight: "0.5mm solid #CC0000",
+                    borderRight: "0.4mm solid #CC0000",
                     flexShrink: 0,
-                    padding: "1.5mm 0.8mm",
+                    padding: "1mm 0.5mm",
                     boxSizing: "border-box",
                   }}
                 >
@@ -796,7 +796,7 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Center — barcode + address */}
+                {/* Center — barcode + address perfeitamente centralizados (72% de área útil ampliada) */}
                 <div
                   style={{
                     flex: 1,
@@ -805,7 +805,8 @@ export default function Home() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     height: "100%",
-                    padding: "1mm 2mm",
+                    padding: "0.5mm 1mm",
+                    textAlign: "center",
                   }}
                 >
                   <div
@@ -814,29 +815,33 @@ export default function Home() {
                   />
                   <div
                     style={{
+                      width: "100%",
                       fontFamily: "monospace",
                       fontWeight: 900,
-                      fontSize: "10pt",
+                      fontSize: "10.5pt",
                       lineHeight: "1",
                       letterSpacing: "0.5px",
                       textAlign: "center",
-                      marginTop: "0.5mm",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: "2.5mm", // subiu a informação dos endereços
                     }}
                   >
                     {addr.code}
                   </div>
                 </div>
 
-                {/* Right — wide bold arrow */}
+                {/* Right — wide bold arrow (14% para simetria e centralização perfeita) */}
                 <div
                   style={{
-                    width: "20%",
+                    width: "14%",
                     height: "100%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    padding: "1mm",
+                    padding: "0.5mm",
                     boxSizing: "border-box",
                   }}
                 >

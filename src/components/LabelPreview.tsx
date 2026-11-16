@@ -66,8 +66,8 @@ export function LabelPreview({
   };
 
   const isLevelOne = sampleAddress.nivel <= 1;
-  const svgHeight = Math.max(26, Math.min(84, Math.round(barHeightMm * 2.6)));
-  const barcodeSvg = generateCode128Svg(sampleAddress.code, 240, svgHeight, 8);
+  const svgHeight = Math.max(30, Math.min(90, Math.round(barHeightMm * 2.8)));
+  const barcodeSvg = generateCode128Svg(sampleAddress.code, 280, svgHeight, 6);
 
   return (
     <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-xl p-5 sm:p-6 shadow-sm no-print space-y-4">
@@ -108,13 +108,13 @@ export function LabelPreview({
           <span>{wCm} cm</span>
         </div>
 
-        {/* Outer orange frame */}
+        {/* Outer orange frame (borda ultra-fina o mais fina possível) */}
         <div
           className="relative select-none transition-all duration-200"
           style={{
             backgroundColor: "#FF6400",
-            borderRadius: `${Math.max(10, Math.min(20, wCm * 1.5))}px`,
-            padding: `${Math.max(3.5, Math.min(6, (hCm / wCm) * 6))}%`,
+            borderRadius: "4px",
+            padding: "1.5px", // borda o mais fina possível
             boxSizing: "border-box",
             fontFamily: "Helvetica, Arial, sans-serif",
             aspectRatio: aspectRatio,
@@ -129,7 +129,7 @@ export function LabelPreview({
               width: "100%",
               height: "100%",
               backgroundColor: "#ffffff",
-              borderRadius: "9px",
+              borderRadius: "3px",
               display: "flex",
               flexDirection: "row",
               alignItems: "stretch",
@@ -147,7 +147,7 @@ export function LabelPreview({
               </div>
             )}
 
-            {/* Left column — Collab vertical logo */}
+            {/* Left column — Collab vertical logo (14% simétrico) */}
             {includeLogo && (
               <div
                 style={{
@@ -156,9 +156,9 @@ export function LabelPreview({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRight: "2.5px solid #CC0000",
+                  borderRight: "2px solid #CC0000",
                   flexShrink: 0,
-                  padding: "6px 2px",
+                  padding: "4px 2px",
                   boxSizing: "border-box",
                 }}
               >
@@ -178,7 +178,7 @@ export function LabelPreview({
               </div>
             )}
 
-            {/* Center — barcode + address */}
+            {/* Center — barcode + address perfeitamente centralizados (72% de área útil) */}
             <div
               style={{
                 flex: 1,
@@ -186,34 +186,47 @@ export function LabelPreview({
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "3% 2%",
+                padding: "1.5% 1%",
                 overflow: "hidden",
+                textAlign: "center",
               }}
             >
               <div
-                style={{ width: "100%", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+                style={{
+                  width: "100%",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  paddingTop: "2px",
+                }}
                 dangerouslySetInnerHTML={{ __html: barcodeSvg }}
               />
               <div
                 style={{
+                  width: "100%",
                   fontFamily: resolvedFontFamily,
                   fontWeight: 900,
                   fontSize: resolvedFontSize,
                   color: "#000000",
-                  letterSpacing: "0.04em",
+                  letterSpacing: "0.05em",
                   textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   lineHeight: 1,
-                  paddingTop: "2%",
+                  paddingBottom: "8px", // sobe um pouco a informação dos endereços
                 }}
               >
                 {sampleAddress.code}
               </div>
             </div>
 
-            {/* Right column — directional arrow (+50% larger, centered) */}
+            {/* Right column — directional arrow (14% simétrico) */}
             <div
               style={{
-                width: "22%",
+                width: "14%",
                 height: "100%",
                 display: "flex",
                 alignItems: "center",

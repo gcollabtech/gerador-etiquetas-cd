@@ -85,8 +85,8 @@ function drawSingleLabel(
   sc.push("1.0 0.392 0.0 rg");
   sc.push(`0 0 ${labelWidthPt.toFixed(2)} ${labelHeightPt.toFixed(2)} re f`);
 
-  // White inner rectangle (proportional inset)
-  const framePt = Math.max(6, Math.min(labelWidthPt, labelHeightPt) * 0.08);
+  // Borda ultra-fina (#FF6400): o mais fina possível (~0.6mm / 1.8pt)
+  const framePt = 1.8;
   const innerX = framePt;
   const innerY = framePt;
   const innerW = labelWidthPt - framePt * 2;
@@ -103,25 +103,26 @@ function drawSingleLabel(
     sc.push("[] 0 d");
   }
 
-  // Left brand column (vertical logo): ~14% width
+  // Colunas simétricas para centralização perfeita no centro da etiqueta:
+  // Coluna esquerda (logo): 14% da largura útil
+  // Coluna direita (seta): 14% da largura útil
+  // Coluna central (código de barras + endereçamento): 72% de área útil ampliada!
   const BRAND_COL_W = wU * 0.14;
+  const arrowColW = wU * 0.14;
   const RED_LINE_X = xU + BRAND_COL_W;
-
-  // Right column: Directional arrow (~22% width, enlarged by additional 50% and centered)
-  const arrowColW = wU * 0.22;
   const arrowColX = xU + wU - arrowColW;
 
   let barcodeStartX: number;
   let barcodeWidth: number;
 
   if (includeLogo) {
-    barcodeStartX = RED_LINE_X + 6;
-    barcodeWidth = arrowColX - barcodeStartX - 4;
+    barcodeStartX = RED_LINE_X + 2;
+    barcodeWidth = arrowColX - barcodeStartX - 2;
 
     if (logoXObjNum > 0) {
       // Draw vertical logo centered in left column
-      const maxW = BRAND_COL_W - 4;
-      const maxH = hU - 8;
+      const maxW = BRAND_COL_W - 3;
+      const maxH = hU - 6;
       const scale = Math.min(maxW / COLLAB_LOGO_WIDTH, maxH / COLLAB_LOGO_HEIGHT);
       const logoDrawW = COLLAB_LOGO_WIDTH * scale;
       const logoDrawH = COLLAB_LOGO_HEIGHT * scale;
@@ -149,21 +150,18 @@ function drawSingleLabel(
     sc.push(`${RED_LINE_X.toFixed(2)} ${(yU + hU).toFixed(2)} l S`);
     sc.push("0 0 0 RG");
   } else {
-    barcodeStartX = xU + 6;
-    barcodeWidth = arrowColX - barcodeStartX - 4;
+    barcodeStartX = xU + 2;
+    barcodeWidth = arrowColX - barcodeStartX - 2;
   }
 
   // Typography for address text (Ruas, Prédios/Andares, Apartamentos, Níveis)
   const fontFamily = config.fonteFamilia || config.fontFamily || "Helvetica";
   let fontResource = "/F1"; // Helvetica-Bold
-  let charWidthFactor = 0.55;
 
   if (fontFamily === "Courier") {
     fontResource = "/F4"; // Courier-Bold
-    charWidthFactor = 0.60;
   } else if (fontFamily === "Times") {
     fontResource = "/F6"; // Times-Bold
-    charWidthFactor = 0.52;
   }
 
   const customFontPt = Number(config.tamanhoFontePt || config.fontSizePt);
@@ -171,13 +169,14 @@ function drawSingleLabel(
   const fontPt = customFontPt > 0 ? customFontPt : defaultFontPt;
 
   // Vertical layout: barcode on top, address text below
+  // Sobe um pouco a informação dos endereços para não ficar colada na margem inferior
   const textLineHeight = fontPt * 1.15;
-  const textBottomMargin = Math.max(3, innerH * 0.04);
+  const textBottomMargin = Math.max(8, innerH * 0.08); // subiu a posição das informações de endereço
   const textY = yU + textBottomMargin;
 
-  // Barcode height: configurable in mm, respecting available label area
-  const maxBarcodeHeight = Math.max(12, hU - textLineHeight - textBottomMargin - 6);
-  const defaultBarcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 8);
+  // Barcode height: ampliado para preencher melhor a área de impressão
+  const maxBarcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 5);
+  const defaultBarcodeHeight = Math.max(20, Math.round(innerH * 0.48));
 
   const customBarcodeHeightMm = Number(config.alturaCodigoBarrasMm);
   let barcodeHeight = defaultBarcodeHeight;
@@ -189,14 +188,21 @@ function drawSingleLabel(
   const availableUpperSpace = hU - (textY + textLineHeight);
   const barcodeY = textY + textLineHeight + Math.max(2, (availableUpperSpace - barcodeHeight) / 2);
 
-  const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 8);
+  // quietZoneModules de 6 para aumentar a área útil e espessura das barras
+  const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 6);
   sc.push("0 0 0 rg");
   for (const r of rects) {
     sc.push(`${r.x.toFixed(2)} ${r.y.toFixed(2)} ${r.width.toFixed(2)} ${r.height.toFixed(2)} re f`);
   }
 
-  // Address text centered horizontally below barcode
-  const textW = addr.code.length * (fontPt * charWidthFactor);
+  // Cálculo preciso da largura do texto para centralização perfeita de Rua, Prédio, Apto e Nível
+  let textW = 0;
+  for (const ch of addr.code) {
+    if (ch === "-") textW += fontPt * 0.333;
+    else if (ch >= "0" && ch <= "9") textW += fontPt * 0.556;
+    else if (ch === "P") textW += fontPt * 0.667;
+    else textW += fontPt * 0.722; // R, A, N
+  }
   const textX = barcodeStartX + (barcodeWidth - textW) / 2;
   sc.push("BT");
   sc.push(`${fontResource} ${fontPt} Tf`);
@@ -204,9 +210,9 @@ function drawSingleLabel(
   sc.push(`(${escapePdfString(addr.code)}) Tj`);
   sc.push("ET");
 
-  // Directional arrow: increased by an additional 50% while keeping perfectly centered
-  const arrowH = Math.round(Math.min(hU * 0.90, 112));
-  const arrowW = Math.round(Math.min(arrowColW * 0.88, arrowH * 0.58));
+  // Directional arrow perfeitamente centralizada na coluna direita simétrica
+  const arrowH = Math.round(Math.min(hU * 0.88, 110));
+  const arrowW = Math.round(Math.min(arrowColW * 0.86, arrowH * 0.56));
   const arrowX = arrowColX + (arrowColW - arrowW) / 2; // centered horizontally
   const arrowY = yU + (hU - arrowH) / 2; // centered vertically
   drawVectorArrow(sc, arrowX, arrowY, arrowW, arrowH, addr.arrowDirection);

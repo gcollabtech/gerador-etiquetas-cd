@@ -123,11 +123,11 @@ h1, h2, h3, h4, .font-heading {
     max-width: 100mm !important;
     max-height: 50mm !important;
     box-sizing: border-box !important;
-    padding: 2.8mm !important;
+    padding: 0.6mm !important;
     page-break-after: always !important;
     break-after: page !important;
     background: #FF6400 !important;
-    border-radius: 4mm !important;
+    border-radius: 1mm !important;
     overflow: hidden !important;
     display: block !important;
   }
@@ -137,7 +137,7 @@ h1, h2, h3, h4, .font-heading {
     height: 100% !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
-    border-radius: 2.5mm !important;
+    border-radius: 0.6mm !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: stretch !important;
