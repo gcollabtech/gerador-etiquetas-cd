@@ -5,6 +5,7 @@ import { StorageAddress, PrintLayoutMode } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
+  printLabelsPdf,
   calculateA4GridLayout,
   LABEL_WIDTH_MM,
   LABEL_HEIGHT_MM,
@@ -116,6 +117,16 @@ export function PrintPortalView({
     });
   };
 
+  const handlePrint = () => {
+    printLabelsPdf(targetBatch, {
+      mode,
+      showCutBorders,
+      includeCompanyLogo,
+      larguraCm: wCm,
+      alturaCm: hCm,
+    });
+  };
+
   const handleLoadPdfPreview = () => {
     setIsGeneratingPdf(true);
     setTimeout(() => {
@@ -160,13 +171,24 @@ export function PrintPortalView({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-95 shadow-sm transition-all cursor-pointer"
+            title="Imprimir etiquetas diretamente"
+          >
+            <Printer size={14} />
+            <span>Imprimir</span>
+          </button>
+
           <button
             type="button"
             onClick={handleDownloadPdf}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-95 shadow-sm transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] shadow-sm transition-all cursor-pointer"
+            title="Baixar arquivo PDF com todas as etiquetas"
           >
-            <FileDown size={14} />
+            <FileDown size={14} className="text-[var(--collab-mostarda)]" />
             <span>
               {mode === "a4_grid"
                 ? `Baixar PDF A4 (${grid.totalPages} folha${grid.totalPages > 1 ? "s" : ""})`
@@ -356,7 +378,27 @@ export function PrintPortalView({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-95 shadow-sm transition-all cursor-pointer"
+              title="Imprimir etiquetas diretamente"
+            >
+              <Printer size={13} />
+              <span>Imprimir</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+              title="Baixar arquivo PDF"
+            >
+              <FileDown size={13} className="text-[var(--collab-mostarda)]" />
+              <span>Baixar PDF</span>
+            </button>
+
             {pdfPreviewUrl && (
               <button
                 type="button"

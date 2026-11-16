@@ -5,6 +5,7 @@ import { StorageAddress, PrintConfig } from "@/lib/types";
 import {
   createLabelsPdfBlob,
   downloadLabelsPdf,
+  printLabelsPdf,
   calculateA4GridLayout,
   LABEL_WIDTH_MM,
   LABEL_HEIGHT_MM,
@@ -127,7 +128,13 @@ export function PrintModal({
   };
 
   const handleNativePrint = () => {
-    window.print();
+    printLabelsPdf(targetAddresses, {
+      mode,
+      showCutBorders,
+      includeCompanyLogo,
+      larguraCm: wCm,
+      alturaCm: hCm,
+    });
   };
 
   return (

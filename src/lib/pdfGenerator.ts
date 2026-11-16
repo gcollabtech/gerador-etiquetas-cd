@@ -462,6 +462,13 @@ export function downloadLabelsPdf(
   addresses: StorageAddress[],
   config: Partial<PrintConfig> = {}
 ): void {
+  if (!addresses || addresses.length === 0) {
+    if (typeof window !== "undefined") {
+      alert("Nenhuma etiqueta disponível para baixar.");
+    }
+    return;
+  }
+
   const blob = createLabelsPdfBlob(addresses, config);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -470,6 +477,9 @@ export function downloadLabelsPdf(
   const w = Number(config.larguraCm) > 0 ? Number(config.larguraCm) : 10;
   const h = Number(config.alturaCm) > 0 ? Number(config.alturaCm) : 5;
   const mode: PrintLayoutMode = config.mode || config.layoutMode || "a4_grid";
+
+  a.style.display = "none";
+  a.href = url;
 
   if (mode === "a4_grid") {
     const grid = calculateA4GridLayout(w, h, addresses.length, config.gapMm ?? 0);
@@ -480,8 +490,76 @@ export function downloadLabelsPdf(
 
   document.body.appendChild(a);
   a.click();
+
   setTimeout(() => {
-    document.body.removeChild(a);
+    if (a.parentNode) {
+      document.body.removeChild(a);
+    }
     URL.revokeObjectURL(url);
-  }, 200);
+  }, 15000);
+}
+
+export function printLabelsPdf(
+  addresses: StorageAddress[],
+  config: Partial<PrintConfig> = {}
+): void {
+  if (!addresses || addresses.length === 0) {
+    if (typeof window !== "undefined") {
+      alert("Nenhuma etiqueta disponível para imprimir.");
+    }
+    return;
+  }
+
+  const blob = createLabelsPdfBlob(addresses, config);
+  const url = URL.createObjectURL(blob);
+
+  try {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    iframe.src = url;
+
+    document.body.appendChild(iframe);
+
+    let printed = false;
+    const triggerPrint = () => {
+      if (printed) return;
+      printed = true;
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.warn("Iframe print falhou, abrindo janela auxiliar:", err);
+        const win = window.open(url, "_blank");
+        if (win) {
+          win.focus();
+        }
+      }
+    };
+
+    iframe.onload = () => {
+      setTimeout(triggerPrint, 300);
+    };
+
+    setTimeout(() => {
+      if (!printed) {
+        triggerPrint();
+      }
+    }, 1500);
+
+    setTimeout(() => {
+      if (iframe.parentNode) {
+        document.body.removeChild(iframe);
+      }
+      URL.revokeObjectURL(url);
+    }, 60000);
+  } catch (err) {
+    console.error("Erro ao iniciar impressão:", err);
+    window.open(url, "_blank");
+  }
 }

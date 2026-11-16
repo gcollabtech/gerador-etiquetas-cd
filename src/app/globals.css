@@ -96,7 +96,6 @@ h1, h2, h3, h4, .font-heading {
 }
 
 @page {
-  size: 100mm 50mm;
   margin: 0;
 }
 
@@ -106,8 +105,8 @@ h1, h2, h3, h4, .font-heading {
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100mm !important;
-    height: 50mm !important;
+    width: 100% !important;
+    height: auto !important;
   }
 
   .no-print {
