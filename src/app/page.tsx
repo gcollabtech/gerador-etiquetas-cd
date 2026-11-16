@@ -13,6 +13,7 @@ import { PrintPortalView } from "@/components/PrintPortalView";
 import { HistoryPortalView } from "@/components/HistoryPortalView";
 import { AcceptanceTestsPortalView } from "@/components/AcceptanceTestsPortalView";
 import { LoginView } from "@/components/LoginView";
+import { DashboardPortalView } from "@/components/DashboardPortalView";
 import { UsersPortalView } from "@/components/UsersPortalView";
 import { WmsPortalView } from "@/components/WmsPortalView";
 import { TrackingPortalView } from "@/components/TrackingPortalView";
@@ -60,7 +61,7 @@ import {
 export default function Home() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [activeModule, setActiveModule] = useState<MainPortalModule>("etiquetas");
+  const [activeModule, setActiveModule] = useState<MainPortalModule>("dashboard");
   const [activeTopic, setActiveTopic] = useState<PortalTopic>("config");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -227,6 +228,10 @@ export default function Home() {
 
   // Module titles and descriptions
   const moduleTitles: Record<MainPortalModule, { title: string; subtitle: string }> = {
+    dashboard: {
+      title: "Painel de Controle e Indicadores do CD",
+      subtitle: "Visão executiva em tempo real: KPIs logísticos, capacidade do CD e gestão operacional",
+    },
     wms: {
       title: "1. WMS — Warehouse Management System",
       subtitle: "Módulos operacionais de recebimento, armazenagem, inventário e separação",
@@ -420,6 +425,11 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+            ) : activeModule === "dashboard" ? (
+              <DashboardPortalView
+                currentUser={session.user}
+                onNavigate={(mod) => setActiveModule(mod)}
+              />
             ) : activeModule === "wms" ? (
               <WmsPortalView onNavigateToLabels={() => setActiveModule("etiquetas")} />
             ) : activeModule === "rastreamento" ? (

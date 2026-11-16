@@ -91,6 +91,13 @@ export function Sidebar({
 
   const mainMenuItems: MainMenuItem[] = [
     {
+      id: "dashboard",
+      title: "Dashboard",
+      subtitle: "Indicadores, CD e gestão",
+      icon: LayoutDashboard,
+      badge: "Geral",
+    },
+    {
       id: "wms",
       title: "1. WMS",
       subtitle: "Warehouse Management",

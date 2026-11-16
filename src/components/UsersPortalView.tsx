@@ -24,6 +24,7 @@ import {
   Truck,
   Barcode,
   Settings,
+  LayoutDashboard,
   Mail,
   User as UserIcon,
   Phone,
@@ -109,6 +110,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     setFormRole(role);
     if (role === "admin") {
       setFormPermissions([
+        "dashboard",
         "wms",
         "rastreamento",
         "etiquetas",
@@ -116,11 +118,11 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
         "configuracoes",
       ]);
     } else if (role === "supervisor") {
-      setFormPermissions(["wms", "rastreamento", "etiquetas"]);
+      setFormPermissions(["dashboard", "wms", "rastreamento", "etiquetas"]);
     } else if (role === "operador") {
-      setFormPermissions(["etiquetas", "wms"]);
+      setFormPermissions(["dashboard", "etiquetas", "wms"]);
     } else if (role === "visualizador") {
-      setFormPermissions(["etiquetas", "rastreamento"]);
+      setFormPermissions(["dashboard", "etiquetas", "rastreamento"]);
     }
   };
 
@@ -211,6 +213,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
   ).length;
 
   const moduleNames: Record<ModulePermission, { label: string; icon: any }> = {
+    dashboard: { label: "Dashboard", icon: LayoutDashboard },
     wms: { label: "WMS", icon: Boxes },
     rastreamento: { label: "Rastreamento", icon: Truck },
     etiquetas: { label: "Etiquetas CD", icon: Barcode },
@@ -680,6 +683,12 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {(
                     [
+                      {
+                        key: "dashboard",
+                        label: "Dashboard Inicial",
+                        desc: "Indicadores, estrutura do CD e gestão",
+                        icon: LayoutDashboard,
+                      },
                       {
                         key: "wms",
                         label: "1. WMS",

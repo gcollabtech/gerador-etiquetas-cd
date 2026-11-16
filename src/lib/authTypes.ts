@@ -1,6 +1,7 @@
 export type UserRole = "admin" | "supervisor" | "operador" | "visualizador";
 
 export type ModulePermission =
+  | "dashboard"
   | "wms"
   | "rastreamento"
   | "etiquetas"
@@ -30,6 +31,15 @@ export interface AuthSession {
   token: string;
   loginTime: string;
   remember: boolean;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+  userName: string;
+  token: string;
+  code: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 export interface GeneralSettings {

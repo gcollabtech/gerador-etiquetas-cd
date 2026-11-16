@@ -1,8 +1,15 @@
-import { PortalUser, AuthSession, ModulePermission, GeneralSettings } from "./authTypes";
+import {
+  PortalUser,
+  AuthSession,
+  ModulePermission,
+  GeneralSettings,
+  PasswordResetRequest,
+} from "./authTypes";
 
 const USERS_STORAGE_KEY = "collab_log_users_v1";
 const SESSION_STORAGE_KEY = "collab_log_session_v1";
 const SETTINGS_STORAGE_KEY = "collab_log_settings_v1";
+const PASSWORD_RESET_STORAGE_KEY = "collab_log_password_reset_v1";
 
 export const DEFAULT_USERS: PortalUser[] = [
   {
@@ -13,7 +20,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "admin",
     cargo: "Administrador Geral & Operações",
     status: "ativo",
-    permissions: ["wms", "rastreamento", "etiquetas", "usuarios", "configuracoes"],
+    permissions: ["dashboard", "wms", "rastreamento", "etiquetas", "usuarios", "configuracoes"],
     unidadeCd: "CD Matriz — Big Master",
     telefone: "(11) 98765-4321",
     createdAt: "2026-01-10T08:00:00Z",
@@ -27,7 +34,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "supervisor",
     cargo: "Supervisor de Logística e Armazenagem",
     status: "ativo",
-    permissions: ["wms", "rastreamento", "etiquetas"],
+    permissions: ["dashboard", "wms", "rastreamento", "etiquetas"],
     unidadeCd: "CD Matriz — Big Master",
     telefone: "(11) 97654-3210",
     createdAt: "2026-02-15T09:30:00Z",
@@ -41,7 +48,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "operador",
     cargo: "Operadora de Centro de Distribuição",
     status: "ativo",
-    permissions: ["etiquetas", "wms"],
+    permissions: ["dashboard", "etiquetas", "wms"],
     unidadeCd: "CD Matriz — Big Master",
     telefone: "(11) 96543-2109",
     createdAt: "2026-03-01T10:15:00Z",
@@ -55,7 +62,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "operador",
     cargo: "Controlador de Frotas e Rastreamento",
     status: "ativo",
-    permissions: ["rastreamento", "etiquetas"],
+    permissions: ["dashboard", "rastreamento", "etiquetas"],
     unidadeCd: "CD Filial Sul",
     telefone: "(11) 95432-1098",
     createdAt: "2026-04-12T11:00:00Z",
@@ -69,7 +76,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "visualizador",
     cargo: "Auditora de Qualidade e Inventário",
     status: "ativo",
-    permissions: ["etiquetas", "rastreamento"],
+    permissions: ["dashboard", "etiquetas", "rastreamento"],
     unidadeCd: "CD Matriz — Big Master",
     telefone: "(11) 94321-0987",
     createdAt: "2026-05-20T14:00:00Z",
@@ -248,6 +255,7 @@ export function logout(): void {
 export function hasPermission(user: PortalUser | null | undefined, module: ModulePermission): boolean {
   if (!user) return false;
   if (user.role === "admin") return true;
+  if (module === "dashboard") return true;
   return user.permissions.includes(module);
 }
 
@@ -274,4 +282,136 @@ export function saveGeneralSettings(settings: GeneralSettings): void {
   } catch (e) {
     console.error("Erro ao salvar configurações:", e);
   }
+}
+
+// ── Redefinição de Senha (Esqueci Minha Senha) ─────────────────────────
+export function requestPasswordReset(email: string): {
+  success: boolean;
+  error?: string;
+  resetData?: PasswordResetRequest;
+} {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) {
+    return { success: false, error: "Por favor, informe seu e-mail corporativo." };
+  }
+
+  const users = getUsers();
+  const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (!user) {
+    return {
+      success: false,
+      error: "E-mail não encontrado no cadastro de usuários do portal.",
+    };
+  }
+
+  if (user.status !== "ativo") {
+    return {
+      success: false,
+      error: "Este usuário está temporariamente desativado. Contate o administrador do sistema.",
+    };
+  }
+
+  // Gera um código numérico aleatório de 6 dígitos
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const token = `rst-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const now = new Date();
+  const expires = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutos de validade
+
+  const resetData: PasswordResetRequest = {
+    email: user.email,
+    userName: user.name,
+    token,
+    code,
+    createdAt: now.toISOString(),
+    expiresAt: expires.toISOString(),
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(PASSWORD_RESET_STORAGE_KEY, JSON.stringify(resetData));
+    } catch (e) {
+      console.error("Erro ao salvar solicitação de redefinição:", e);
+    }
+  }
+
+  return {
+    success: true,
+    resetData,
+  };
+}
+
+export function getActiveResetRequest(email: string): PasswordResetRequest | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PASSWORD_RESET_STORAGE_KEY);
+    if (!raw) return null;
+    const data: PasswordResetRequest = JSON.parse(raw);
+    if (data.email.toLowerCase() !== email.trim().toLowerCase()) return null;
+    if (new Date(data.expiresAt).getTime() < Date.now()) {
+      localStorage.removeItem(PASSWORD_RESET_STORAGE_KEY);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error("Erro ao ler dados de redefinição:", e);
+    return null;
+  }
+}
+
+export function resetPasswordWithCode(
+  email: string,
+  code: string,
+  newPassword: string
+): { success: boolean; error?: string } {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanCode = code.trim();
+
+  if (!cleanCode) {
+    return { success: false, error: "Informe o código de verificação de 6 dígitos." };
+  }
+
+  if (!newPassword || newPassword.length < 4) {
+    return { success: false, error: "A nova senha deve possuir pelo menos 4 caracteres." };
+  }
+
+  const pending = getActiveResetRequest(cleanEmail);
+  if (!pending) {
+    return {
+      success: false,
+      error: "Nenhuma solicitação de redefinição ativa encontrada ou o código expirou. Solicite um novo código.",
+    };
+  }
+
+  if (pending.code !== cleanCode) {
+    return {
+      success: false,
+      error: "Código de verificação incorreto. Verifique o código recebido no e-mail e tente novamente.",
+    };
+  }
+
+  // Atualiza a senha no cadastro do usuário
+  const users = getUsers();
+  const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    return { success: false, error: "Usuário não localizado no sistema." };
+  }
+
+  const updatedUser: PortalUser = {
+    ...user,
+    password: newPassword,
+  };
+
+  saveUser(updatedUser);
+
+  // Limpa o reset request usado
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(PASSWORD_RESET_STORAGE_KEY);
+    } catch (e) {
+      console.error("Erro ao limpar dados de redefinição:", e);
+    }
+  }
+
+  return { success: true };
 }
