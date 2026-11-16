@@ -246,24 +246,36 @@ export default function Home() {
           return (
             <div key={`print_${addr.id}`} className="printable-label-page">
               <div className="printable-label-content">
+                {/* Left — Collab logo vertical */}
                 <div
                   style={{
-                    fontSize: "8px",
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    transform: "rotate(180deg)",
-                    writingMode: "vertical-rl",
-                    paddingRight: "2mm",
-                    borderRight: "0.2mm solid #cccccc",
+                    width: "14%",
                     height: "100%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    borderRight: "0.5mm solid #CC0000",
+                    flexShrink: 0,
+                    padding: "1.5mm 0.8mm",
+                    boxSizing: "border-box",
                   }}
                 >
-                  BIG MASTER • COLLAB CD
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/logo-collab-vertical.png"
+                    alt="Grupo Collab"
+                    style={{
+                      maxHeight: "92%",
+                      maxWidth: "88%",
+                      width: "auto",
+                      height: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
                 </div>
 
+                {/* Center — barcode + address */}
                 <div
                   style={{
                     flex: 1,
@@ -272,46 +284,50 @@ export default function Home() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     height: "100%",
-                    padding: "0 2mm",
+                    padding: "1mm 2mm",
                   }}
                 >
                   <div
-                    style={{ width: "100%", height: "18mm", display: "flex", justifyContent: "center" }}
+                    style={{ width: "100%", flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}
                     dangerouslySetInnerHTML={{ __html: barcodeSvg }}
                   />
                   <div
                     style={{
                       fontFamily: "monospace",
                       fontWeight: 900,
-                      fontSize: "14pt",
+                      fontSize: "10pt",
                       lineHeight: "1",
                       letterSpacing: "0.5px",
                       textAlign: "center",
-                      marginTop: "1mm",
+                      marginTop: "0.5mm",
                     }}
                   >
                     {addr.code}
                   </div>
                 </div>
 
+                {/* Right — wide bold arrow */}
                 <div
                   style={{
-                    width: "14mm",
+                    width: "20%",
                     height: "100%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    flexShrink: 0,
+                    padding: "1mm",
+                    boxSizing: "border-box",
                   }}
                 >
                   {isDown ? (
-                    <svg viewBox="0 0 40 80" style={{ width: "12mm", height: "24mm" }} fill="#000000">
-                      <rect x="14" y="0" width="12" height="48" />
-                      <polygon points="20,78 0,46 40,46" />
+                    <svg viewBox="0 0 48 80" style={{ width: "15mm", height: "28mm" }} fill="#000000">
+                      <rect x="11" y="2" width="26" height="42" />
+                      <polygon points="24,78 0,42 48,42" />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 40 80" style={{ width: "12mm", height: "24mm" }} fill="#000000">
-                      <polygon points="20,2 0,34 40,34" />
-                      <rect x="14" y="32" width="12" height="48" />
+                    <svg viewBox="0 0 48 80" style={{ width: "15mm", height: "28mm" }} fill="#000000">
+                      <polygon points="24,2 0,38 48,38" />
+                      <rect x="11" y="36" width="26" height="42" />
                     </svg>
                   )}
                 </div>

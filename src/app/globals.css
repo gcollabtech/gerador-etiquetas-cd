@@ -90,26 +90,25 @@ h1, h2, h3, h4, .font-heading {
     max-width: 100mm !important;
     max-height: 50mm !important;
     box-sizing: border-box !important;
-    padding: 10mm !important;
+    padding: 2.8mm !important;
     page-break-after: always !important;
     break-after: page !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #FF6400 !important;
+    border-radius: 4mm !important;
     overflow: hidden !important;
+    display: block !important;
   }
 
   .printable-label-content {
-    width: 80mm !important;
-    height: 30mm !important;
+    width: 100% !important;
+    height: 100% !important;
     box-sizing: border-box !important;
+    background: #ffffff !important;
+    border-radius: 2.5mm !important;
     display: flex !important;
     flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
   }
 }
 

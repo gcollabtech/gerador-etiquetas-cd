@@ -74,66 +74,127 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
           <span>10 cm</span>
         </div>
 
+        {/* Outer orange frame */}
         <div
-          className="relative w-full max-w-[500px] aspect-[2/1] bg-white text-black rounded-sm shadow-2xl p-[10%] flex flex-col justify-between overflow-hidden border border-gray-300 select-none"
+          className="relative w-full max-w-[500px] aspect-[2/1] select-none"
           style={{
+            backgroundColor: "#FF6400",
+            borderRadius: "14px",
+            padding: "5%",
+            boxSizing: "border-box",
             fontFamily: "Helvetica, Arial, sans-serif",
           }}
         >
-          {showGuides && (
-            <div className="absolute inset-[10%] border-2 border-dashed border-red-400 pointer-events-none z-20 flex items-start justify-end p-1">
-              <span className="text-[9px] font-mono font-bold bg-red-100 text-red-700 px-1 rounded shadow-sm opacity-90">
-                Área Útil 8 × 3 cm
-              </span>
-            </div>
-          )}
-
-          <div className="w-full h-full flex items-center justify-between z-10 gap-2">
-            {includeLogo && (
-              <div className="h-full flex flex-col justify-center items-center pr-1 border-r border-gray-200 shrink-0">
-                <div
-                  className="text-[9px] font-black uppercase tracking-wider text-gray-800 rotate-180"
-                  style={{ writingMode: "vertical-rl" }}
-                >
-                  BIG MASTER • COLLAB CD
-                </div>
+          {/* Inner white area */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              backgroundColor: "#ffffff",
+              borderRadius: "9px",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "stretch",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {showGuides && (
+              <div
+                className="absolute inset-0 border-2 border-dashed border-blue-400 pointer-events-none z-20 flex items-start justify-end p-1"
+              >
+                <span className="text-[9px] font-mono font-bold bg-blue-100 text-blue-700 px-1 rounded shadow-sm opacity-90">
+                  Área Útil
+                </span>
               </div>
             )}
 
-            <div className="flex-1 h-full flex flex-col items-center justify-between py-1 px-1 overflow-hidden">
+            {/* Left column — Collab vertical logo */}
+            {includeLogo && (
               <div
-                className="w-full flex-1 flex items-center justify-center overflow-hidden"
+                style={{
+                  width: "14%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRight: "2.5px solid #CC0000",
+                  flexShrink: 0,
+                  padding: "6px 2px",
+                  boxSizing: "border-box",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo-collab-vertical.png"
+                  alt="Grupo Collab"
+                  style={{
+                    maxHeight: "92%",
+                    maxWidth: "88%",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Center — barcode + address */}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "3% 2%",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{ width: "100%", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
                 dangerouslySetInnerHTML={{ __html: barcodeSvg }}
               />
-
-              <div className="font-mono font-black text-lg sm:text-2xl text-black tracking-wider leading-none text-center mt-1">
+              <div
+                style={{
+                  fontFamily: "monospace, Helvetica, Arial",
+                  fontWeight: 900,
+                  fontSize: "clamp(11px, 3vw, 20px)",
+                  color: "#000000",
+                  letterSpacing: "0.04em",
+                  textAlign: "center",
+                  lineHeight: 1,
+                  paddingTop: "2%",
+                }}
+              >
                 {sampleAddress.code}
               </div>
             </div>
 
-            <div className="h-full w-14 sm:w-16 flex items-center justify-center pl-1 shrink-0">
+            {/* Right column — wide bold arrow */}
+            <div
+              style={{
+                width: "20%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                padding: "2px",
+                boxSizing: "border-box",
+              }}
+            >
               {sampleAddress.arrowDirection === "down" ? (
-                <div className="flex flex-col items-center justify-center w-full h-full text-black">
-                  <svg
-                    viewBox="0 0 40 80"
-                    className="w-10 sm:w-12 h-16 sm:h-20"
-                    fill="currentColor"
-                  >
-                    <rect x="14" y="0" width="12" height="48" />
-                    <polygon points="20,78 0,46 40,46" />
-                  </svg>
-                </div>
+                <svg viewBox="0 0 48 80" style={{ width: "88%", height: "88%", maxHeight: "92%" }} fill="#000000">
+                  <rect x="11" y="2" width="26" height="42" />
+                  <polygon points="24,78 0,42 48,42" />
+                </svg>
               ) : (
-                <div className="flex flex-col items-center justify-center w-full h-full text-black">
-                  <svg
-                    viewBox="0 0 40 80"
-                    className="w-10 sm:w-12 h-16 sm:h-20"
-                    fill="currentColor"
-                  >
-                    <polygon points="20,2 0,34 40,34" />
-                    <rect x="14" y="32" width="12" height="48" />
-                  </svg>
-                </div>
+                <svg viewBox="0 0 48 80" style={{ width: "88%", height: "88%", maxHeight: "92%" }} fill="#000000">
+                  <polygon points="24,2 0,38 48,38" />
+                  <rect x="11" y="36" width="26" height="42" />
+                </svg>
               )}
             </div>
           </div>
@@ -141,8 +202,8 @@ export function LabelPreview({ address, includeLogo = true }: LabelPreviewProps)
 
         <div className="w-full max-w-[500px] flex items-center justify-between text-[11px] font-mono text-[var(--muted)] mt-1 px-1">
           <span>Altura: 5 cm (50 mm)</span>
-          <span>Margens: 1 cm (10 mm)</span>
-          <span>Área Útil: 8 × 3 cm</span>
+          <span>Frame laranja • Interior branco</span>
+          <span>Collab® | Barcode | Seta</span>
         </div>
       </div>
 
