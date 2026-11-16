@@ -12,6 +12,14 @@ import { TestAcceptanceModal } from "@/components/TestAcceptanceModal";
 import { PrintPortalView } from "@/components/PrintPortalView";
 import { HistoryPortalView } from "@/components/HistoryPortalView";
 import { AcceptanceTestsPortalView } from "@/components/AcceptanceTestsPortalView";
+import { LoginView } from "@/components/LoginView";
+import { UsersPortalView } from "@/components/UsersPortalView";
+import { WmsPortalView } from "@/components/WmsPortalView";
+import { TrackingPortalView } from "@/components/TrackingPortalView";
+import { GeneralSettingsPortalView } from "@/components/GeneralSettingsPortalView";
+
+import { getCurrentSession, logout, hasPermission } from "@/lib/authService";
+import { AuthSession, MainPortalModule } from "@/lib/authTypes";
 
 import {
   AddressParams,
@@ -42,9 +50,17 @@ import {
   ChevronRight,
   Sparkles,
   Barcode,
+  ShieldAlert,
+  Boxes,
+  Truck,
+  Users,
+  Settings,
 } from "lucide-react";
 
 export default function Home() {
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [activeModule, setActiveModule] = useState<MainPortalModule>("etiquetas");
   const [activeTopic, setActiveTopic] = useState<PortalTopic>("config");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -84,6 +100,10 @@ export default function Home() {
     setTheme(initialTheme);
     document.documentElement.setAttribute("data-theme", initialTheme);
     localStorage.setItem("cd-labels-theme", initialTheme);
+
+    const currentSess = getCurrentSession();
+    setSession(currentSess);
+    setIsAuthChecking(false);
 
     setHistory(getHistory());
     setPresets(getPresets());
@@ -193,13 +213,42 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    setSession(null);
+  };
+
   const selectedAddresses = useMemo(() => {
     return addresses.filter((a) => selectedIds.has(a.id));
   }, [addresses, selectedIds]);
 
   const printBatch = printSelectedOnly && selectedAddresses.length > 0 ? selectedAddresses : addresses;
 
-  // Breadcrumb / titles lookup
+  // Module titles and descriptions
+  const moduleTitles: Record<MainPortalModule, { title: string; subtitle: string }> = {
+    wms: {
+      title: "1. WMS — Warehouse Management System",
+      subtitle: "Módulos operacionais de recebimento, armazenagem, inventário e separação",
+    },
+    rastreamento: {
+      title: "2. Rastreamento e Gestão de Cargas",
+      subtitle: "Monitoramento em tempo real de frotas, despachos, rotas e entregas ativas",
+    },
+    etiquetas: {
+      title: "3. Gerador de Etiquetas CD (CODE 128)",
+      subtitle: "Endereçamento físico, matriz de cálculo, prévia em escala real e impressão",
+    },
+    usuarios: {
+      title: "4. Gestão de Usuários e Permissões",
+      subtitle: "Controle de perfis, concessão granular por módulo e status de acesso",
+    },
+    configuracoes: {
+      title: "5. Configurações Gerais do Sistema",
+      subtitle: "Parâmetros do Centro de Distribuição, preferências de impressão e tema",
+    },
+  };
+
+  // Breadcrumb / titles lookup for Labels subtopics
   const topicTitles: Record<PortalTopic, { title: string; subtitle: string }> = {
     config: {
       title: "1. Parâmetros de Endereçamento",
@@ -235,13 +284,34 @@ export default function Home() {
     },
   };
 
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--background)] text-[var(--foreground)]">
+        <div className="w-12 h-12 rounded-xl bg-[var(--collab-mostarda)] text-black flex items-center justify-center font-black animate-pulse text-xl mb-4 shadow-lg shadow-[#FF6400]/20">
+          C
+        </div>
+        <p className="text-xs font-semibold text-[var(--muted)]">Carregando Collab Log...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginView onLoginSuccess={(sess) => setSession(sess)} />;
+  }
+
+  const canAccessCurrentModule = hasPermission(session.user, activeModule);
+
   return (
     <>
       <div className="min-h-screen flex bg-[var(--background)] no-print">
         {/* Left Sidebar Menu */}
         <Sidebar
+          activeModule={activeModule}
+          onSelectModule={setActiveModule}
           activeTopic={activeTopic}
           onSelectTopic={setActiveTopic}
+          currentUser={session.user}
+          onLogout={handleLogout}
           totalGenerated={addresses.length}
           selectedCount={selectedIds.size}
           isMobileOpen={isMobileOpen}
@@ -268,51 +338,100 @@ export default function Home() {
 
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] font-medium">
-                  <span>Portal CD</span>
+                  <span className="font-semibold text-[var(--foreground)]">Portal Logístico</span>
                   <ChevronRight size={12} />
-                  <span className="text-[var(--collab-mostarda)] truncate font-semibold">
-                    {topicTitles[activeTopic].title}
-                  </span>
+                  <span>{moduleTitles[activeModule]?.title}</span>
+                  {activeModule === "etiquetas" && (
+                    <>
+                      <ChevronRight size={12} />
+                      <span className="text-[var(--collab-mostarda)] truncate font-semibold">
+                        {topicTitles[activeTopic].title}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <h1 className="text-sm sm:text-base font-bold text-[var(--foreground)] truncate font-heading">
-                  {topicTitles[activeTopic].title}
+                  {activeModule === "etiquetas"
+                    ? topicTitles[activeTopic].title
+                    : moduleTitles[activeModule]?.title}
                 </h1>
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={!validation.valid}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-90 transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Gerar etiquetas com os parâmetros configurados"
-              >
-                <Play size={13} fill="currentColor" />
-                <span className="hidden sm:inline">Gerar Etiquetas</span>
-                <span className="sm:hidden">Gerar</span>
-              </button>
+              {activeModule === "etiquetas" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={!validation.valid}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-90 transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Gerar etiquetas com os parâmetros configurados"
+                  >
+                    <Play size={13} fill="currentColor" />
+                    <span className="hidden sm:inline">Gerar Etiquetas</span>
+                    <span className="sm:hidden">Gerar</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setPrintSelectedOnly(false);
-                  setActiveTopic("print");
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
-                title="Ir para a Central de Impressão"
-              >
-                <Printer size={13} className="text-[var(--collab-mostarda)]" />
-                <span className="hidden sm:inline">Imprimir / PDF</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrintSelectedOnly(false);
+                      setActiveTopic("print");
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+                    title="Ir para a Central de Impressão"
+                  >
+                    <Printer size={13} className="text-[var(--collab-mostarda)]" />
+                    <span className="hidden sm:inline">Imprimir / PDF</span>
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-full bg-[var(--collab-mostarda)]/10 text-[var(--collab-mostarda)] font-semibold border border-[var(--collab-mostarda)]/20">
+                    Perfil: {session.user.role.toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
           </header>
 
           {/* Main View Body */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
-            {/* 1. CONFIG VIEW */}
-            {activeTopic === "config" && (
+            {/* ACCESS DENIED FALLBACK */}
+            {!canAccessCurrentModule ? (
+              <div className="rounded-2xl bg-[var(--card)] border border-red-500/30 p-8 text-center max-w-lg mx-auto my-12 shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                  <ShieldAlert size={32} />
+                </div>
+                <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Acesso Restrito</h2>
+                <p className="text-sm text-[var(--muted)] mb-6 leading-relaxed">
+                  Seu usuário (<strong>{session.user.name}</strong> &bull; {session.user.email}) não possui permissão concedida para acessar o módulo <strong>{moduleTitles[activeModule]?.title}</strong>.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModule("etiquetas")}
+                    className="px-4 py-2 text-xs font-bold rounded-xl bg-[var(--collab-mostarda)] text-black hover:opacity-90 transition-all cursor-pointer shadow-sm"
+                  >
+                    Ir para Gerador de Etiquetas CD
+                  </button>
+                </div>
+              </div>
+            ) : activeModule === "wms" ? (
+              <WmsPortalView onNavigateToLabels={() => setActiveModule("etiquetas")} />
+            ) : activeModule === "rastreamento" ? (
+              <TrackingPortalView />
+            ) : activeModule === "usuarios" ? (
+              <UsersPortalView currentUser={session.user} />
+            ) : activeModule === "configuracoes" ? (
+              <GeneralSettingsPortalView theme={theme} onToggleTheme={toggleTheme} />
+            ) : (
+              /* ACTIVE MODULE === "etiquetas" */
+              <>
+                {/* 1. CONFIG VIEW */}
+                {activeTopic === "config" && (
               <div className="space-y-6">
                 <ConfigPanel
                   params={params}
@@ -548,17 +667,19 @@ export default function Home() {
                 />
               </div>
             )}
-          </main>
+          </>
+        )}
+      </main>
 
-          {/* Footer */}
-          <footer className="border-t border-[var(--card-border)] py-6 px-4 sm:px-6 text-center text-xs text-[var(--muted)] no-print mt-auto">
-            <p>
-              Portal Logístico Collab — Sistema de Endereçamento e Etiquetas CODE 128 (Centro de Distribuição)
-            </p>
-            <p className="mt-1 font-mono text-[11px] text-[var(--collab-mostarda)]">
-              Dimensões: {Number(params.larguraCm || 10)} × {Number(params.alturaCm || 5)} cm ({(Number(params.larguraCm || 10) * 10)} × {(Number(params.alturaCm || 5) * 10)} mm) • Padrão: R01-P01-A01-N01
-            </p>
-          </footer>
+      {/* Footer */}
+      <footer className="border-t border-[var(--card-border)] py-6 px-4 sm:px-6 text-center text-xs text-[var(--muted)] no-print mt-auto">
+        <p>
+          <strong>Collab Log • Portal Logístico</strong> — Grupo Collab • Sistema Integrado de Gestão da Cadeia de Suprimentos
+        </p>
+        <p className="mt-1 font-mono text-[11px] text-[var(--collab-mostarda)]">
+          Centro de Distribuição Principal • Logística & Armazenagem • Padrão CODE 128
+        </p>
+      </footer>
         </div>
       </div>
 
