@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Header } from "@/components/Header";
+import { Sidebar, PortalTopic } from "@/components/Sidebar";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { GenerationSummaryCard } from "@/components/GenerationSummaryCard";
 import { LabelPreview } from "@/components/LabelPreview";
@@ -9,6 +9,9 @@ import { LabelsGrid } from "@/components/LabelsGrid";
 import { PrintModal } from "@/components/PrintModal";
 import { HistoryDrawer } from "@/components/HistoryDrawer";
 import { TestAcceptanceModal } from "@/components/TestAcceptanceModal";
+import { PrintPortalView } from "@/components/PrintPortalView";
+import { HistoryPortalView } from "@/components/HistoryPortalView";
+import { AcceptanceTestsPortalView } from "@/components/AcceptanceTestsPortalView";
 
 import {
   AddressParams,
@@ -30,8 +33,22 @@ import {
   DEFAULT_PRESETS,
 } from "@/lib/historyStorage";
 import { generateCode128Svg } from "@/lib/code128";
+import {
+  Menu,
+  Play,
+  Printer,
+  Sliders,
+  Layers,
+  ChevronRight,
+  Sparkles,
+  Barcode,
+} from "lucide-react";
 
 export default function Home() {
+  const [activeTopic, setActiveTopic] = useState<PortalTopic>("config");
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("light");
+
   const [params, setParams] = useState<AddressParams>({
     ruaInicio: "R01",
     ruaFim: "R02",
@@ -58,6 +75,12 @@ export default function Home() {
   const [presets, setPresets] = useState<AddressPreset[]>(DEFAULT_PRESETS);
 
   useEffect(() => {
+    const rawTheme = localStorage.getItem("cd-labels-theme");
+    const initialTheme: "dark" | "light" = rawTheme === "dark" ? "light" : (rawTheme as "light") || "light";
+    setTheme(initialTheme);
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    localStorage.setItem("cd-labels-theme", initialTheme);
+
     setHistory(getHistory());
     setPresets(getPresets());
 
@@ -82,6 +105,13 @@ export default function Home() {
     }
   }, []);
 
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("cd-labels-theme", next);
+  };
+
   const validation = useMemo(() => validateAddressParams(params), [params]);
   const summary = useMemo(() => calculateGenerationSummary(params), [params]);
 
@@ -102,6 +132,11 @@ export default function Home() {
         lastCode: generated[generated.length - 1]?.code || "",
       });
       setHistory(getHistory());
+
+      // If user is in config or summary, jump to preview or labels to view results
+      if (activeTopic === "config" || activeTopic === "summary") {
+        setActiveTopic("preview");
+      }
     } catch (err: any) {
       alert(`Erro na geração: ${err.message || err}`);
     }
@@ -160,62 +195,354 @@ export default function Home() {
 
   const printBatch = printSelectedOnly && selectedAddresses.length > 0 ? selectedAddresses : addresses;
 
+  // Breadcrumb / titles lookup
+  const topicTitles: Record<PortalTopic, { title: string; subtitle: string }> = {
+    config: {
+      title: "1. Parâmetros de Endereçamento",
+      subtitle: "Configure os intervalos de ruas, prédios, apartamentos e níveis de armazenagem",
+    },
+    summary: {
+      title: "2. Resumo da Geração & Cálculo da Matriz",
+      subtitle: "Valide a quantidade de etiquetas antes da impressão e dispare a criação",
+    },
+    preview: {
+      title: "3. Pré-visualização da Etiqueta em Escala Real",
+      subtitle: "Padrão 10 × 5 cm com frame laranja, logo Collab® e setas direcionais",
+    },
+    labels: {
+      title: "4. Gerenciamento e Grade de Etiquetas",
+      subtitle: "Pesquise, filtre por rua/prédio e selecione etiquetas individualmente ou por lote",
+    },
+    print: {
+      title: "5. Central de Impressão e Exportação em PDF",
+      subtitle: "Gere arquivos PDF padronizados a 100% e imprima em impressoras térmicas",
+    },
+    history: {
+      title: "6. Histórico de Lotes Gerados",
+      subtitle: "Audite gerações anteriores e restaure configurações com 1 clique",
+    },
+    tests: {
+      title: "7. Critérios de Aceite Oficiais (1 a 6)",
+      subtitle: "Validação automatizada de conformidade técnica com as regras do sistema",
+    },
+    all: {
+      title: "Visão Completa do Sistema",
+      subtitle: "Fluxo contínuo com todos os painéis e ferramentas reunidos",
+    },
+  };
+
   return (
     <>
-      <div className="min-h-screen flex flex-col no-print">
-        <Header
-          onOpenHistory={() => setIsHistoryOpen(true)}
-          onOpenAcceptanceTests={() => setIsAcceptanceTestsOpen(true)}
-          totalGeneratedCount={addresses.length}
+      <div className="min-h-screen flex bg-[var(--background)] no-print">
+        {/* Left Sidebar Menu */}
+        <Sidebar
+          activeTopic={activeTopic}
+          onSelectTopic={setActiveTopic}
+          totalGenerated={addresses.length}
+          selectedCount={selectedIds.size}
+          isMobileOpen={isMobileOpen}
+          onToggleMobile={() => setIsMobileOpen(!isMobileOpen)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-          <ConfigPanel
-            params={params}
-            onChange={setParams}
-            validation={validation}
-            presets={presets}
-            onSelectPreset={handleSelectPreset}
-            onSaveCurrentAsPreset={handleSaveCurrentAsPreset}
-          />
+        {/* Right Main Content Area */}
+        <div className="flex-1 lg:pl-72 sm:lg:pl-80 flex flex-col min-w-0">
+          {/* Top Navbar */}
+          <header className="sticky top-0 z-30 bg-[var(--card)]/90 backdrop-blur-md border-b border-[var(--card-border)] py-3 px-4 sm:px-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsMobileOpen(true)}
+                className="lg:hidden p-2 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)]"
+                aria-label="Abrir menu lateral"
+              >
+                <Menu size={18} />
+              </button>
 
-          <GenerationSummaryCard
-            summary={summary}
-            onGenerate={handleGenerate}
-            isValid={validation.valid}
-            isGenerated={addresses.length > 0}
-          />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] font-medium">
+                  <span>Portal CD</span>
+                  <ChevronRight size={12} />
+                  <span className="text-[var(--collab-mostarda)] truncate font-semibold">
+                    {topicTitles[activeTopic].title}
+                  </span>
+                </div>
+                <h1 className="text-sm sm:text-base font-bold text-[var(--foreground)] truncate font-heading">
+                  {topicTitles[activeTopic].title}
+                </h1>
+              </div>
+            </div>
 
-          <LabelPreview
-            address={previewAddress || addresses[0] || null}
-            includeLogo={true}
-          />
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!validation.valid}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-90 transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Gerar etiquetas com os parâmetros configurados"
+              >
+                <Play size={13} fill="currentColor" />
+                <span className="hidden sm:inline">Gerar Etiquetas</span>
+                <span className="sm:hidden">Gerar</span>
+              </button>
 
-          <LabelsGrid
-            addresses={addresses}
-            selectedIds={selectedIds}
-            onToggleSelect={handleToggleSelect}
-            onSelectAll={handleSelectAll}
-            onDeselectAll={handleDeselectAll}
-            onSelectRange={handleSelectRange}
-            onPreviewAddress={setPreviewAddress}
-            onOpenPrintModal={(selectedOnly) => {
-              setPrintSelectedOnly(selectedOnly);
-              setIsPrintModalOpen(true);
-            }}
-          />
-        </main>
+              <button
+                type="button"
+                onClick={() => {
+                  setPrintSelectedOnly(false);
+                  setActiveTopic("print");
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+                title="Ir para a Central de Impressão"
+              >
+                <Printer size={13} className="text-[var(--collab-mostarda)]" />
+                <span className="hidden sm:inline">Imprimir / PDF</span>
+              </button>
+            </div>
+          </header>
 
-        <footer className="border-t border-[var(--card-border)] py-6 px-4 text-center text-xs text-[var(--muted)] no-print">
-          <p>
-            Sistema de Endereçamento de Armazenagem e Impressão CODE 128 — Centro de Distribuição Big Master / Collab
-          </p>
-          <p className="mt-1 font-mono text-[11px] text-[var(--collab-mostarda)]">
-            Dimensão Nominal: 100 × 50 mm • Margens: 10 mm • Área Útil: 80 × 30 mm • Padrão: R01-P01-A01-N01
-          </p>
-        </footer>
+          {/* Main View Body */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+            {/* 1. CONFIG VIEW */}
+            {activeTopic === "config" && (
+              <div className="space-y-6">
+                <ConfigPanel
+                  params={params}
+                  onChange={setParams}
+                  validation={validation}
+                  presets={presets}
+                  onSelectPreset={handleSelectPreset}
+                  onSaveCurrentAsPreset={handleSaveCurrentAsPreset}
+                />
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-[var(--card)] border border-[var(--card-border)]">
+                  <div className="text-xs text-[var(--muted)]">
+                    Parâmetros validados: <strong className="font-mono text-[var(--foreground)]">{summary.totalEnderecos} etiquetas previstas</strong>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTopic("summary")}
+                      className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--secondary)] hover:bg-[var(--card-border)] text-[var(--foreground)] transition-all cursor-pointer"
+                    >
+                      Ver Matriz de Cálculo
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerate}
+                      disabled={!validation.valid}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-90 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Play size={13} fill="currentColor" />
+                      <span>Gerar e Visualizar Prévia</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. SUMMARY VIEW */}
+            {activeTopic === "summary" && (
+              <div className="space-y-6">
+                <GenerationSummaryCard
+                  summary={summary}
+                  onGenerate={handleGenerate}
+                  isValid={validation.valid}
+                  isGenerated={addresses.length > 0}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-2">
+                    <h3 className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                      <Sliders size={14} className="text-[var(--collab-mostarda)]" />
+                      <span>Intervalos Atuais Configurados</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[var(--muted)]">
+                      <div>Rua: <strong className="text-[var(--foreground)]">{params.ruaInicio} a {params.ruaFim}</strong></div>
+                      <div>Prédio: <strong className="text-[var(--foreground)]">{params.predioInicio} a {params.predioFim}</strong></div>
+                      <div>Apto: <strong className="text-[var(--foreground)]">{params.aptoInicio} a {params.aptoFim}</strong></div>
+                      <div>Nível: <strong className="text-[var(--foreground)]">{params.nivelInicio} a {params.nivelFim}</strong></div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-2">
+                    <h3 className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                      <Barcode size={14} className="text-[var(--collab-mostarda)]" />
+                      <span>Formato de Saída Obrigatório</span>
+                    </h3>
+                    <p className="text-xs text-[var(--muted)]">
+                      Cada endereço gerado recebe código de barras <strong>CODE 128</strong>, etiqueta <strong>100 × 50 mm</strong> e posicionamento automático de seta direcional (↓ N01 / ↑ N&gt;01).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. PREVIEW VIEW */}
+            {activeTopic === "preview" && (
+              <div className="space-y-6">
+                <LabelPreview
+                  address={previewAddress || addresses[0] || null}
+                  includeLogo={true}
+                />
+
+                {addresses.length > 1 && (
+                  <div className="p-4 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[var(--foreground)]">
+                        Inspecionar outra etiqueta do lote atual ({addresses.length} geradas):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTopic("labels")}
+                        className="text-xs text-[var(--collab-mostarda)] hover:underline"
+                      >
+                        Ver todas na Grade →
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                      {addresses.slice(0, 12).map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => setPreviewAddress(a)}
+                          className={`px-2.5 py-1 text-xs font-mono rounded border transition-all shrink-0 cursor-pointer ${
+                            previewAddress?.id === a.id
+                              ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                              : "bg-[var(--background)] text-[var(--muted)] border-[var(--card-border)] hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          {a.code} ({a.arrowDirection === "down" ? "↓" : "↑"})
+                        </button>
+                      ))}
+                      {addresses.length > 12 && (
+                        <span className="text-xs text-[var(--muted)] shrink-0 px-2">
+                          + {addresses.length - 12} mais na Grade
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. LABELS GRID VIEW */}
+            {activeTopic === "labels" && (
+              <div className="space-y-6">
+                <LabelsGrid
+                  addresses={addresses}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onSelectAll={handleSelectAll}
+                  onDeselectAll={handleDeselectAll}
+                  onSelectRange={handleSelectRange}
+                  onPreviewAddress={(addr) => {
+                    setPreviewAddress(addr);
+                    setActiveTopic("preview");
+                  }}
+                  onOpenPrintModal={(selectedOnly) => {
+                    setPrintSelectedOnly(selectedOnly);
+                    setActiveTopic("print");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 5. PRINT & PDF VIEW */}
+            {activeTopic === "print" && (
+              <div className="space-y-6">
+                <PrintPortalView
+                  addresses={addresses}
+                  selectedAddresses={selectedAddresses}
+                  onOpenPrintModal={(selectedOnly) => {
+                    setPrintSelectedOnly(selectedOnly);
+                    setIsPrintModalOpen(true);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 6. HISTORY VIEW */}
+            {activeTopic === "history" && (
+              <div className="space-y-6">
+                <HistoryPortalView
+                  history={history}
+                  onRestoreParams={(p) => setParams(p)}
+                  onClearHistory={handleClearHistory}
+                  onNavigateToConfig={() => setActiveTopic("config")}
+                />
+              </div>
+            )}
+
+            {/* 7. ACCEPTANCE TESTS VIEW */}
+            {activeTopic === "tests" && (
+              <div className="space-y-6">
+                <AcceptanceTestsPortalView
+                  onLoadTestParams={(p) => setParams(p)}
+                  onNavigateToConfig={() => setActiveTopic("config")}
+                />
+              </div>
+            )}
+
+            {/* 8. ALL (FULL FLOW) VIEW */}
+            {activeTopic === "all" && (
+              <div className="space-y-6">
+                <ConfigPanel
+                  params={params}
+                  onChange={setParams}
+                  validation={validation}
+                  presets={presets}
+                  onSelectPreset={handleSelectPreset}
+                  onSaveCurrentAsPreset={handleSaveCurrentAsPreset}
+                />
+
+                <GenerationSummaryCard
+                  summary={summary}
+                  onGenerate={handleGenerate}
+                  isValid={validation.valid}
+                  isGenerated={addresses.length > 0}
+                />
+
+                <LabelPreview
+                  address={previewAddress || addresses[0] || null}
+                  includeLogo={true}
+                />
+
+                <LabelsGrid
+                  addresses={addresses}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onSelectAll={handleSelectAll}
+                  onDeselectAll={handleDeselectAll}
+                  onSelectRange={handleSelectRange}
+                  onPreviewAddress={setPreviewAddress}
+                  onOpenPrintModal={(selectedOnly) => {
+                    setPrintSelectedOnly(selectedOnly);
+                    setIsPrintModalOpen(true);
+                  }}
+                />
+              </div>
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-[var(--card-border)] py-6 px-4 sm:px-6 text-center text-xs text-[var(--muted)] no-print mt-auto">
+            <p>
+              Portal Logístico Collab — Sistema de Endereçamento e Etiquetas CODE 128 (Centro de Distribuição)
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-[var(--collab-mostarda)]">
+              Dimensões: 100 × 50 mm • Margens: 10 mm • Área Central: 80 × 30 mm • Padrão: R01-P01-A01-N01
+            </p>
+          </footer>
+        </div>
       </div>
 
+      {/* Advanced Print Modal (accessible from quick action or button) */}
       <PrintModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
@@ -224,6 +551,7 @@ export default function Home() {
         defaultSelectedOnly={printSelectedOnly}
       />
 
+      {/* History Drawer Modal */}
       <HistoryDrawer
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
@@ -232,12 +560,14 @@ export default function Home() {
         onClearHistory={handleClearHistory}
       />
 
+      {/* Acceptance Tests Modal */}
       <TestAcceptanceModal
         isOpen={isAcceptanceTestsOpen}
         onClose={() => setIsAcceptanceTestsOpen(false)}
         onLoadTestParams={setParams}
       />
 
+      {/* Physical Print Sheet (@media print) */}
       <div className="print-only">
         {printBatch.map((addr) => {
           const barcodeSvg = generateCode128Svg(addr.code, 220, 48, 8);

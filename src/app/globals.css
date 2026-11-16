@@ -20,33 +20,67 @@
 }
 
 :root {
-  --collab-mostarda: #C09100;
-  --mostarda-300: #D6AE3A;
-  --mostarda-700: #8A6900;
+  /* Padrão Collab: Laranja (#FF6400), Preto (#0A0A0A) com Fundo Branco (#FFFFFF / #F8F9FA) */
+  --collab-orange: #FF6400;
+  --collab-orange-hover: #E65A00;
+  --collab-orange-light: rgba(255, 100, 0, 0.10);
+  --collab-orange-border: rgba(255, 100, 0, 0.30);
+  --collab-mostarda: #FF6400; /* Mapeamento do accent principal para o Laranja Collab */
+  --mostarda-300: #FF8533;
+  --mostarda-700: #CC5000;
 
-  --background: #0D0E12;
-  --foreground: #F2F2F2;
-  --card: #15171E;
-  --card-border: rgba(255, 255, 255, 0.08);
-  --secondary: #1F222B;
-  --muted: #8E929E;
-  --accent: #C09100;
-  --danger: #E5484D;
-  --warning: #F5A623;
-  --success: #30A46C;
-}
-
-[data-theme="light"] {
-  --background: #F4F5F7;
-  --foreground: #111827;
+  --background: #F8F9FA;
+  --foreground: #0A0A0A;
   --card: #FFFFFF;
-  --card-border: #E2E8F0;
-  --secondary: #E5E7EB;
-  --muted: #6B7280;
-  --accent: #B08200;
+  --card-border: #E5E7EB;
+  --secondary: #F1F3F5;
+  --muted: #64748B;
+  --accent: #FF6400;
   --danger: #DC2626;
   --warning: #D97706;
   --success: #16A34A;
+}
+
+[data-theme="light"] {
+  --collab-orange: #FF6400;
+  --collab-orange-hover: #E65A00;
+  --collab-orange-light: rgba(255, 100, 0, 0.10);
+  --collab-orange-border: rgba(255, 100, 0, 0.30);
+  --collab-mostarda: #FF6400;
+  --mostarda-300: #FF8533;
+  --mostarda-700: #CC5000;
+
+  --background: #F8F9FA;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-border: #E5E7EB;
+  --secondary: #F1F3F5;
+  --muted: #64748B;
+  --accent: #FF6400;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --success: #16A34A;
+}
+
+[data-theme="dark"] {
+  --collab-orange: #FF6400;
+  --collab-orange-hover: #FF751A;
+  --collab-orange-light: rgba(255, 100, 0, 0.15);
+  --collab-orange-border: rgba(255, 100, 0, 0.35);
+  --collab-mostarda: #FF6400;
+  --mostarda-300: #FF8533;
+  --mostarda-700: #CC5000;
+
+  --background: #0B0D11;
+  --foreground: #F8FAFC;
+  --card: #131720;
+  --card-border: #1E293B;
+  --secondary: #1E2433;
+  --muted: #94A3B8;
+  --accent: #FF6400;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --success: #10B981;
 }
 
 body {

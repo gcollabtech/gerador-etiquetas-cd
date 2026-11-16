@@ -32,13 +32,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" data-theme="dark" suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var theme = localStorage.getItem('cd-labels-theme') || 'dark';
+                var theme = localStorage.getItem('cd-labels-theme');
+                if (!theme || theme === 'dark') {
+                  theme = 'light';
+                  localStorage.setItem('cd-labels-theme', 'light');
+                }
                 document.documentElement.setAttribute('data-theme', theme);
               } catch (e) {}
             `,
