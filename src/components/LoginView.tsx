@@ -207,12 +207,12 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       {/* Top Header */}
       <header className="px-6 py-4 border-b border-[var(--card-border)] bg-[var(--card)]/80 backdrop-blur-md flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-white rounded-lg p-2 shadow-sm border border-gray-200 shrink-0">
+          <div className="bg-white rounded-lg px-2.5 py-1.5 shadow-sm border border-gray-200 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo-collab.png"
-              alt="Grupo Collab"
-              className="h-6 w-auto object-contain block"
+              src="/logo-collab-log.png"
+              alt="Grupo Collab Log"
+              className="h-7 sm:h-8 w-auto object-contain block"
             />
           </div>
         </div>
@@ -233,12 +233,12 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             {/* Logo */}
             <div className="text-center space-y-3">
               <div className="flex justify-center">
-                <div className="bg-white rounded-xl p-3.5 shadow-sm border border-gray-200 inline-flex items-center justify-center">
+                <div className="bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-200 inline-flex items-center justify-center max-w-[280px]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/logo-collab.png"
-                    alt="Grupo Collab"
-                    className="h-10 w-auto object-contain block"
+                    src="/logo-collab-log.png"
+                    alt="Grupo Collab Log"
+                    className="h-12 sm:h-14 w-auto object-contain block"
                   />
                 </div>
               </div>

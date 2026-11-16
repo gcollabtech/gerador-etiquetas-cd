@@ -166,15 +166,15 @@ export function Sidebar({
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Top Header: Collab Logo on top-left */}
+        {/* Top Header: Collab Log Logo on top-left */}
         <div className="p-4 border-b border-[var(--card-border)] bg-[var(--card)] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-white rounded-lg p-2 shadow-sm border border-gray-200 inline-block shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="bg-white rounded-lg px-2.5 py-1.5 shadow-sm border border-gray-200 inline-block shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo-collab.png"
-                alt="Grupo Collab"
-                className="h-7 w-auto object-contain block"
+                src="/logo-collab-log.png"
+                alt="Grupo Collab Log"
+                className="h-8 w-auto object-contain block"
               />
             </div>
           </div>
