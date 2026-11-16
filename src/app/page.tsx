@@ -80,6 +80,7 @@ export default function Home() {
     alturaCm: 5,
     fonteFamilia: "Helvetica",
     tamanhoFontePt: 16,
+    alturaCodigoBarrasMm: 20,
   });
 
   const [addresses, setAddresses] = useState<StorageAddress[]>([]);
@@ -517,6 +518,7 @@ export default function Home() {
                   alturaCm={params.alturaCm}
                   fonteFamilia={params.fonteFamilia}
                   tamanhoFontePt={params.tamanhoFontePt}
+                  alturaCodigoBarrasMm={params.alturaCodigoBarrasMm}
                 />
 
                 {addresses.length > 1 && (
@@ -598,6 +600,7 @@ export default function Home() {
                   alturaCm={params.alturaCm}
                   fonteFamilia={params.fonteFamilia}
                   tamanhoFontePt={params.tamanhoFontePt}
+                  alturaCodigoBarrasMm={params.alturaCodigoBarrasMm}
                 />
               </div>
             )}
@@ -650,6 +653,7 @@ export default function Home() {
                   alturaCm={params.alturaCm}
                   fonteFamilia={params.fonteFamilia}
                   tamanhoFontePt={params.tamanhoFontePt}
+                  alturaCodigoBarrasMm={params.alturaCodigoBarrasMm}
                 />
 
                 <LabelsGrid
@@ -694,6 +698,7 @@ export default function Home() {
         alturaCm={params.alturaCm}
         fonteFamilia={params.fonteFamilia}
         tamanhoFontePt={params.tamanhoFontePt}
+        alturaCodigoBarrasMm={params.alturaCodigoBarrasMm}
       />
 
       {/* Dynamic browser print styles based on parameterized dimensions (A4 multiple labels grid) */}
@@ -744,7 +749,9 @@ export default function Home() {
       {/* Physical Print Sheet (@media print) */}
       <div className="print-only">
         {printBatch.map((addr) => {
-          const barcodeSvg = generateCode128Svg(addr.code, 220, 48, 8);
+          const barHeightMm = Number(params.alturaCodigoBarrasMm || 20);
+          const svgHeight = Math.max(26, Math.min(84, Math.round(barHeightMm * 2.4)));
+          const barcodeSvg = generateCode128Svg(addr.code, 220, svgHeight, 8);
           const isDown = addr.arrowDirection === "down";
 
           return (

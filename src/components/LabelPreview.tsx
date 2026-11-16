@@ -15,6 +15,7 @@ interface LabelPreviewProps {
   alturaCm?: number | "";
   fonteFamilia?: LabelFontFamily;
   tamanhoFontePt?: number | "";
+  alturaCodigoBarrasMm?: number | "";
 }
 
 export function LabelPreview({
@@ -24,12 +25,17 @@ export function LabelPreview({
   alturaCm = 5,
   fonteFamilia = "Helvetica",
   tamanhoFontePt,
+  alturaCodigoBarrasMm,
 }: LabelPreviewProps) {
   const [showGuides, setShowGuides] = useState(true);
 
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
   const aspectRatio = `${wCm} / ${hCm}`;
+
+  const customBarHeightMm = Number(alturaCodigoBarrasMm);
+  const defaultBarHeightMm = Math.max(12, Math.min(42, Math.round((hCm * 10) * 0.40)));
+  const barHeightMm = customBarHeightMm > 0 ? customBarHeightMm : defaultBarHeightMm;
 
   const resolvedFontFamily =
     fonteFamilia === "Courier"
@@ -60,7 +66,8 @@ export function LabelPreview({
   };
 
   const isLevelOne = sampleAddress.nivel <= 1;
-  const barcodeSvg = generateCode128Svg(sampleAddress.code, 240, 52, 8);
+  const svgHeight = Math.max(26, Math.min(84, Math.round(barHeightMm * 2.6)));
+  const barcodeSvg = generateCode128Svg(sampleAddress.code, 240, svgHeight, 8);
 
   return (
     <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-xl p-5 sm:p-6 shadow-sm no-print space-y-4">

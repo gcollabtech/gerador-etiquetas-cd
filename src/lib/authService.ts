@@ -9,7 +9,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     id: "usr-01",
     name: "Thiago Fragoso",
     email: "admin@collab.com.br",
-    password: "collab123",
+    password: "Gcoll@b123",
     role: "admin",
     cargo: "Administrador Geral & Operações",
     status: "ativo",
@@ -100,7 +100,16 @@ export function getUsers(): PortalUser[] {
       return DEFAULT_USERS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_USERS;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Sincroniza a nova senha do admin caso já existam dados em localStorage
+      const adminIdx = parsed.findIndex((u: PortalUser) => u.email.toLowerCase() === "admin@collab.com.br");
+      if (adminIdx >= 0 && parsed[adminIdx].password !== "Gcoll@b123") {
+        parsed[adminIdx].password = "Gcoll@b123";
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
+    return DEFAULT_USERS;
   } catch (e) {
     console.error("Erro ao ler usuários:", e);
     return DEFAULT_USERS;
@@ -192,8 +201,9 @@ export function authenticate(
     };
   }
 
-  // Verifica a senha cadastrada para o usuário (ou collab123 por padrão para usuários legados)
-  const userPassword = user.password || "collab123";
+  // Verifica a senha cadastrada para o usuário (Gcoll@b123 para admin ou cadastrada)
+  const defaultPass = cleanEmail === "admin@collab.com.br" ? "Gcoll@b123" : "collab123";
+  const userPassword = user.password || defaultPass;
   if (pass !== userPassword) {
     return {
       success: false,

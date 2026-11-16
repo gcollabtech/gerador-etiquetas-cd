@@ -36,6 +36,7 @@ interface PrintPortalViewProps {
   alturaCm?: number | "";
   fonteFamilia?: LabelFontFamily;
   tamanhoFontePt?: number | "";
+  alturaCodigoBarrasMm?: number | "";
 }
 
 export function PrintPortalView({
@@ -48,6 +49,7 @@ export function PrintPortalView({
   alturaCm = 5,
   fonteFamilia: initialFonteFamilia = "Helvetica",
   tamanhoFontePt: initialTamanhoFontePt = 16,
+  alturaCodigoBarrasMm = 20,
 }: PrintPortalViewProps) {
   const [printScope, setPrintScope] = useState<"all" | "selected">(() => {
     return defaultSelectedOnly && selectedAddresses.length > 0 ? "selected" : "all";
@@ -105,6 +107,7 @@ export function PrintPortalView({
         alturaCm: hCm,
         fonteFamilia,
         tamanhoFontePt,
+        alturaCodigoBarrasMm,
       });
       const url = URL.createObjectURL(blob);
       if (active) {
@@ -122,7 +125,7 @@ export function PrintPortalView({
     return () => {
       active = false;
     };
-  }, [targetBatch, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt]);
+  }, [targetBatch, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt, alturaCodigoBarrasMm]);
 
   const handleDownloadPdf = () => {
     downloadLabelsPdf(targetBatch, {
@@ -133,6 +136,7 @@ export function PrintPortalView({
       alturaCm: hCm,
       fonteFamilia,
       tamanhoFontePt,
+      alturaCodigoBarrasMm,
     });
   };
 
@@ -145,6 +149,7 @@ export function PrintPortalView({
       alturaCm: hCm,
       fonteFamilia,
       tamanhoFontePt,
+      alturaCodigoBarrasMm,
     });
   };
 
@@ -162,6 +167,7 @@ export function PrintPortalView({
         alturaCm: hCm,
         fonteFamilia,
         tamanhoFontePt,
+        alturaCodigoBarrasMm,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);

@@ -31,6 +31,7 @@ interface PrintModalProps {
   alturaCm?: number | "";
   fonteFamilia?: LabelFontFamily;
   tamanhoFontePt?: number | "";
+  alturaCodigoBarrasMm?: number | "";
 }
 
 export function PrintModal({
@@ -43,6 +44,7 @@ export function PrintModal({
   alturaCm = 5,
   fonteFamilia: initialFonteFamilia = "Helvetica",
   tamanhoFontePt: initialTamanhoFontePt = 16,
+  alturaCodigoBarrasMm = 20,
 }: PrintModalProps) {
   const [printSelectedOnly, setPrintSelectedOnly] = useState(defaultSelectedOnly);
   const [mode, setMode] = useState<"thermal" | "a4_grid">("a4_grid");
@@ -88,6 +90,7 @@ export function PrintModal({
         alturaCm: hCm,
         fonteFamilia,
         tamanhoFontePt,
+        alturaCodigoBarrasMm,
       });
       const url = URL.createObjectURL(blob);
       if (active) {
@@ -105,7 +108,7 @@ export function PrintModal({
     return () => {
       active = false;
     };
-  }, [isOpen, targetAddresses, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt]);
+  }, [isOpen, targetAddresses, mode, showCutBorders, includeCompanyLogo, wCm, hCm, fonteFamilia, tamanhoFontePt, alturaCodigoBarrasMm]);
 
   if (!isOpen) return null;
 
@@ -123,6 +126,7 @@ export function PrintModal({
         alturaCm: hCm,
         fonteFamilia,
         tamanhoFontePt,
+        alturaCodigoBarrasMm,
       });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
@@ -139,6 +143,7 @@ export function PrintModal({
       alturaCm: hCm,
       fonteFamilia,
       tamanhoFontePt,
+      alturaCodigoBarrasMm,
     });
   };
 
@@ -151,6 +156,7 @@ export function PrintModal({
       alturaCm: hCm,
       fonteFamilia,
       tamanhoFontePt,
+      alturaCodigoBarrasMm,
     });
   };
 

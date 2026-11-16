@@ -175,8 +175,19 @@ function drawSingleLabel(
   const textBottomMargin = Math.max(3, innerH * 0.04);
   const textY = yU + textBottomMargin;
 
-  const barcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 8);
-  const barcodeY = textY + textLineHeight + 3;
+  // Barcode height: configurable in mm, respecting available label area
+  const maxBarcodeHeight = Math.max(12, hU - textLineHeight - textBottomMargin - 6);
+  const defaultBarcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 8);
+
+  const customBarcodeHeightMm = Number(config.alturaCodigoBarrasMm);
+  let barcodeHeight = defaultBarcodeHeight;
+  if (customBarcodeHeightMm > 0) {
+    const requestedPt = customBarcodeHeightMm * MM_TO_PT;
+    barcodeHeight = Math.min(requestedPt, maxBarcodeHeight);
+  }
+
+  const availableUpperSpace = hU - (textY + textLineHeight);
+  const barcodeY = textY + textLineHeight + Math.max(2, (availableUpperSpace - barcodeHeight) / 2);
 
   const { rects } = getCode128Rectangles(addr.code, barcodeStartX, barcodeY, barcodeWidth, barcodeHeight, 8);
   sc.push("0 0 0 rg");

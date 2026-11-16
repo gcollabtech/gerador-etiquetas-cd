@@ -15,6 +15,7 @@ export interface AddressParams {
   alturaCm?: number | "";
   fonteFamilia?: LabelFontFamily;
   tamanhoFontePt?: number | "";
+  alturaCodigoBarrasMm?: number | "";
 }
 
 export type ArrowDirection = "down" | "up";
@@ -79,6 +80,7 @@ export interface PrintConfig {
   tamanhoFontePt?: number | "";
   fontFamily?: LabelFontFamily;
   fontSizePt?: number | "";
+  alturaCodigoBarrasMm?: number | "";
 }
 
 export interface GenerationHistoryItem {

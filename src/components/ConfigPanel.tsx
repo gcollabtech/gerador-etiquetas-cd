@@ -18,6 +18,7 @@ import {
   Ruler,
   Maximize2,
   Type,
+  Barcode,
 } from "lucide-react";
 
 interface ConfigPanelProps {
@@ -519,6 +520,97 @@ export function ConfigPanel({
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3.5. Dimensão do Código de Barras (CODE 128) */}
+      <div className="pt-2 border-t border-[var(--card-border)]">
+        <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Barcode size={14} className="text-[var(--collab-mostarda)]" />
+            <span>3.5. Dimensão das Barras do Código de Barras (CODE 128)</span>
+          </span>
+          <span className="text-[11px] font-mono text-[var(--collab-mostarda)] font-semibold">
+            {params.alturaCodigoBarrasMm && Number(params.alturaCodigoBarrasMm) > 0
+              ? `${params.alturaCodigoBarrasMm} mm (${(Number(params.alturaCodigoBarrasMm) / 10).toFixed(1)} cm)`
+              : "Auto proporcional (~20 mm)"}
+          </span>
+        </div>
+
+        <div className="p-4 bg-[var(--background)] border border-[var(--card-border)] rounded-lg space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
+                Altura da Barra do Código de Barras (mm)
+              </label>
+              <p className="text-[11px] text-[var(--muted)]">
+                Ajuste a altura vertical das barras CODE 128 para garantir a leitura perfeita por coletores ópticos e leitores laser em etiquetas de diferentes tamanhos ({Number(params.larguraCm || 10)} × {Number(params.alturaCm || 5)} cm).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <input
+                type="number"
+                min="6"
+                max="80"
+                step="1"
+                value={params.alturaCodigoBarrasMm ?? 20}
+                onChange={(e) =>
+                  onChange({
+                    ...params,
+                    alturaCodigoBarrasMm: e.target.value === "" ? "" : parseInt(e.target.value, 10),
+                  })
+                }
+                placeholder="20"
+                className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+              />
+              <span className="text-xs font-mono font-bold text-[var(--muted)]">mm</span>
+
+              <button
+                type="button"
+                onClick={() => onChange({ ...params, alturaCodigoBarrasMm: "" })}
+                className={`px-2.5 py-2 text-xs rounded border transition-all cursor-pointer ${
+                  !params.alturaCodigoBarrasMm
+                    ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)]"
+                    : "bg-[var(--card)] border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                }`}
+                title="Ajustar automaticamente proporcional à altura da etiqueta"
+              >
+                Auto
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Barcode Height Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-[var(--card-border)]">
+            <span className="text-[11px] text-[var(--muted)] font-medium mr-1">
+              Alturas Recomendadas:
+            </span>
+            {[
+              { label: "12 mm (Compacta)", val: 12 },
+              { label: "16 mm (Pequena)", val: 16 },
+              { label: "20 mm (Padrão CD)", val: 20 },
+              { label: "25 mm (Média)", val: 25 },
+              { label: "30 mm (Alta)", val: 30 },
+              { label: "38 mm (Extra Alta)", val: 38 },
+            ].map((p) => {
+              const isSelected = Number(params.alturaCodigoBarrasMm) === p.val;
+              return (
+                <button
+                  key={p.val}
+                  type="button"
+                  onClick={() => onChange({ ...params, alturaCodigoBarrasMm: p.val })}
+                  className={`px-2.5 py-1 rounded text-[11px] font-mono border transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[var(--collab-mostarda)] text-black font-bold border-[var(--collab-mostarda)] shadow-sm"
+                      : "bg-[var(--secondary)] border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--collab-mostarda)]"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
