@@ -23,6 +23,10 @@ import {
   X,
   LogOut,
   ShieldCheck,
+  Clock,
+  UserCheck,
+  FileText,
+  Calendar,
 } from "lucide-react";
 
 export type PortalTopic =
@@ -34,6 +38,15 @@ export type PortalTopic =
   | "history"
   | "tests"
   | "all";
+
+export type WmsSubTab = "janelas" | "portaria" | "agendamentos" | "indicadores";
+
+export interface WmsSubItem {
+  id: WmsSubTab;
+  title: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  badge?: string;
+}
 
 export interface MainMenuItem {
   id: MainPortalModule;
@@ -56,6 +69,8 @@ interface SidebarProps {
   onSelectModule: (mod: MainPortalModule) => void;
   activeTopic: PortalTopic;
   onSelectTopic: (topic: PortalTopic) => void;
+  activeWmsTab?: WmsSubTab;
+  onSelectWmsTab?: (tab: WmsSubTab) => void;
   currentUser: PortalUser;
   onLogout: () => void;
   totalGenerated: number;
@@ -73,6 +88,8 @@ export function Sidebar({
   onSelectModule,
   activeTopic,
   onSelectTopic,
+  activeWmsTab = "janelas",
+  onSelectWmsTab,
   currentUser,
   onLogout,
   totalGenerated,
@@ -85,6 +102,7 @@ export function Sidebar({
   alturaCm = 5,
 }: SidebarProps) {
   const [etiquetasMenuExpanded, setEtiquetasMenuExpanded] = useState(true);
+  const [wmsMenuExpanded, setWmsMenuExpanded] = useState(true);
 
   const wCm = Number(larguraCm) > 0 ? Number(larguraCm) : 10;
   const hCm = Number(alturaCm) > 0 ? Number(alturaCm) : 5;
@@ -100,9 +118,9 @@ export function Sidebar({
     {
       id: "wms",
       title: "1. WMS",
-      subtitle: "Warehouse Management",
+      subtitle: "Agendamento de Entregas",
       icon: Boxes,
-      badge: "Em Breve",
+      badge: "Módulo 01",
     },
     {
       id: "rastreamento",
@@ -141,6 +159,13 @@ export function Sidebar({
     { id: "history", title: "6. Histórico de Gerações", icon: History },
     { id: "tests", title: "7. Critérios de Aceite", icon: CheckCircle2 },
     { id: "all", title: "Visão Completa", icon: LayoutDashboard },
+  ];
+
+  const wmsSubItems: WmsSubItem[] = [
+    { id: "janelas", title: "Janelas (2h em 2h)", icon: Clock, badge: "Capacidade" },
+    { id: "portaria", title: "Portaria & Check-in", icon: UserCheck, badge: "Chegadas" },
+    { id: "agendamentos", title: "Lista Geral de Entregas", icon: FileText },
+    { id: "indicadores", title: "Indicadores & Ocupação", icon: LayoutDashboard },
   ];
 
   const initials = currentUser.name
@@ -208,6 +233,7 @@ export function Sidebar({
             const Icon = item.icon;
             const isMainActive = activeModule === item.id;
             const isEtiquetas = item.id === "etiquetas";
+            const isWms = item.id === "wms";
 
             return (
               <div key={item.id} className="space-y-1">
@@ -218,7 +244,10 @@ export function Sidebar({
                     if (isEtiquetas) {
                       setEtiquetasMenuExpanded(true);
                     }
-                    if (isMobileOpen && !isEtiquetas) {
+                    if (isWms) {
+                      setWmsMenuExpanded(true);
+                    }
+                    if (isMobileOpen && !isEtiquetas && !isWms) {
                       onToggleMobile();
                     }
                   }}
@@ -285,13 +314,37 @@ export function Sidebar({
                           }
                         }}
                         className="p-0.5 rounded hover:bg-black/10 cursor-pointer"
-                        title="Expandir/recolher subtópicos"
+                        title="Expandir/recolher subtópicos de etiquetas"
                       >
                         <ChevronDown
                           size={14}
                           className={`transition-transform duration-200 ${
                             isMainActive ? "text-white" : "text-[var(--muted)]"
                           } ${etiquetasMenuExpanded ? "" : "-rotate-90"}`}
+                        />
+                      </span>
+                    ) : isWms ? (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWmsMenuExpanded(!wmsMenuExpanded);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            setWmsMenuExpanded(!wmsMenuExpanded);
+                          }
+                        }}
+                        className="p-0.5 rounded hover:bg-black/10 cursor-pointer"
+                        title="Expandir/recolher submenus do WMS"
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-200 ${
+                            isMainActive ? "text-white" : "text-[var(--muted)]"
+                          } ${wmsMenuExpanded ? "" : "-rotate-90"}`}
                         />
                       </span>
                     ) : (
@@ -306,6 +359,59 @@ export function Sidebar({
                     )}
                   </div>
                 </button>
+
+                {/* Submenu for "WMS" — Agendamento de Entregas */}
+                {isWms && isMainActive && wmsMenuExpanded && (
+                  <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-[var(--collab-mostarda)]/50 ml-5 my-1 animate-fadeIn">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] px-2 py-1 flex items-center gap-1.5">
+                      <Calendar size={11} className="text-[var(--collab-mostarda)]" />
+                      <span>Agendamento de Entregas</span>
+                    </div>
+
+                    {wmsSubItems.map((sub) => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeWmsTab === sub.id;
+
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            onSelectWmsTab?.(sub.id);
+                            if (isMobileOpen) onToggleMobile();
+                          }}
+                          className={`w-full text-left rounded-lg px-2.5 py-1.5 text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            isSubActive
+                              ? "bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] font-bold border border-[var(--collab-mostarda)]/30"
+                              : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <SubIcon size={13} className={isSubActive ? "text-[var(--collab-mostarda)]" : "opacity-60"} />
+                            <span className="truncate">{sub.title}</span>
+                          </div>
+
+                          {sub.badge && (
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[var(--card)] text-[var(--collab-mostarda)] border border-[var(--card-border)]">
+                              {sub.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    <div className="pt-2 mt-1 border-t border-[var(--card-border)]/50 space-y-0.5">
+                      <div className="px-2.5 py-1 text-[10px] text-[var(--muted)] flex items-center justify-between opacity-50">
+                        <span>2. Recebimento & Cego</span>
+                        <span className="text-[9px] font-mono">Em breve</span>
+                      </div>
+                      <div className="px-2.5 py-1 text-[10px] text-[var(--muted)] flex items-center justify-between opacity-50">
+                        <span>3. Armazenagem</span>
+                        <span className="text-[9px] font-mono">Em breve</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Subtopics for "Gerador de etiquetas CD" */}
                 {isEtiquetas && isMainActive && etiquetasMenuExpanded && (

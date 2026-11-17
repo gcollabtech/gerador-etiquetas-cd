@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Sidebar, PortalTopic } from "@/components/Sidebar";
+import { Sidebar, PortalTopic, WmsSubTab } from "@/components/Sidebar";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { GenerationSummaryCard } from "@/components/GenerationSummaryCard";
 import { LabelPreview } from "@/components/LabelPreview";
@@ -63,6 +63,7 @@ export default function Home() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [activeModule, setActiveModule] = useState<MainPortalModule>("dashboard");
   const [activeTopic, setActiveTopic] = useState<PortalTopic>("config");
+  const [activeWmsTab, setActiveWmsTab] = useState<WmsSubTab>("janelas");
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
 
@@ -316,6 +317,11 @@ export default function Home() {
           onSelectModule={setActiveModule}
           activeTopic={activeTopic}
           onSelectTopic={setActiveTopic}
+          activeWmsTab={activeWmsTab}
+          onSelectWmsTab={(tab) => {
+            setActiveWmsTab(tab);
+            setActiveModule("wms");
+          }}
           currentUser={session.user}
           onLogout={handleLogout}
           totalGenerated={addresses.length}
@@ -355,10 +361,35 @@ export default function Home() {
                       </span>
                     </>
                   )}
+                  {activeModule === "wms" && (
+                    <>
+                      <ChevronRight size={12} />
+                      <span className="text-[var(--collab-mostarda)] truncate font-semibold">
+                        Agendamento de Entregas
+                      </span>
+                      <ChevronRight size={12} />
+                      <span className="text-[var(--foreground)] truncate font-medium">
+                        {activeWmsTab === "janelas" && "Janelas 2h em 2h"}
+                        {activeWmsTab === "portaria" && "Portaria & Check-in"}
+                        {activeWmsTab === "agendamentos" && "Lista de Entregas"}
+                        {activeWmsTab === "indicadores" && "Indicadores & Ocupação"}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <h1 className="text-sm sm:text-base font-bold text-[var(--foreground)] truncate font-heading">
                   {activeModule === "etiquetas"
                     ? topicTitles[activeTopic].title
+                    : activeModule === "wms"
+                    ? `WMS: Agendamento de Entregas — ${
+                        activeWmsTab === "janelas"
+                          ? "Janelas (2h em 2h)"
+                          : activeWmsTab === "portaria"
+                          ? "Portaria & Check-in"
+                          : activeWmsTab === "agendamentos"
+                          ? "Lista Geral"
+                          : "Indicadores"
+                      }`
                     : moduleTitles[activeModule]?.title}
                 </h1>
               </div>
@@ -431,7 +462,11 @@ export default function Home() {
                 onNavigate={(mod) => setActiveModule(mod)}
               />
             ) : activeModule === "wms" ? (
-              <WmsPortalView onNavigateToLabels={() => setActiveModule("etiquetas")} />
+              <WmsPortalView
+                activeSubTab={activeWmsTab}
+                onSelectSubTab={setActiveWmsTab}
+                onNavigateToLabels={() => setActiveModule("etiquetas")}
+              />
             ) : activeModule === "rastreamento" ? (
               <TrackingPortalView />
             ) : activeModule === "usuarios" ? (
