@@ -169,13 +169,21 @@ export function Sidebar({
         {/* Top Header: Collab Log Logo on top-left */}
         <div className="p-4 border-b border-[var(--card-border)] bg-[var(--card)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-white rounded-lg px-2.5 py-1.5 shadow-sm border border-gray-200 inline-block shrink-0">
+            <div className="bg-white rounded-lg p-1.5 shadow-sm border border-gray-200 inline-block shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo-collab-log.png"
-                alt="Grupo Collab Log"
-                className="h-8 w-auto object-contain block"
+                src="/logo-cl-icone.png"
+                alt="Collab Log"
+                className="h-9 w-auto object-contain block"
               />
+            </div>
+            <div className="min-w-0">
+              <span className="font-heading font-black text-sm tracking-tight text-[var(--foreground)] block truncate">
+                Collab Log
+              </span>
+              <span className="text-[10px] text-[var(--muted)] font-medium block truncate">
+                Portal Logístico
+              </span>
             </div>
           </div>
 
