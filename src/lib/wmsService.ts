@@ -466,6 +466,22 @@ export function registrarCheckInPortaria(
   return { success: true, agendamento: updated };
 }
 
+// ── Exclusão de Agendamento ───────────────────────────────────────────
+export function deleteAgendamento(id: string): { success: boolean; error?: string } {
+  const agendamentos = getAgendamentos();
+  const exists = agendamentos.some((a) => a.id === id);
+  if (!exists) {
+    return { success: false, error: "Agendamento não encontrado para exclusão." };
+  }
+  const filtered = agendamentos.filter((a) => a.id !== id);
+  saveAgendamentos(filtered);
+  return { success: true };
+}
+
+export function resetAgendamentosToSeed(): void {
+  saveAgendamentos(SEED_AGENDAMENTOS);
+}
+
 // ── Consulta de Disponibilidade das Janelas ────────────────────────────
 export function getDisponibilidadeJanelas(dataStr: string): JanelaCapacidadeInfo[] {
   const agendamentos = getAgendamentos();

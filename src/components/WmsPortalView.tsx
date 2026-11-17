@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   EntregaAgendamento,
   AgendamentoStatus,
@@ -16,6 +16,8 @@ import {
   getDisponibilidadeJanelas,
   toggleBloqueioJanela,
   getIndicadoresAgendamento,
+  deleteAgendamento,
+  resetAgendamentosToSeed,
   JANELAS_PADRAO,
   MAX_FORNECEDORES_POR_JANELA,
   MAX_VOLUMES_POR_JANELA,
@@ -48,6 +50,7 @@ import {
   ShieldAlert,
   Hash,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 
 interface WmsPortalViewProps {
@@ -82,6 +85,8 @@ export function WmsPortalView({
   const [isNovoAgendamentoOpen, setIsNovoAgendamentoOpen] = useState(false);
   const [modalDetalhesItem, setModalDetalhesItem] = useState<EntregaAgendamento | null>(null);
   const [modalCheckInItem, setModalCheckInItem] = useState<EntregaAgendamento | null>(null);
+  const [modalExcluirItem, setModalExcluirItem] = useState<EntregaAgendamento | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [responsavelPortariaInput, setResponsavelPortariaInput] = useState("Portaria 01 — Carlos R.");
   const [obsPortariaInput, setObsPortariaInput] = useState("");
 
@@ -144,6 +149,45 @@ export function WmsPortalView({
   const handleToggleBloqueio = (janela: JanelaHorario) => {
     toggleBloqueioJanela(dataSelecionada, janela, "Operação interna e manutenção programada", "Doca 02");
     setRefreshKey((k) => k + 1);
+  };
+
+  useEffect(() => {
+    if (!toastMsg) return;
+    const timer = setTimeout(() => setToastMsg(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toastMsg]);
+
+  const handleConfirmarExclusao = () => {
+    if (!modalExcluirItem) return;
+    const item = modalExcluirItem;
+    const res = deleteAgendamento(item.id);
+    if (res.success) {
+      setToastMsg({
+        text: `Agendamento ${item.protocolo} excluído com sucesso! Vaga e volumes liberados.`,
+        type: "success",
+      });
+      setRefreshKey((k) => k + 1);
+      if (modalDetalhesItem?.id === item.id) {
+        setModalDetalhesItem(null);
+      }
+      setModalExcluirItem(null);
+    } else {
+      setToastMsg({
+        text: res.error || "Não foi possível excluir o agendamento.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleRestaurarSeed = () => {
+    if (typeof window !== "undefined" && confirm("Deseja restaurar a base de agendamentos demonstrativos do CD?")) {
+      resetAgendamentosToSeed();
+      setRefreshKey((k) => k + 1);
+      setToastMsg({
+        text: "Agendamentos demonstrativos restaurados com sucesso!",
+        type: "success",
+      });
+    }
   };
 
   const handleOpenCheckIn = (agd: EntregaAgendamento) => {
@@ -313,6 +357,29 @@ export function WmsPortalView({
           </button>
         </div>
       </div>
+
+      {/* Toast de Notificação Feedback */}
+      {toastMsg && (
+        <div
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs animate-in fade-in duration-200 shadow-sm ${
+            toastMsg.type === "success"
+              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+              : "bg-red-500/15 border-red-500/30 text-red-400"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {toastMsg.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span className="font-semibold">{toastMsg.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMsg(null)}
+            className="p-1 hover:opacity-75 cursor-pointer text-current"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards Rápidos (Item 2.7) */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -630,6 +697,15 @@ export function WmsPortalView({
                               >
                                 Ver Detalhes
                               </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setModalExcluirItem(agd)}
+                                className="p-1.5 rounded bg-[var(--card)] hover:bg-red-500/15 border border-[var(--card-border)] hover:border-red-500/30 text-[var(--muted)] hover:text-red-500 text-[11px] font-medium cursor-pointer transition-colors"
+                                title="Excluir este agendamento"
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -803,6 +879,15 @@ export function WmsPortalView({
                             >
                               <Eye size={14} />
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setModalExcluirItem(agd)}
+                              className="p-1 rounded text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors"
+                              title="Excluir agendamento"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -912,17 +997,41 @@ export function WmsPortalView({
 
                 <div className="pt-2 border-t border-[var(--card-border)] flex items-center justify-between">
                   {renderStatusBadge(agd.status)}
-                  <button
-                    type="button"
-                    onClick={() => setModalDetalhesItem(agd)}
-                    className="inline-flex items-center gap-1 text-xs text-[var(--collab-mostarda)] hover:underline font-bold cursor-pointer"
-                  >
-                    <span>Ver Ficha</span>
-                    <ArrowRight size={12} />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setModalExcluirItem(agd)}
+                      className="p-1.5 rounded-lg border border-[var(--card-border)] text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30 cursor-pointer transition-colors"
+                      title="Excluir este agendamento"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalDetalhesItem(agd)}
+                      className="inline-flex items-center gap-1 text-xs text-[var(--collab-mostarda)] hover:underline font-bold cursor-pointer"
+                    >
+                      <span>Ver Ficha</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+
+            {agendamentosFiltrados.length === 0 && (
+              <div className="col-span-full p-8 text-center bg-[var(--card)] border border-[var(--card-border)] rounded-2xl space-y-3">
+                <p className="text-sm text-[var(--muted)]">Nenhum agendamento encontrado para os filtros selecionados.</p>
+                <button
+                  type="button"
+                  onClick={handleRestaurarSeed}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--card-border)] hover:bg-[var(--secondary)] text-xs text-[var(--collab-mostarda)] font-semibold cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  <span>Restaurar agendamentos demonstrativos</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1475,12 +1584,86 @@ export function WmsPortalView({
                 <span>Status:</span>
                 {renderStatusBadge(modalDetalhesItem.status)}
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalExcluirItem(modalDetalhesItem)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 font-semibold cursor-pointer transition-colors"
+                  title="Excluir este agendamento"
+                >
+                  <Trash2 size={13} />
+                  <span>Excluir Agendamento</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalDetalhesItem(null)}
+                  className="px-4 py-1.5 rounded-lg border border-[var(--card-border)] hover:bg-[var(--secondary)] font-medium cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE AGENDAMENTO ──────────────── */}
+      {modalExcluirItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--card)] border border-red-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-500 flex items-center justify-center shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-heading font-bold text-base text-[var(--foreground)]">
+                  Excluir Agendamento de Entrega
+                </h3>
+                <p className="text-xs text-[var(--muted)]">
+                  Esta ação removerá o agendamento da base do CD e liberará a vaga na janela de recebimento.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--background)] p-3.5 rounded-xl border border-[var(--card-border)] text-xs space-y-1.5 font-mono">
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Protocolo:</span>
+                <strong className="text-[var(--collab-mostarda)]">{modalExcluirItem.protocolo}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Fornecedor:</span>
+                <strong className="text-[var(--foreground)] truncate max-w-[220px]">{modalExcluirItem.fornecedorNome}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Nota Fiscal:</span>
+                <strong className="text-[var(--foreground)]">NF {modalExcluirItem.numeroNotaFiscal} ({modalExcluirItem.quantidadeVolumes} vols)</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Janela / Data:</span>
+                <strong className="text-[var(--foreground)]">{modalExcluirItem.janela} • {modalExcluirItem.data}</strong>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[11px] text-red-400 leading-relaxed flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0 text-red-500" />
+              <span>Atenção: A exclusão é definitiva. As vagas ocupadas por este fornecedor e seus volumes serão recalculadas imediatamente.</span>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setModalDetalhesItem(null)}
-                className="px-4 py-1.5 rounded-lg border border-[var(--card-border)] hover:bg-[var(--secondary)] font-medium"
+                onClick={() => setModalExcluirItem(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--card-border)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-semibold cursor-pointer transition-all"
               >
-                Fechar
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarExclusao}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold cursor-pointer transition-all shadow-sm"
+              >
+                <Trash2 size={13} />
+                <span>Confirmar Exclusão</span>
               </button>
             </div>
           </div>
