@@ -150,7 +150,13 @@ export function saveUsers(users: PortalUser[]): void {
 export async function syncUsersFromServer(): Promise<PortalUser[]> {
   if (typeof window === "undefined") return DEFAULT_USERS;
   try {
-    const res = await fetch("/api/users", { cache: "no-store" });
+    const res = await fetch(`/api/users?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users) && data.users.length > 0) {
@@ -165,7 +171,7 @@ export async function syncUsersFromServer(): Promise<PortalUser[]> {
   return getUsers();
 }
 
-export function saveUser(user: PortalUser): PortalUser[] {
+export function saveUser(user: PortalUser, syncOnline: boolean = true): PortalUser[] {
   const current = getUsers();
   const cleanEmail = user.email.trim().toLowerCase();
   const userToSave: PortalUser = {
@@ -184,8 +190,8 @@ export function saveUser(user: PortalUser): PortalUser[] {
   }
   saveUsers(updated);
 
-  // Sincroniza assincronamente com o servidor para persistência multi-navegadores
-  if (typeof window !== "undefined") {
+  // Sincroniza assincronamente com o servidor apenas se syncOnline for true
+  if (syncOnline && typeof window !== "undefined") {
     fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,12 +211,16 @@ export async function saveUserAsync(
     email: cleanEmail,
   };
 
-  const localUpdated = saveUser(userToSave);
+  // Salva no localStorage localmente sem disparar fetch duplicado
+  const localUpdated = saveUser(userToSave, false);
 
   try {
     const res = await fetch("/api/users", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+      },
       body: JSON.stringify({ user: userToSave }),
     });
     if (res.ok) {
@@ -219,6 +229,13 @@ export async function saveUserAsync(
         saveUsers(data.users);
         return { success: true, users: data.users };
       }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errData.error || "Erro ao salvar usuário no servidor.",
+        users: localUpdated,
+      };
     }
     return { success: true, users: localUpdated };
   } catch (err: any) {

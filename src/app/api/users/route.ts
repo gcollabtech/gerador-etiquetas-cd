@@ -6,12 +6,24 @@ import {
   mergeServerUsers,
 } from "@/lib/serverUsers";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(req: NextRequest) {
   const users = getServerUsers();
-  return NextResponse.json({
-    success: true,
-    users,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      users,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {

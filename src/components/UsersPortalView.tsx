@@ -68,6 +68,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     "etiquetas",
   ]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     syncUsersFromServer().then((latest) => {
@@ -164,6 +165,8 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
     if (!formName.trim() || !formEmail.trim()) {
       setFormError("Nome e e-mail são obrigatórios.");
       return;
@@ -206,10 +209,26 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       lastLogin: editingUser?.lastLogin,
     };
 
-    // Salva no servidor de forma síncrona/await para garantir persistência imediata
-    await saveUserAsync(userToSave);
-    refreshList();
-    setIsModalOpen(false);
+    setIsSaving(true);
+    try {
+      const res = await saveUserAsync(userToSave);
+      if (res.success) {
+        if (Array.isArray(res.users) && res.users.length > 0) {
+          setUsers(res.users);
+        } else {
+          setUsers(getUsers());
+        }
+        setIsModalOpen(false);
+      } else {
+        setFormError(res.error || "Não foi possível gravar o usuário no sistema.");
+      }
+    } catch (err: any) {
+      console.error("Erro ao salvar usuário:", err);
+      setFormError(err.message || "Erro inesperado ao salvar usuário.");
+    } finally {
+      setIsSaving(false);
+      refreshList();
+    }
   };
 
   const handleToggleMustChangePassword = async (id: string, name: string, force: boolean) => {
@@ -218,6 +237,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       : `Deseja dispensar a troca obrigatória de senha de "${name}"?`;
     if (confirm(msg)) {
       toggleUserMustChangePassword(id, force);
+      setUsers(getUsers());
       refreshList();
     }
   };
@@ -228,6 +248,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       if (!res.success) {
         alert(res.error || "Não foi possível excluir o usuário.");
       } else {
+        setUsers(getUsers());
         refreshList();
       }
     }
@@ -238,6 +259,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     if (!res.success) {
       alert(res.error || "Não foi possível alterar o status do usuário.");
     } else {
+      setUsers(getUsers());
       refreshList();
     }
   };
@@ -827,7 +849,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                     const isChecked = formPermissions.includes(m.key);
                     const MIcon = m.icon;
                     return (
-                      <label
+                      <div
                         key={m.key}
                         onClick={() => handleTogglePermission(m.key)}
                         className={`p-2.5 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
@@ -839,7 +861,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}} // handled by parent onClick
+                          readOnly
                           className="accent-[var(--collab-mostarda)] mt-0.5 pointer-events-none"
                         />
                         <div className="flex-1 text-xs">
@@ -849,7 +871,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                           </strong>
                           <span className="text-[11px] opacity-75 block">{m.desc}</span>
                         </div>
-                      </label>
+                      </div>
                     );
                   })}
                 </div>
@@ -859,16 +881,24 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
               <div className="pt-4 border-t border-[var(--card-border)] flex items-center justify-end gap-2">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-heading font-black uppercase tracking-wider rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] shadow-sm transition-all cursor-pointer"
+                  disabled={isSaving}
+                  className="px-5 py-2 text-xs font-heading font-black uppercase tracking-wider rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
-                  {editingUser ? "Salvar Alterações" : "Cadastrar Usuário"}
+                  {isSaving ? (
+                    <span>Salvando...</span>
+                  ) : editingUser ? (
+                    "Salvar Alterações"
+                  ) : (
+                    "Cadastrar Usuário"
+                  )}
                 </button>
               </div>
             </form>
