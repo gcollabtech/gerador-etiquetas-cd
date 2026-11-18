@@ -382,14 +382,24 @@ export function DashboardPortalView({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onNavigate("etiquetas")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--collab-mostarda)] text-black text-xs font-bold hover:opacity-90 transition-all cursor-pointer shrink-0 shadow-sm"
-            >
-              <span>Gerar Etiquetas CD</span>
-              <ArrowRight size={13} />
-            </button>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => onNavigate("etiquetas_produto")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--card-border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                title="Emitir etiquetas térmicas de produto com código EAN-13"
+              >
+                <span>Etiquetas Produto (EAN-13)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate("etiquetas")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--collab-mostarda)] text-black text-xs font-bold hover:opacity-90 transition-all cursor-pointer shrink-0 shadow-sm"
+              >
+                <span>Gerar Etiquetas CD</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
           </div>
         </div>
 

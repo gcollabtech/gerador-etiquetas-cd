@@ -23,6 +23,7 @@ import {
   Boxes,
   Truck,
   Barcode,
+  Tag,
   Settings,
   LayoutDashboard,
   Mail,
@@ -217,6 +218,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     wms: { label: "WMS", icon: Boxes },
     rastreamento: { label: "Rastreamento", icon: Truck },
     etiquetas: { label: "Etiquetas CD", icon: Barcode },
+    etiquetas_produto: { label: "Etiquetas Produto (EAN-13)", icon: Tag },
     usuarios: { label: "Usuários", icon: Users },
     configuracoes: { label: "Configurações", icon: Settings },
   };

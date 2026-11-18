@@ -5,6 +5,7 @@ export type ModulePermission =
   | "wms"
   | "rastreamento"
   | "etiquetas"
+  | "etiquetas_produto"
   | "usuarios"
   | "configuracoes";
 

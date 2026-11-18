@@ -18,6 +18,7 @@ import { UsersPortalView } from "@/components/UsersPortalView";
 import { WmsPortalView } from "@/components/WmsPortalView";
 import { TrackingPortalView } from "@/components/TrackingPortalView";
 import { GeneralSettingsPortalView } from "@/components/GeneralSettingsPortalView";
+import { ProductBarcodeView } from "@/components/ProductBarcodeView";
 
 import { getCurrentSession, logout, hasPermission } from "@/lib/authService";
 import { AuthSession, MainPortalModule } from "@/lib/authTypes";
@@ -292,12 +293,16 @@ export default function Home() {
       title: "3. Gerador de Etiquetas CD (CODE 128)",
       subtitle: "Endereçamento físico, matriz de cálculo, prévia em escala real e impressão",
     },
+    etiquetas_produto: {
+      title: "4. Etiquetas de Código de Barras (Produto)",
+      subtitle: "Código de Barras EAN-13 térmico: descrição, código de barras e código do produto",
+    },
     usuarios: {
-      title: "4. Gestão de Usuários e Permissões",
+      title: "5. Gestão de Usuários e Permissões",
       subtitle: "Controle de perfis, concessão granular por módulo e status de acesso",
     },
     configuracoes: {
-      title: "5. Configurações Gerais do Sistema",
+      title: "6. Configurações Gerais do Sistema",
       subtitle: "Parâmetros do Centro de Distribuição, preferências de impressão e tema",
     },
   };
@@ -533,6 +538,8 @@ export default function Home() {
               />
             ) : activeModule === "rastreamento" ? (
               <TrackingPortalView />
+            ) : activeModule === "etiquetas_produto" ? (
+              <ProductBarcodeView />
             ) : activeModule === "usuarios" ? (
               <UsersPortalView currentUser={session.user} />
             ) : activeModule === "configuracoes" ? (

@@ -27,6 +27,7 @@ import {
   UserCheck,
   FileText,
   Calendar,
+  Tag,
 } from "lucide-react";
 
 export type PortalTopic =
@@ -137,14 +138,21 @@ export function Sidebar({
       badge: totalGenerated > 0 ? `${totalGenerated} un` : undefined,
     },
     {
+      id: "etiquetas_produto",
+      title: "4. Etiquetas de Produto",
+      subtitle: "Código de Barras EAN-13",
+      icon: Tag,
+      badge: "EAN-13",
+    },
+    {
       id: "usuarios",
-      title: "4. Usuários",
+      title: "5. Usuários",
       subtitle: "Cadastros & permissões",
       icon: Users,
     },
     {
       id: "configuracoes",
-      title: "5. Configurações Gerais",
+      title: "6. Configurações Gerais",
       subtitle: "Parâmetros do portal",
       icon: Settings,
     },
