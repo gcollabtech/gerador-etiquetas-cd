@@ -20,7 +20,7 @@ import { TrackingPortalView } from "@/components/TrackingPortalView";
 import { GeneralSettingsPortalView } from "@/components/GeneralSettingsPortalView";
 import { ProductBarcodeView } from "@/components/ProductBarcodeView";
 
-import { getCurrentSession, logout, hasPermission, getUsers } from "@/lib/authService";
+import { getCurrentSession, logout, hasPermission, getUsers, syncUsersFromServer } from "@/lib/authService";
 import { AuthSession, MainPortalModule } from "@/lib/authTypes";
 
 import {
@@ -127,6 +127,9 @@ export default function Home() {
       setSession(null);
     }
     setIsAuthChecking(false);
+
+    // Sincroniza usuários do servidor em background
+    syncUsersFromServer();
 
     setHistory(getHistory());
     setPresets(getPresets());

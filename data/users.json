@@ -1,0 +1,121 @@
+[
+  {
+    "id": "usr-01",
+    "name": "Thiago Fragoso",
+    "email": "admin@collab.com.br",
+    "password": "Gcoll@b123",
+    "role": "admin",
+    "cargo": "Administrador Geral & Operações",
+    "status": "ativo",
+    "permissions": [
+      "dashboard",
+      "wms",
+      "rastreamento",
+      "etiquetas",
+      "etiquetas_produto",
+      "usuarios",
+      "configuracoes"
+    ],
+    "unidadeCd": "CD Matriz — Big Master",
+    "telefone": "(11) 98765-4321",
+    "createdAt": "2026-01-10T08:00:00Z",
+    "lastLogin": "2026-11-16T16:50:00Z"
+  },
+  {
+    "id": "usr-02",
+    "name": "Carlos Eduardo Silva",
+    "email": "supervisor@collab.com.br",
+    "password": "collab123",
+    "role": "supervisor",
+    "cargo": "Supervisor de Logística e Armazenagem",
+    "status": "ativo",
+    "permissions": [
+      "dashboard",
+      "wms",
+      "rastreamento",
+      "etiquetas",
+      "etiquetas_produto"
+    ],
+    "unidadeCd": "CD Matriz — Big Master",
+    "telefone": "(11) 97654-3210",
+    "createdAt": "2026-02-15T09:30:00Z",
+    "lastLogin": "2026-11-16T15:30:00Z"
+  },
+  {
+    "id": "usr-03",
+    "name": "Mariana Costa",
+    "email": "operador@collab.com.br",
+    "password": "collab123",
+    "role": "operador",
+    "cargo": "Operadora de Centro de Distribuição",
+    "status": "ativo",
+    "permissions": [
+      "dashboard",
+      "etiquetas",
+      "etiquetas_produto",
+      "wms"
+    ],
+    "unidadeCd": "CD Matriz — Big Master",
+    "telefone": "(11) 96543-2109",
+    "createdAt": "2026-03-01T10:15:00Z",
+    "lastLogin": "2026-11-16T14:20:00Z"
+  },
+  {
+    "id": "usr-04",
+    "name": "Lucas Ferreira",
+    "email": "rastreamento@collab.com.br",
+    "password": "collab123",
+    "role": "operador",
+    "cargo": "Controlador de Frotas e Rastreamento",
+    "status": "ativo",
+    "permissions": [
+      "dashboard",
+      "rastreamento",
+      "etiquetas",
+      "etiquetas_produto"
+    ],
+    "unidadeCd": "CD Filial Sul",
+    "telefone": "(11) 95432-1098",
+    "createdAt": "2026-04-12T11:00:00Z",
+    "lastLogin": "2026-11-15T18:45:00Z"
+  },
+  {
+    "id": "usr-05",
+    "name": "Juliana Mendes",
+    "email": "auditor@collab.com.br",
+    "password": "collab123",
+    "role": "visualizador",
+    "cargo": "Auditora de Qualidade e Inventário",
+    "status": "ativo",
+    "permissions": [
+      "dashboard",
+      "etiquetas",
+      "etiquetas_produto",
+      "rastreamento"
+    ],
+    "unidadeCd": "CD Matriz — Big Master",
+    "telefone": "(11) 94321-0987",
+    "createdAt": "2026-05-20T14:00:00Z",
+    "lastLogin": "2026-11-14T09:10:00Z"
+  },
+  {
+    "id": "usr-1794860216335",
+    "name": "Flavio Koike",
+    "email": "flavio.koike@gcollab.com.br",
+    "password": "gcoll@b123",
+    "cargo": "Operador de Centro de Distribuição",
+    "role": "admin",
+    "status": "ativo",
+    "permissions": [
+      "wms",
+      "rastreamento",
+      "etiquetas",
+      "usuarios",
+      "configuracoes",
+      "etiquetas_produto"
+    ],
+    "unidadeCd": "CD Matriz — Big Master",
+    "createdAt": "2026-11-16T20:16:56.335Z",
+    "lastLogin": "2026-11-16T20:29:06.782Z"
+  }
+]

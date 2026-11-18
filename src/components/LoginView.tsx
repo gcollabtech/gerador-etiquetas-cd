@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   authenticate,
   authenticateWithGoogle,
@@ -8,6 +8,7 @@ import {
   requestPasswordReset,
   resetPasswordWithCode,
   completeFirstAccessPasswordChange,
+  syncUsersFromServer,
 } from "@/lib/authService";
 import { AuthSession, PasswordResetRequest, PortalUser } from "@/lib/authTypes";
 import {
@@ -102,30 +103,36 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [resetData, setResetData] = useState<PasswordResetRequest | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Sincroniza usuários do servidor na inicialização do componente
+  useEffect(() => {
+    syncUsersFromServer();
+  }, []);
+
   // Handlers
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    setTimeout(() => {
-      const res = authenticate(email, password, remember);
-      setLoading(false);
-      if (res.success) {
-        if (res.mustChangePassword && res.user) {
-          setPendingFirstAccessUser(res.user);
-          setFirstAccessPassword("");
-          setFirstAccessConfirmPassword("");
-          setShowFirstAccessPassword(false);
-          setError(null);
-          setViewMode("first_access_password");
-        } else if (res.session) {
-          onLoginSuccess(res.session);
-        }
-      } else {
-        setError(res.error || "Falha na autenticação.");
+    // Sincroniza usuários do servidor em tempo real para permitir logins de outros navegadores
+    await syncUsersFromServer();
+
+    const res = authenticate(email, password, remember);
+    setLoading(false);
+    if (res.success) {
+      if (res.mustChangePassword && res.user) {
+        setPendingFirstAccessUser(res.user);
+        setFirstAccessPassword("");
+        setFirstAccessConfirmPassword("");
+        setShowFirstAccessPassword(false);
+        setError(null);
+        setViewMode("first_access_password");
+      } else if (res.session) {
+        onLoginSuccess(res.session);
       }
-    }, 350);
+    } else {
+      setError(res.error || "Falha na autenticação.");
+    }
   };
 
   const handleFirstAccessPasswordSubmit = (e: React.FormEvent) => {
@@ -192,22 +199,22 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     });
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    setTimeout(() => {
-      const res = requestPasswordReset(forgotEmail);
-      setLoading(false);
-      if (res.success && res.resetData) {
-        setResetData(res.resetData);
-        setResetCode(res.resetData.code);
-        setViewMode("email_sent");
-      } else {
-        setError(res.error || "Não foi possível solicitar a redefinição de senha.");
-      }
-    }, 400);
+    await syncUsersFromServer();
+
+    const res = requestPasswordReset(forgotEmail);
+    setLoading(false);
+    if (res.success && res.resetData) {
+      setResetData(res.resetData);
+      setResetCode(res.resetData.code);
+      setViewMode("email_sent");
+    } else {
+      setError(res.error || "Não foi possível solicitar a redefinição de senha.");
+    }
   };
 
   const handleResetPasswordSubmit = (e: React.FormEvent) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PortalUser, UserRole, ModulePermission } from "@/lib/authTypes";
 import {
   getUsers,
@@ -8,6 +8,7 @@ import {
   deleteUser,
   toggleUserStatus,
   toggleUserMustChangePassword,
+  syncUsersFromServer,
 } from "@/lib/authService";
 import {
   Users,
@@ -66,8 +67,18 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
   ]);
   const [formError, setFormError] = useState<string | null>(null);
 
+  useEffect(() => {
+    syncUsersFromServer().then((latest) => {
+      if (Array.isArray(latest) && latest.length > 0) {
+        setUsers(latest);
+      }
+    });
+  }, []);
+
   const refreshList = () => {
-    setUsers(getUsers());
+    syncUsersFromServer().then((latest) => {
+      setUsers(latest);
+    });
   };
 
   const handleOpenCreateModal = () => {

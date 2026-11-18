@@ -147,17 +147,72 @@ export function saveUsers(users: PortalUser[]): void {
   }
 }
 
+export async function syncUsersFromServer(): Promise<PortalUser[]> {
+  if (typeof window === "undefined") return DEFAULT_USERS;
+  try {
+    const localUsers = getUsers();
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync", users: localUsers }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+        saveUsers(data.users);
+        return data.users;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar usuários com o servidor:", err);
+  }
+
+  // Fallback para GET simples caso o POST falhe
+  try {
+    const res = await fetch("/api/users");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+        saveUsers(data.users);
+        return data.users;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return getUsers();
+}
+
 export function saveUser(user: PortalUser): PortalUser[] {
   const current = getUsers();
-  const index = current.findIndex((u) => u.id === user.id);
+  const cleanEmail = user.email.trim().toLowerCase();
+  const userToSave: PortalUser = {
+    ...user,
+    email: cleanEmail,
+  };
+  const index = current.findIndex(
+    (u) => u.id === userToSave.id || u.email.trim().toLowerCase() === cleanEmail
+  );
   let updated: PortalUser[];
   if (index >= 0) {
     updated = [...current];
-    updated[index] = { ...user };
+    updated[index] = { ...userToSave };
   } else {
-    updated = [user, ...current];
+    updated = [userToSave, ...current];
   }
   saveUsers(updated);
+
+  // Sincroniza assincronamente com o servidor para persistência multi-navegadores
+  if (typeof window !== "undefined") {
+    fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: userToSave }),
+    }).catch((err) => console.error("Erro ao sincronizar usuário no servidor:", err));
+  }
+
   return updated;
 }
 
@@ -169,6 +224,14 @@ export function deleteUser(id: string): { success: boolean; error?: string } {
   const current = getUsers();
   const updated = current.filter((u) => u.id !== id);
   saveUsers(updated);
+
+  // Sincroniza exclusão no servidor
+  if (typeof window !== "undefined") {
+    fetch(`/api/users?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }).catch((err) => console.error("Erro ao deletar usuário no servidor:", err));
+  }
+
   return { success: true };
 }
 
@@ -500,6 +563,12 @@ export function requestPasswordReset(email: string): {
     } catch (e) {
       console.error("Erro ao salvar solicitação de redefinição:", e);
     }
+
+    fetch("/api/users/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "request", email: cleanEmail }),
+    }).catch((e) => console.error("Erro ao sincronizar reset no servidor:", e));
   }
 
   return {
