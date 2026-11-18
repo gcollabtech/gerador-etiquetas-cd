@@ -696,6 +696,44 @@ export function saveGeneralSettings(settings: GeneralSettings): void {
   }
 }
 
+export async function syncGeneralSettingsFromServer(): Promise<GeneralSettings> {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  try {
+    const res = await fetch(`/api/settings?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.settings) {
+        saveGeneralSettings(data.settings);
+        return data.settings;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar configurações com o servidor:", err);
+  }
+  return getGeneralSettings();
+}
+
+export async function saveGeneralSettingsAsync(settings: GeneralSettings): Promise<GeneralSettings> {
+  saveGeneralSettings(settings);
+  try {
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settings }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.settings) {
+        saveGeneralSettings(data.settings);
+        return data.settings;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao salvar configurações no servidor:", err);
+  }
+  return settings;
+}
+
 // ── Redefinição de Senha (Esqueci Minha Senha) ─────────────────────────
 export function requestPasswordReset(email: string): {
   success: boolean;

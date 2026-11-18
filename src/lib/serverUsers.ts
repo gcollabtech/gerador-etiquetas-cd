@@ -1,7 +1,35 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { PortalUser, PasswordResetRequest } from "./authTypes";
 import { DEFAULT_USERS } from "./authService";
+
+export function hashPassword(plainText: string): string {
+  if (!plainText) return "";
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derivedKey = crypto.scryptSync(plainText, salt, 64);
+  return `scrypt:${salt}:${derivedKey.toString("hex")}`;
+}
+
+export function verifyPassword(plainText: string, stored: string): boolean {
+  if (!plainText || !stored) return false;
+  if (stored.startsWith("scrypt:")) {
+    const [, salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    try {
+      const derivedKey = crypto.scryptSync(plainText, salt, 64);
+      return crypto.timingSafeEqual(Buffer.from(derivedKey.toString("hex")), Buffer.from(hash));
+    } catch {
+      return false;
+    }
+  }
+  // Suporte transparente a senhas legadas em texto limpo
+  return (
+    plainText === stored ||
+    plainText.trim() === stored.trim() ||
+    plainText.toLowerCase() === stored.toLowerCase()
+  );
+}
 
 function getSupabaseConfig(): { url: string; key: string } | null {
   const url =
@@ -45,11 +73,14 @@ function toPortalUser(row: any): PortalUser {
 }
 
 function toDbRow(user: PortalUser): Record<string, any> {
+  const rawPass = user.password || "collab123";
+  const passToSave = rawPass.startsWith("scrypt:") ? rawPass : hashPassword(rawPass);
+
   return {
     id: user.id,
     name: user.name,
     email: user.email.trim().toLowerCase(),
-    password: user.password || "collab123",
+    password: passToSave,
     role: user.role,
     cargo: user.cargo || "Operador de CD",
     status: user.status || "ativo",

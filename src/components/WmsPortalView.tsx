@@ -24,6 +24,8 @@ import {
   removerBloqueio,
   getBloqueios,
   resetAgendamentosToSeed,
+  syncAgendamentosFromServer,
+  syncBloqueiosFromServer,
   JANELAS_PADRAO,
   MAX_FORNECEDORES_POR_JANELA,
   MAX_VOLUMES_POR_JANELA,
@@ -137,6 +139,13 @@ export function WmsPortalView({
   const [formObservacoes, setFormObservacoes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccessProtocolo, setFormSuccessProtocolo] = useState<string | null>(null);
+
+  // Sincroniza dados com o Supabase na inicialização
+  useEffect(() => {
+    Promise.all([syncAgendamentosFromServer(), syncBloqueiosFromServer()]).then(() => {
+      setRefreshKey((k) => k + 1);
+    });
+  }, []);
 
   // Carrega dados reativos
   const agendamentos = useMemo(() => {

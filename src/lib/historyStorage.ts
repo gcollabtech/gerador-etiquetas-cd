@@ -187,6 +187,48 @@ export function clearHistory(): void {
   localStorage.removeItem(HISTORY_KEY);
 }
 
+export async function syncHistoryFromServer(): Promise<GenerationHistoryItem[]> {
+  if (typeof window === "undefined") return [];
+  try {
+    const res = await fetch(`/api/labels/batches?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.history)) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(data.history));
+        return data.history;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar lotes com servidor:", err);
+  }
+  return getHistory();
+}
+
+export async function saveHistoryItemAsync(
+  item: Omit<GenerationHistoryItem, "id" | "timestamp">
+): Promise<GenerationHistoryItem> {
+  const localItem = saveHistoryItem(item);
+  try {
+    await fetch("/api/labels/batches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batch: localItem }),
+    });
+  } catch (err) {
+    console.warn("Aviso ao salvar lote no servidor:", err);
+  }
+  return localItem;
+}
+
+export async function clearHistoryAsync(): Promise<void> {
+  clearHistory();
+  try {
+    await fetch("/api/labels/batches", { method: "DELETE" });
+  } catch (err) {
+    console.warn("Aviso ao limpar histórico no servidor:", err);
+  }
+}
+
 export function getPresets(): AddressPreset[] {
   if (typeof window === "undefined") return DEFAULT_PRESETS;
   try {
@@ -271,4 +313,49 @@ export function resetPresetsToDefault(): AddressPreset[] {
     localStorage.setItem(PRESETS_KEY, JSON.stringify(DEFAULT_PRESETS));
   }
   return DEFAULT_PRESETS;
+}
+
+export async function syncPresetsFromServer(): Promise<AddressPreset[]> {
+  if (typeof window === "undefined") return DEFAULT_PRESETS;
+  try {
+    const res = await fetch(`/api/labels/presets?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.presets) && data.presets.length > 0) {
+        localStorage.setItem(PRESETS_KEY, JSON.stringify(data.presets));
+        return data.presets;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar presets com o servidor:", err);
+  }
+  return getPresets();
+}
+
+export async function saveCustomPresetAsync(
+  name: string,
+  description: string,
+  params: AddressParams
+): Promise<AddressPreset> {
+  const localPreset = saveCustomPreset(name, description, params);
+  try {
+    await fetch("/api/labels/presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset: localPreset }),
+    });
+  } catch (err) {
+    console.warn("Aviso ao salvar preset no servidor:", err);
+  }
+  return localPreset;
+}
+
+export async function deletePresetAsync(id: string): Promise<boolean> {
+  const ok = deletePreset(id);
+  try {
+    await fetch(`/api/labels/presets?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (err) {
+    console.warn("Aviso ao excluir preset no servidor:", err);
+  }
+  return ok;
 }

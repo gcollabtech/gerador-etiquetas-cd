@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GeneralSettings } from "@/lib/authTypes";
-import { getGeneralSettings, saveGeneralSettings } from "@/lib/authService";
+import {
+  getGeneralSettings,
+  saveGeneralSettings,
+  syncGeneralSettingsFromServer,
+  saveGeneralSettingsAsync,
+} from "@/lib/authService";
 import {
   Settings,
   Building,
@@ -27,12 +32,25 @@ export function GeneralSettingsPortalView({
 }: GeneralSettingsPortalViewProps) {
   const [settings, setSettings] = useState<GeneralSettings>(() => getGeneralSettings());
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    syncGeneralSettingsFromServer().then((latest) => {
+      setSettings(latest);
+    });
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveGeneralSettings(settings);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setIsSaving(true);
+    try {
+      const updated = await saveGeneralSettingsAsync(settings);
+      setSettings(updated);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

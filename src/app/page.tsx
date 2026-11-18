@@ -46,6 +46,12 @@ import {
   saveLastParams,
   resetPresetsToDefault,
   DEFAULT_PRESETS,
+  syncPresetsFromServer,
+  syncHistoryFromServer,
+  saveHistoryItemAsync,
+  clearHistoryAsync,
+  saveCustomPresetAsync,
+  deletePresetAsync,
 } from "@/lib/historyStorage";
 import { generateCode128Svg } from "@/lib/code128";
 import {
@@ -128,11 +134,10 @@ export default function Home() {
     }
     setIsAuthChecking(false);
 
-    // Sincroniza usuários do servidor em background
+    // Sincroniza usuários, presets e histórico de lotes do servidor em background
     syncUsersFromServer();
-
-    setHistory(getHistory());
-    setPresets(getPresets());
+    syncPresetsFromServer().then((latest) => setPresets(latest));
+    syncHistoryFromServer().then((latest) => setHistory(latest));
 
     // Recupera os últimos parâmetros parametrizados pelo usuário
     const savedLastParams = getLastParams();
@@ -188,14 +193,15 @@ export default function Home() {
         setPreviewAddress(generated[0]);
       }
 
-      saveHistoryItem({
-        user: "Operador CD",
+      saveHistoryItemAsync({
+        user: session?.user.name || "Operador CD",
         params,
         totalGenerated: generated.length,
         firstCode: generated[0]?.code || "",
         lastCode: generated[generated.length - 1]?.code || "",
+      }).then(() => {
+        setHistory(getHistory());
       });
-      setHistory(getHistory());
 
       // If user is in config or summary, jump to preview or labels to view results
       if (activeTopic === "config" || activeTopic === "summary") {
@@ -245,22 +251,26 @@ export default function Home() {
   };
 
   const handleSaveCurrentAsPreset = (name: string, description: string) => {
-    const saved = saveCustomPreset(name, description, params);
-    setPresets(getPresets());
-    setActivePresetId(saved.id);
+    saveCustomPresetAsync(name, description, params).then((saved) => {
+      setPresets(getPresets());
+      setActivePresetId(saved.id);
+    });
   };
 
   const handleUpdatePreset = (id: string, name: string, description: string) => {
     updateCustomPreset(id, name, description, params);
-    setPresets(getPresets());
+    saveCustomPresetAsync(name, description, params).then(() => {
+      setPresets(getPresets());
+    });
   };
 
   const handleDeletePreset = (id: string) => {
-    deletePreset(id);
-    setPresets(getPresets());
-    if (activePresetId === id) {
-      setActivePresetId(null);
-    }
+    deletePresetAsync(id).then(() => {
+      setPresets(getPresets());
+      if (activePresetId === id) {
+        setActivePresetId(null);
+      }
+    });
   };
 
   const handleResetPresets = () => {
@@ -273,8 +283,9 @@ export default function Home() {
 
   const handleClearHistory = () => {
     if (confirm("Deseja realmente limpar todo o histórico local de gerações?")) {
-      clearHistory();
-      setHistory([]);
+      clearHistoryAsync().then(() => {
+        setHistory([]);
+      });
     }
   };
 

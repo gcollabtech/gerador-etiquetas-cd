@@ -310,6 +310,88 @@ export function saveBloqueios(bloqueios: BloqueioJanela[]): void {
   }
 }
 
+export async function syncAgendamentosFromServer(): Promise<EntregaAgendamento[]> {
+  if (typeof window === "undefined") return SEED_AGENDAMENTOS;
+  try {
+    const res = await fetch(`/api/wms/agendamentos?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.agendamentos)) {
+        saveAgendamentos(data.agendamentos);
+        return data.agendamentos;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar agendamentos:", err);
+  }
+  return getAgendamentos();
+}
+
+export async function syncBloqueiosFromServer(): Promise<BloqueioJanela[]> {
+  if (typeof window === "undefined") return SEED_BLOQUEIOS;
+  try {
+    const res = await fetch(`/api/wms/bloqueios?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.bloqueios)) {
+        saveBloqueios(data.bloqueios);
+        return data.bloqueios;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao sincronizar bloqueios:", err);
+  }
+  return getBloqueios();
+}
+
+export async function saveAgendamentoAsync(agendamento: EntregaAgendamento): Promise<void> {
+  const current = getAgendamentos().filter((a) => a.id !== agendamento.id);
+  saveAgendamentos([agendamento, ...current]);
+  try {
+    await fetch("/api/wms/agendamentos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agendamento }),
+    });
+  } catch (err) {
+    console.warn("Aviso ao salvar agendamento no servidor:", err);
+  }
+}
+
+export async function deleteAgendamentoAsync(id: string): Promise<void> {
+  const current = getAgendamentos().filter((a) => a.id !== id);
+  saveAgendamentos(current);
+  try {
+    await fetch(`/api/wms/agendamentos?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (err) {
+    console.warn("Aviso ao excluir agendamento no servidor:", err);
+  }
+}
+
+export async function saveBloqueioAsync(bloqueio: BloqueioJanela): Promise<void> {
+  const current = getBloqueios().filter((b) => b.id !== bloqueio.id);
+  saveBloqueios([bloqueio, ...current]);
+  try {
+    await fetch("/api/wms/bloqueios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bloqueio }),
+    });
+  } catch (err) {
+    console.warn("Aviso ao salvar bloqueio no servidor:", err);
+  }
+}
+
+export async function deleteBloqueioAsync(id: string): Promise<void> {
+  const current = getBloqueios().filter((b) => b.id !== id);
+  saveBloqueios(current);
+  try {
+    await fetch(`/api/wms/bloqueios?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (err) {
+    console.warn("Aviso ao excluir bloqueio no servidor:", err);
+  }
+}
+
 // ── Validação e Criação de Agendamento ─────────────────────────────────
 export function createAgendamento(
   data: Omit<EntregaAgendamento, "id" | "protocolo" | "createdAt" | "status">
@@ -385,6 +467,7 @@ export function createAgendamento(
 
   const updated = [novoAgendamento, ...agendamentos];
   saveAgendamentos(updated);
+  saveAgendamentoAsync(novoAgendamento);
 
   return { success: true, agendamento: novoAgendamento };
 }
@@ -412,6 +495,7 @@ export function updateAgendamentoStatus(
 
   agendamentos[index] = updatedItem;
   saveAgendamentos(agendamentos);
+  saveAgendamentoAsync(updatedItem);
   return { success: true };
 }
 
@@ -463,6 +547,7 @@ export function registrarCheckInPortaria(
 
   agendamentos[index] = updated;
   saveAgendamentos(agendamentos);
+  saveAgendamentoAsync(updated);
   return { success: true, agendamento: updated };
 }
 
@@ -490,6 +575,7 @@ export function cancelarAgendamento(
 
   agendamentos[index] = updated;
   saveAgendamentos(agendamentos);
+  saveAgendamentoAsync(updated);
   return { success: true };
 }
 
@@ -574,6 +660,7 @@ export function remarcarAgendamento(
 
   agendamentos[index] = updated;
   saveAgendamentos(agendamentos);
+  saveAgendamentoAsync(updated);
   return { success: true, agendamento: updated };
 }
 
@@ -586,6 +673,7 @@ export function deleteAgendamento(id: string): { success: boolean; error?: strin
   }
   const filtered = agendamentos.filter((a) => a.id !== id);
   saveAgendamentos(filtered);
+  deleteAgendamentoAsync(id);
   return { success: true };
 }
 
@@ -611,6 +699,7 @@ export function criarBloqueio(dados: {
   };
 
   saveBloqueios([...bloqueios, novoBloqueio]);
+  saveBloqueioAsync(novoBloqueio);
   return { success: true, bloqueio: novoBloqueio };
 }
 
@@ -618,6 +707,7 @@ export function removerBloqueio(id: string): { success: boolean } {
   const bloqueios = getBloqueios();
   const filtrados = bloqueios.filter((b) => b.id !== id);
   saveBloqueios(filtrados);
+  deleteBloqueioAsync(id);
   return { success: true };
 }
 

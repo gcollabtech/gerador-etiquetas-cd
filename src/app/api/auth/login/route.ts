@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerUsers, saveServerUsers } from "@/lib/serverUsers";
+import { getServerUsers, saveServerUsers, verifyPassword, hashPassword } from "@/lib/serverUsers";
 import { AuthSession, PortalUser } from "@/lib/authTypes";
 
 export const dynamic = "force-dynamic";
@@ -67,11 +67,10 @@ export async function POST(req: NextRequest) {
       cleanEmail === "admin@collab.com.br" ? "Gcoll@b123" : "collab123";
     const userPassword = (user.password || defaultPass).trim();
 
-    // Verificação de senha flexível (permite senha exata, com trim e tolerância a maiúsculas no primeiro caractere/case)
+    // Verificação de senha segura com suporte a scrypt e fallback legado
     const isPasswordCorrect =
-      cleanPassword === userPassword ||
-      rawPassword === user.password ||
-      cleanPassword.toLowerCase() === userPassword.toLowerCase();
+      verifyPassword(cleanPassword, userPassword) ||
+      verifyPassword(rawPassword, user.password || "");
 
     if (!isPasswordCorrect) {
       return NextResponse.json(
@@ -81,6 +80,11 @@ export async function POST(req: NextRequest) {
         },
         { status: 401 }
       );
+    }
+
+    // Se a senha estava em texto limpo legado, atualiza automaticamente para hash seguro scrypt no banco
+    if (user.password && !user.password.startsWith("scrypt:")) {
+      user.password = hashPassword(cleanPassword);
     }
 
     // Se o usuário precisa obrigatoriamente trocar a senha no primeiro acesso
