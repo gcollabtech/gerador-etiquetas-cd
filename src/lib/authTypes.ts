@@ -16,6 +16,7 @@ export interface PortalUser {
   name: string;
   email: string;
   password?: string;
+  mustChangePassword?: boolean;
   role: UserRole;
   cargo: string;
   status: "ativo" | "inativo";
@@ -25,6 +26,14 @@ export interface PortalUser {
   unidadeCd?: string;
   createdAt: string;
   lastLogin?: string;
+}
+
+export interface AuthenticateResult {
+  success: boolean;
+  session?: AuthSession;
+  mustChangePassword?: boolean;
+  user?: PortalUser;
+  error?: string;
 }
 
 export interface AuthSession {

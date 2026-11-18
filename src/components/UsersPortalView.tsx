@@ -7,6 +7,7 @@ import {
   saveUser,
   deleteUser,
   toggleUserStatus,
+  toggleUserMustChangePassword,
 } from "@/lib/authService";
 import {
   Users,
@@ -33,6 +34,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  KeyRound,
 } from "lucide-react";
 
 interface UsersPortalViewProps {
@@ -58,6 +60,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
   const [formStatus, setFormStatus] = useState<"ativo" | "inativo">("ativo");
   const [formUnidade, setFormUnidade] = useState("CD Matriz — Big Master");
   const [formTelefone, setFormTelefone] = useState("");
+  const [formMustChangePassword, setFormMustChangePassword] = useState(true);
   const [formPermissions, setFormPermissions] = useState<ModulePermission[]>([
     "etiquetas",
   ]);
@@ -78,6 +81,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     setFormStatus("ativo");
     setFormUnidade("CD Matriz — Big Master");
     setFormTelefone("");
+    setFormMustChangePassword(true);
     setFormPermissions(["etiquetas"]);
     setFormError(null);
     setIsModalOpen(true);
@@ -94,6 +98,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     setFormStatus(user.status);
     setFormUnidade(user.unidadeCd || "CD Matriz — Big Master");
     setFormTelefone(user.telefone || "");
+    setFormMustChangePassword(user.mustChangePassword ?? false);
     setFormPermissions(user.permissions);
     setFormError(null);
     setIsModalOpen(true);
@@ -160,6 +165,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       name: formName.trim(),
       email: emailClean,
       password: formPassword.trim() || editingUser?.password || "collab123",
+      mustChangePassword: formMustChangePassword,
       cargo: formCargo.trim() || "Operador de CD",
       role: formRole,
       status: formStatus,
@@ -173,6 +179,16 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     saveUser(userToSave);
     refreshList();
     setIsModalOpen(false);
+  };
+
+  const handleToggleMustChangePassword = (id: string, name: string, force: boolean) => {
+    const msg = force
+      ? `Deseja exigir a alteração de senha de "${name}" no próximo login?`
+      : `Deseja dispensar a troca obrigatória de senha de "${name}"?`;
+    if (confirm(msg)) {
+      toggleUserMustChangePassword(id, force);
+      refreshList();
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -391,6 +407,11 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                             <span className="text-[11px] text-[var(--muted)] font-mono block">
                               {u.email}
                             </span>
+                            {u.mustChangePassword && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-md mt-1">
+                                <KeyRound size={10} /> 1º acesso pendente (troca de senha)
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -477,6 +498,29 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleMustChangePassword(
+                                u.id,
+                                u.name,
+                                !u.mustChangePassword
+                              )
+                            }
+                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                              u.mustChangePassword
+                                ? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
+                                : "bg-transparent border-transparent text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+                            }`}
+                            title={
+                              u.mustChangePassword
+                                ? "Troca de senha pendente: Clique para dispensar exigência"
+                                : "Exigir alteração de senha no próximo login deste usuário"
+                            }
+                          >
+                            <KeyRound size={14} />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(u)}
@@ -609,6 +653,26 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                       {showFormPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
                   </div>
+                </div>
+
+                {/* Exigir alteração de senha no primeiro acesso / próximo login */}
+                <div className="sm:col-span-2 p-3 rounded-lg bg-[var(--secondary)]/70 border border-[var(--card-border)] flex items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="formMustChangePassword"
+                    checked={formMustChangePassword}
+                    onChange={(e) => setFormMustChangePassword(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded text-[var(--collab-mostarda)] border-[var(--card-border)] focus:ring-[var(--collab-mostarda)] cursor-pointer accent-[var(--collab-mostarda)]"
+                  />
+                  <label htmlFor="formMustChangePassword" className="text-xs text-[var(--foreground)] cursor-pointer select-none">
+                    <span className="font-bold flex items-center gap-1.5 text-[var(--foreground)]">
+                      <KeyRound size={13} className="text-[var(--collab-mostarda)]" />
+                      Exigir alteração de senha no primeiro acesso / próximo login
+                    </span>
+                    <span className="block text-[11px] text-[var(--muted)] mt-0.5">
+                      Ao efetuar login, o sistema exigirá obrigatoriamente que o usuário cadastre sua própria senha pessoal antes de acessar o portal.
+                    </span>
+                  </label>
                 </div>
 
                 <div className="space-y-1">

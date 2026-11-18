@@ -20,7 +20,7 @@ import { TrackingPortalView } from "@/components/TrackingPortalView";
 import { GeneralSettingsPortalView } from "@/components/GeneralSettingsPortalView";
 import { ProductBarcodeView } from "@/components/ProductBarcodeView";
 
-import { getCurrentSession, logout, hasPermission } from "@/lib/authService";
+import { getCurrentSession, logout, hasPermission, getUsers } from "@/lib/authService";
 import { AuthSession, MainPortalModule } from "@/lib/authTypes";
 
 import {
@@ -114,7 +114,18 @@ export default function Home() {
     localStorage.setItem("cd-labels-theme", initialTheme);
 
     const currentSess = getCurrentSession();
-    setSession(currentSess);
+    if (currentSess) {
+      const allUsers = getUsers();
+      const freshUser = allUsers.find((u) => u.id === currentSess.user.id);
+      if (freshUser && freshUser.mustChangePassword) {
+        logout();
+        setSession(null);
+      } else {
+        setSession(currentSess);
+      }
+    } else {
+      setSession(null);
+    }
     setIsAuthChecking(false);
 
     setHistory(getHistory());

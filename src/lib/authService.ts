@@ -4,6 +4,7 @@ import {
   ModulePermission,
   GeneralSettings,
   PasswordResetRequest,
+  AuthenticateResult,
 } from "./authTypes";
 
 const USERS_STORAGE_KEY = "collab_log_users_v1";
@@ -189,7 +190,7 @@ export function authenticate(
   email: string,
   pass: string,
   remember: boolean = true
-): { success: boolean; session?: AuthSession; error?: string } {
+): AuthenticateResult {
   const cleanEmail = email.trim().toLowerCase();
   const users = getUsers();
   const user = users.find((u) => u.email.toLowerCase() === cleanEmail);
@@ -218,6 +219,15 @@ export function authenticate(
     };
   }
 
+  // Se o usuário precisa alterar a senha no primeiro acesso / próximo login
+  if (user.mustChangePassword) {
+    return {
+      success: true,
+      mustChangePassword: true,
+      user,
+    };
+  }
+
   const updatedUser: PortalUser = {
     ...user,
     lastLogin: new Date().toISOString(),
@@ -241,6 +251,70 @@ export function authenticate(
   }
 
   return { success: true, session };
+}
+
+export function completeFirstAccessPasswordChange(
+  userId: string,
+  newPassword: string,
+  remember: boolean = true
+): { success: boolean; session?: AuthSession; error?: string } {
+  const cleanPassword = newPassword.trim();
+  if (!cleanPassword || cleanPassword.length < 4) {
+    return {
+      success: false,
+      error: "A nova senha deve possuir no mínimo 4 caracteres.",
+    };
+  }
+
+  const users = getUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return { success: false, error: "Usuário não localizado no sistema." };
+  }
+
+  const updatedUser: PortalUser = {
+    ...user,
+    password: cleanPassword,
+    mustChangePassword: false,
+    lastLogin: new Date().toISOString(),
+  };
+
+  saveUser(updatedUser);
+
+  const session: AuthSession = {
+    user: updatedUser,
+    token: `token-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    loginTime: new Date().toISOString(),
+    remember,
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    } catch (e) {
+      console.error("Erro ao salvar sessão:", e);
+    }
+  }
+
+  return { success: true, session };
+}
+
+export function toggleUserMustChangePassword(
+  userId: string,
+  force?: boolean
+): { success: boolean; error?: string } {
+  const users = getUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return { success: false, error: "Usuário não encontrado." };
+  }
+  const nextVal = force !== undefined ? force : !user.mustChangePassword;
+  const updatedUser: PortalUser = {
+    ...user,
+    mustChangePassword: nextVal,
+  };
+  saveUser(updatedUser);
+  return { success: true };
 }
 
 export function authenticateWithGoogle(

@@ -7,6 +7,7 @@ import {
   getUsers,
   requestPasswordReset,
   resetPasswordWithCode,
+  completeFirstAccessPasswordChange,
 } from "@/lib/authService";
 import { AuthSession, PasswordResetRequest, PortalUser } from "@/lib/authTypes";
 import {
@@ -61,6 +62,7 @@ interface LoginViewProps {
 
 type AuthViewMode =
   | "login"
+  | "first_access_password"
   | "forgot_request"
   | "email_sent"
   | "reset_password"
@@ -85,6 +87,12 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [customGoogleName, setCustomGoogleName] = useState("");
   const [isUsingCustomAccount, setIsUsingCustomAccount] = useState(false);
 
+  // First access password change state
+  const [pendingFirstAccessUser, setPendingFirstAccessUser] = useState<PortalUser | null>(null);
+  const [firstAccessPassword, setFirstAccessPassword] = useState("");
+  const [firstAccessConfirmPassword, setFirstAccessConfirmPassword] = useState("");
+  const [showFirstAccessPassword, setShowFirstAccessPassword] = useState(false);
+
   // Forgot password & reset state
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
@@ -103,12 +111,59 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     setTimeout(() => {
       const res = authenticate(email, password, remember);
       setLoading(false);
-      if (res.success && res.session) {
-        onLoginSuccess(res.session);
+      if (res.success) {
+        if (res.mustChangePassword && res.user) {
+          setPendingFirstAccessUser(res.user);
+          setFirstAccessPassword("");
+          setFirstAccessConfirmPassword("");
+          setShowFirstAccessPassword(false);
+          setError(null);
+          setViewMode("first_access_password");
+        } else if (res.session) {
+          onLoginSuccess(res.session);
+        }
       } else {
         setError(res.error || "Falha na autenticação.");
       }
     }, 350);
+  };
+
+  const handleFirstAccessPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!pendingFirstAccessUser) return;
+
+    if (!firstAccessPassword || firstAccessPassword.trim().length < 4) {
+      setError("A nova senha deve possuir pelo menos 4 caracteres.");
+      return;
+    }
+
+    if (firstAccessPassword !== firstAccessConfirmPassword) {
+      setError("As senhas digitadas não coincidem. Digite novamente.");
+      return;
+    }
+
+    if (firstAccessPassword === password) {
+      setError("A nova senha deve ser diferente da senha provisória inicial.");
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      const res = completeFirstAccessPasswordChange(
+        pendingFirstAccessUser.id,
+        firstAccessPassword,
+        remember
+      );
+      setLoading(false);
+      if (res.success && res.session) {
+        onLoginSuccess(res.session);
+      } else {
+        setError(res.error || "Falha ao definir nova senha de acesso.");
+      }
+    }, 400);
   };
 
   const handleGoogleLogin = (profile: { email: string; name?: string }) => {
@@ -380,6 +435,129 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                   <GoogleIcon className="w-4 h-4 shrink-0" />
                   <span>Continuar com o Google</span>
                 </button>
+              </div>
+            )}
+
+            {/* 1.1 TELA: PRIMEIRO ACESSO - ALTERAÇÃO OBRIGATÓRIA DE SENHA */}
+            {viewMode === "first_access_password" && pendingFirstAccessUser && (
+              <div className="space-y-5">
+                <div className="text-center space-y-1.5">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30 mx-auto">
+                    <KeyRound size={22} />
+                  </div>
+                  <h2 className="text-base font-bold text-[var(--foreground)] font-heading">
+                    Primeiro Acesso ao Collab Log
+                  </h2>
+                  <p className="text-xs text-[var(--muted)] max-w-xs mx-auto">
+                    Por medida de segurança, todo novo usuário deve cadastrar uma nova senha pessoal no primeiro acesso.
+                  </p>
+                </div>
+
+                {/* Card de identificação do usuário */}
+                <div className="p-3 rounded-lg bg-[var(--secondary)]/60 border border-[var(--card-border)] flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--collab-mostarda)] text-black font-bold text-xs flex items-center justify-center shrink-0">
+                    {pendingFirstAccessUser.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <div className="text-xs font-bold text-[var(--foreground)] truncate">
+                      {pendingFirstAccessUser.name}
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)] font-mono truncate">
+                      {pendingFirstAccessUser.email}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formulário de definição de senha */}
+                <form onSubmit={handleFirstAccessPasswordSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[var(--foreground)] block">
+                      Nova Senha Pessoal:
+                    </label>
+                    <div className="relative">
+                      <Lock
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]"
+                      />
+                      <input
+                        type={showFirstAccessPassword ? "text" : "password"}
+                        required
+                        value={firstAccessPassword}
+                        onChange={(e) => setFirstAccessPassword(e.target.value)}
+                        placeholder="Mínimo 4 caracteres"
+                        className="w-full pl-10 pr-10 py-2.5 text-sm bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)] focus:ring-1 focus:ring-[var(--collab-mostarda)] transition-all font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowFirstAccessPassword(!showFirstAccessPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1"
+                        title={showFirstAccessPassword ? "Ocultar senha" : "Exibir senha"}
+                      >
+                        {showFirstAccessPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[var(--foreground)] block">
+                      Confirmar Nova Senha:
+                    </label>
+                    <div className="relative">
+                      <Lock
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]"
+                      />
+                      <input
+                        type={showFirstAccessPassword ? "text" : "password"}
+                        required
+                        value={firstAccessConfirmPassword}
+                        onChange={(e) => setFirstAccessConfirmPassword(e.target.value)}
+                        placeholder="Repita a nova senha"
+                        className="w-full pl-10 pr-10 py-2.5 text-sm bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)] focus:ring-1 focus:ring-[var(--collab-mostarda)] transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-[var(--secondary)]/40 border border-[var(--card-border)] flex items-start gap-2 text-[11px] text-[var(--muted)]">
+                    <ShieldCheck size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <span>
+                      Esta senha será gravada e solicitada em todos os seus próximos acessos ao portal.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] font-heading font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <span className="animate-pulse">Gravando senha e acessando...</span>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} />
+                        <span>Gravar Senha e Entrar no Portal</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setPendingFirstAccessUser(null);
+                      setViewMode("login");
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)] font-medium pt-1 cursor-pointer transition-colors"
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Voltar para tela de login</span>
+                  </button>
+                </form>
               </div>
             )}
 
