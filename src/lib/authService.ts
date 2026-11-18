@@ -150,13 +150,7 @@ export function saveUsers(users: PortalUser[]): void {
 export async function syncUsersFromServer(): Promise<PortalUser[]> {
   if (typeof window === "undefined") return DEFAULT_USERS;
   try {
-    const localUsers = getUsers();
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "sync", users: localUsers }),
-    });
-
+    const res = await fetch("/api/users", { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users) && data.users.length > 0) {
@@ -166,20 +160,6 @@ export async function syncUsersFromServer(): Promise<PortalUser[]> {
     }
   } catch (err) {
     console.warn("Aviso ao sincronizar usuários com o servidor:", err);
-  }
-
-  // Fallback para GET simples caso o POST falhe
-  try {
-    const res = await fetch("/api/users");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
-        saveUsers(data.users);
-        return data.users;
-      }
-    }
-  } catch {
-    // ignore
   }
 
   return getUsers();
@@ -216,6 +196,37 @@ export function saveUser(user: PortalUser): PortalUser[] {
   return updated;
 }
 
+export async function saveUserAsync(
+  user: PortalUser
+): Promise<{ success: boolean; users: PortalUser[]; error?: string }> {
+  const cleanEmail = user.email.trim().toLowerCase();
+  const userToSave: PortalUser = {
+    ...user,
+    email: cleanEmail,
+  };
+
+  const localUpdated = saveUser(userToSave);
+
+  try {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: userToSave }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        saveUsers(data.users);
+        return { success: true, users: data.users };
+      }
+    }
+    return { success: true, users: localUpdated };
+  } catch (err: any) {
+    console.error("Erro ao salvar usuário no servidor via API:", err);
+    return { success: true, users: localUpdated };
+  }
+}
+
 export function deleteUser(id: string): { success: boolean; error?: string } {
   const currentSession = getCurrentSession();
   if (currentSession?.user.id === id) {
@@ -235,18 +246,40 @@ export function deleteUser(id: string): { success: boolean; error?: string } {
   return { success: true };
 }
 
+export async function deleteUserAsync(id: string): Promise<{ success: boolean; error?: string }> {
+  const localRes = deleteUser(id);
+  if (!localRes.success) return localRes;
+
+  try {
+    const res = await fetch(`/api/users?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        saveUsers(data.users);
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao deletar usuário no servidor:", err);
+  }
+  return { success: true };
+}
+
 export function toggleUserStatus(id: string): { success: boolean; error?: string } {
   const currentSession = getCurrentSession();
   if (currentSession?.user.id === id) {
     return { success: false, error: "Você não pode inativar seu próprio usuário conectado." };
   }
   const current = getUsers();
-  const updated: PortalUser[] = current.map((u) =>
-    u.id === id
-      ? { ...u, status: u.status === "ativo" ? ("inativo" as const) : ("ativo" as const) }
-      : u
-  );
-  saveUsers(updated);
+  const target = current.find((u) => u.id === id);
+  if (!target) return { success: false, error: "Usuário não encontrado." };
+
+  const updatedUser: PortalUser = {
+    ...target,
+    status: target.status === "ativo" ? "inativo" : "ativo",
+  };
+  saveUser(updatedUser);
   return { success: true };
 }
 
@@ -261,6 +294,62 @@ export function getCurrentSession(): AuthSession | null {
     console.error("Erro ao ler sessão:", e);
     return null;
   }
+}
+
+export async function authenticateOnline(
+  email: string,
+  pass: string,
+  remember: boolean = true
+): Promise<AuthenticateResult> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPass = pass.trim();
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: cleanEmail, password: cleanPass, remember }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      if (data.mustChangePassword && data.user) {
+        return {
+          success: true,
+          mustChangePassword: true,
+          user: data.user,
+        };
+      }
+
+      if (data.session) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data.session));
+          } catch (e) {
+            console.error("Erro ao salvar sessão:", e);
+          }
+        }
+        return {
+          success: true,
+          session: data.session,
+          user: data.user,
+        };
+      }
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || "E-mail ou senha incorretos. Verifique suas credenciais.",
+      };
+    }
+  } catch (err) {
+    console.warn("API de login online indisponível, usando fallback local:", err);
+  }
+
+  // Fallback offline caso a chamada de rede falhe
+  return authenticate(email, pass, remember);
 }
 
 export function authenticate(
@@ -288,8 +377,9 @@ export function authenticate(
 
   // Verifica a senha cadastrada para o usuário (Gcoll@b123 para admin ou cadastrada)
   const defaultPass = cleanEmail === "admin@collab.com.br" ? "Gcoll@b123" : "collab123";
-  const userPassword = user.password || defaultPass;
-  if (pass !== userPassword) {
+  const userPassword = (user.password || defaultPass).trim();
+  const cleanPass = pass.trim();
+  if (cleanPass !== userPassword && pass !== user.password) {
     return {
       success: false,
       error: "E-mail ou senha incorretos. Verifique suas credenciais.",
@@ -328,6 +418,55 @@ export function authenticate(
   }
 
   return { success: true, session };
+}
+
+export async function completeFirstAccessPasswordChangeOnline(
+  userId: string,
+  newPassword: string,
+  remember: boolean = true
+): Promise<{ success: boolean; session?: AuthSession; error?: string }> {
+  const cleanPassword = newPassword.trim();
+  if (!cleanPassword || cleanPassword.length < 4) {
+    return {
+      success: false,
+      error: "A nova senha deve possuir no mínimo 4 caracteres.",
+    };
+  }
+
+  try {
+    const res = await fetch("/api/auth/first-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, newPassword: cleanPassword, remember }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success && data.session) {
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data.session));
+        } catch (e) {
+          console.error("Erro ao salvar sessão:", e);
+        }
+      }
+      return {
+        success: true,
+        session: data.session,
+      };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || "Erro ao definir nova senha.",
+      };
+    }
+  } catch (err) {
+    console.warn("API de primeiro acesso indisponível, usando fallback local:", err);
+  }
+
+  return completeFirstAccessPasswordChange(userId, newPassword, remember);
 }
 
 export function completeFirstAccessPasswordChange(

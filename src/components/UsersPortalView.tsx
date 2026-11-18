@@ -5,7 +5,9 @@ import { PortalUser, UserRole, ModulePermission } from "@/lib/authTypes";
 import {
   getUsers,
   saveUser,
+  saveUserAsync,
   deleteUser,
+  deleteUserAsync,
   toggleUserStatus,
   toggleUserMustChangePassword,
   syncUsersFromServer,
@@ -160,7 +162,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
       setFormError("Nome e e-mail são obrigatórios.");
@@ -204,12 +206,13 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       lastLogin: editingUser?.lastLogin,
     };
 
-    saveUser(userToSave);
+    // Salva no servidor de forma síncrona/await para garantir persistência imediata
+    await saveUserAsync(userToSave);
     refreshList();
     setIsModalOpen(false);
   };
 
-  const handleToggleMustChangePassword = (id: string, name: string, force: boolean) => {
+  const handleToggleMustChangePassword = async (id: string, name: string, force: boolean) => {
     const msg = force
       ? `Deseja exigir a alteração de senha de "${name}" no próximo login?`
       : `Deseja dispensar a troca obrigatória de senha de "${name}"?`;
@@ -219,9 +222,9 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     }
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Tem certeza de que deseja excluir o usuário "${name}"?`)) {
-      const res = deleteUser(id);
+      const res = await deleteUserAsync(id);
       if (!res.success) {
         alert(res.error || "Não foi possível excluir o usuário.");
       } else {

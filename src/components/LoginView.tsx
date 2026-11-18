@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import {
   authenticate,
+  authenticateOnline,
   authenticateWithGoogle,
   getUsers,
   requestPasswordReset,
   resetPasswordWithCode,
   completeFirstAccessPasswordChange,
+  completeFirstAccessPasswordChangeOnline,
   syncUsersFromServer,
 } from "@/lib/authService";
 import { AuthSession, PasswordResetRequest, PortalUser } from "@/lib/authTypes";
@@ -114,10 +116,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     setError(null);
     setLoading(true);
 
-    // Sincroniza usuários do servidor em tempo real para permitir logins de outros navegadores
-    await syncUsersFromServer();
-
-    const res = authenticate(email, password, remember);
+    const res = await authenticateOnline(email, password, remember);
     setLoading(false);
     if (res.success) {
       if (res.mustChangePassword && res.user) {
@@ -135,7 +134,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   };
 
-  const handleFirstAccessPasswordSubmit = (e: React.FormEvent) => {
+  const handleFirstAccessPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -158,19 +157,17 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
 
     setLoading(true);
 
-    setTimeout(() => {
-      const res = completeFirstAccessPasswordChange(
-        pendingFirstAccessUser.id,
-        firstAccessPassword,
-        remember
-      );
-      setLoading(false);
-      if (res.success && res.session) {
-        onLoginSuccess(res.session);
-      } else {
-        setError(res.error || "Falha ao definir nova senha de acesso.");
-      }
-    }, 400);
+    const res = await completeFirstAccessPasswordChangeOnline(
+      pendingFirstAccessUser.id,
+      firstAccessPassword,
+      remember
+    );
+    setLoading(false);
+    if (res.success && res.session) {
+      onLoginSuccess(res.session);
+    } else {
+      setError(res.error || "Falha ao definir nova senha de acesso.");
+    }
   };
 
   const handleGoogleLogin = (profile: { email: string; name?: string }) => {
