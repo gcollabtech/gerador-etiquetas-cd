@@ -82,7 +82,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     setFormUnidade("CD Matriz — Big Master");
     setFormTelefone("");
     setFormMustChangePassword(true);
-    setFormPermissions(["etiquetas"]);
+    setFormPermissions(["etiquetas", "etiquetas_produto"]);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -120,15 +120,32 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
         "wms",
         "rastreamento",
         "etiquetas",
+        "etiquetas_produto",
         "usuarios",
         "configuracoes",
       ]);
     } else if (role === "supervisor") {
-      setFormPermissions(["dashboard", "wms", "rastreamento", "etiquetas"]);
+      setFormPermissions([
+        "dashboard",
+        "wms",
+        "rastreamento",
+        "etiquetas",
+        "etiquetas_produto",
+      ]);
     } else if (role === "operador") {
-      setFormPermissions(["dashboard", "etiquetas", "wms"]);
+      setFormPermissions([
+        "dashboard",
+        "etiquetas",
+        "etiquetas_produto",
+        "wms",
+      ]);
     } else if (role === "visualizador") {
-      setFormPermissions(["dashboard", "etiquetas", "rastreamento"]);
+      setFormPermissions([
+        "dashboard",
+        "etiquetas",
+        "etiquetas_produto",
+        "rastreamento",
+      ]);
     }
   };
 
@@ -774,14 +791,20 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                         icon: Barcode,
                       },
                       {
+                        key: "etiquetas_produto",
+                        label: "4. Etiquetas de Produto",
+                        desc: "Impressão térmica de código de barras EAN-13",
+                        icon: Tag,
+                      },
+                      {
                         key: "usuarios",
-                        label: "4. Gestão de Usuários",
+                        label: "5. Gestão de Usuários",
                         desc: "Controle de cadastros e permissões",
                         icon: Users,
                       },
                       {
                         key: "configuracoes",
-                        label: "5. Configurações Gerais",
+                        label: "6. Configurações Gerais",
                         desc: "Preferências de sistema e unidade de CD",
                         icon: Settings,
                       },

@@ -63,7 +63,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "operador",
     cargo: "Controlador de Frotas e Rastreamento",
     status: "ativo",
-    permissions: ["dashboard", "rastreamento", "etiquetas"],
+    permissions: ["dashboard", "rastreamento", "etiquetas", "etiquetas_produto"],
     unidadeCd: "CD Filial Sul",
     telefone: "(11) 95432-1098",
     createdAt: "2026-04-12T11:00:00Z",
@@ -77,7 +77,7 @@ export const DEFAULT_USERS: PortalUser[] = [
     role: "visualizador",
     cargo: "Auditora de Qualidade e Inventário",
     status: "ativo",
-    permissions: ["dashboard", "etiquetas", "rastreamento"],
+    permissions: ["dashboard", "etiquetas", "etiquetas_produto", "rastreamento"],
     unidadeCd: "CD Matriz — Big Master",
     telefone: "(11) 94321-0987",
     createdAt: "2026-05-20T14:00:00Z",
@@ -109,10 +109,24 @@ export function getUsers(): PortalUser[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      let needsSave = false;
       // Sincroniza a nova senha do admin caso já existam dados em localStorage
       const adminIdx = parsed.findIndex((u: PortalUser) => u.email.toLowerCase() === "admin@collab.com.br");
       if (adminIdx >= 0 && parsed[adminIdx].password !== "Gcoll@b123") {
         parsed[adminIdx].password = "Gcoll@b123";
+        needsSave = true;
+      }
+      // Sincroniza a permissão de etiquetas de produto para os perfis padrão e admin
+      parsed.forEach((u: PortalUser) => {
+        if (
+          (u.role === "admin" || u.role === "supervisor" || u.permissions.includes("etiquetas")) &&
+          !u.permissions.includes("etiquetas_produto")
+        ) {
+          u.permissions.push("etiquetas_produto");
+          needsSave = true;
+        }
+      });
+      if (needsSave) {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsed));
       }
       return parsed;
@@ -353,8 +367,8 @@ export function authenticateWithGoogle(
         : "Operador Logístico (Google Workspace)",
       status: "ativo",
       permissions: cleanEmail.includes("admin")
-        ? ["dashboard", "wms", "rastreamento", "etiquetas", "usuarios", "configuracoes"]
-        : ["dashboard", "wms", "rastreamento", "etiquetas"],
+        ? ["dashboard", "wms", "rastreamento", "etiquetas", "etiquetas_produto", "usuarios", "configuracoes"]
+        : ["dashboard", "wms", "rastreamento", "etiquetas", "etiquetas_produto"],
       avatar: googleProfile.avatar,
       unidadeCd: "CD Matriz — Big Master",
       createdAt: new Date().toISOString(),

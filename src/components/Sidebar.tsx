@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MainPortalModule, PortalUser } from "@/lib/authTypes";
+import { hasPermission } from "@/lib/authService";
 import {
   Boxes,
   Truck,
@@ -28,6 +29,7 @@ import {
   FileText,
   Calendar,
   Tag,
+  Lock,
 } from "lucide-react";
 
 export type PortalTopic =
@@ -242,6 +244,7 @@ export function Sidebar({
             const isMainActive = activeModule === item.id;
             const isEtiquetas = item.id === "etiquetas";
             const isWms = item.id === "wms";
+            const hasAccess = hasPermission(currentUser, item.id);
 
             return (
               <div key={item.id} className="space-y-1">
@@ -295,6 +298,17 @@ export function Sidebar({
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                    {!hasAccess && (
+                      <span
+                        className={`p-1 rounded ${
+                          isMainActive ? "text-white/80" : "text-[var(--muted)]"
+                        }`}
+                        title="Acesso não concedido nas permissões de usuário"
+                      >
+                        <Lock size={12} />
+                      </span>
+                    )}
+
                     {item.badge && (
                       <span
                         className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
