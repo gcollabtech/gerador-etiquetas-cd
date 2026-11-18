@@ -2,7 +2,8 @@ export interface Produto {
   id: string; // produto(id)
   cod_produto: string; // Código interno / SKU
   descricao: string; // Descrição do produto
-  ean: string; // Código de barras EAN-13 / GTIN
+  ean?: string; // Código de barras EAN-13 / GTIN numérico
+  barra?: string; // Código de barras alfanumérico (Code 128 / interno)
   created_at?: string;
   updated_at?: string;
 }
@@ -11,12 +12,15 @@ export interface ProdutoFiltros {
   search?: string;
   cod_produto?: string;
   ean?: string;
+  barra?: string;
 }
 
 export interface ProdutoImportPreview {
   cod_produto: string;
   descricao: string;
-  ean: string;
+  ean?: string;
+  barra?: string;
+  tipo: "ean13" | "code128";
   status: "valid" | "warning" | "error";
   statusMessage?: string;
 }
@@ -27,6 +31,7 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1001",
     descricao: "DETERGENTE LÍQUIDO NEUTRO 500ML",
     ean: "7891000315507",
+    barra: "",
     created_at: "2026-11-18T10:00:00Z",
   },
   {
@@ -34,6 +39,7 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1002",
     descricao: "SABÃO EM PÓ CONCENTRADO 1KG",
     ean: "7891234567895",
+    barra: "",
     created_at: "2026-11-18T10:05:00Z",
   },
   {
@@ -41,6 +47,7 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1003",
     descricao: "ÁGUA SANITÁRIA CLORADA 2L",
     ean: "7898912345678",
+    barra: "",
     created_at: "2026-11-18T10:10:00Z",
   },
   {
@@ -48,6 +55,7 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1004",
     descricao: "DESINFETANTE FLORAL 1L",
     ean: "7896000123456",
+    barra: "",
     created_at: "2026-11-18T10:15:00Z",
   },
   {
@@ -55,6 +63,7 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1005",
     descricao: "CANETA ESFEROGRÁFICA AZUL 1.0MM",
     ean: "7891000315507",
+    barra: "",
     created_at: "2026-11-18T10:20:00Z",
   },
   {
@@ -62,6 +71,23 @@ export const SEED_PRODUTOS: Produto[] = [
     cod_produto: "PRD-1006",
     descricao: "PAPEL SULFITE A4 75G PCT 500 FLS",
     ean: "7891027116521",
+    barra: "",
     created_at: "2026-11-18T10:25:00Z",
+  },
+  {
+    id: "prd-1007",
+    cod_produto: "CX-MASTER-01",
+    descricao: "CAIXA MASTER FIO DENTAL 50UN",
+    ean: "",
+    barra: "CX-MASTER-FD-050",
+    created_at: "2026-11-18T10:30:00Z",
+  },
+  {
+    id: "prd-1008",
+    cod_produto: "PLT-LOG-99",
+    descricao: "PALETE LOGÍSTICO REFRIGERADO",
+    ean: "",
+    barra: "PLT-R01-P02-N04",
+    created_at: "2026-11-18T10:35:00Z",
   },
 ];

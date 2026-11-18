@@ -3,7 +3,9 @@ export type ProductLabelPreset = "40x30" | "60x30" | "50x30" | "100x50" | "custo
 export interface ProductLabelItem {
   id: string;
   descricao: string;
-  codigoEan: string; // 12 ou 13 dígitos
+  codigoEan: string; // 12 ou 13 dígitos EAN ou código de barra
+  barra?: string; // Código de barras alfanumérico Code 128
+  tipoBarra?: "ean13" | "code128";
   codigoProduto?: string; // Código interno / SKU
   quantidade: number; // Cópias da etiqueta
   createdAt: string;

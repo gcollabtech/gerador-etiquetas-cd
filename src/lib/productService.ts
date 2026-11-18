@@ -4,35 +4,46 @@ import { validateAndNormalizeEan13, calcEan13CheckDigit } from "./ean13";
 
 /**
  * Gera e dispara o download do modelo oficial de planilha Excel (.xlsx)
- * com as colunas necessárias para cadastro em massa.
+ * com as colunas necessárias para cadastro em massa, incluindo EAN-13 e Barra Alfanumérica.
  */
 export function downloadProductExcelTemplate(): void {
-  const headers = ["cod_produto", "descricao", "ean"];
+  const headers = ["cod_produto", "descricao", "ean", "barra"];
   const sampleData = [
     {
       cod_produto: "PRD-1001",
       descricao: "DETERGENTE LÍQUIDO NEUTRO 500ML",
       ean: "7891000315507",
+      barra: "",
     },
     {
       cod_produto: "PRD-1002",
       descricao: "SABÃO EM PÓ CONCENTRADO 1KG",
       ean: "7891234567895",
+      barra: "",
     },
     {
       cod_produto: "PRD-1003",
       descricao: "ÁGUA SANITÁRIA CLORADA 2L",
       ean: "7898912345678",
+      barra: "",
     },
     {
-      cod_produto: "PRD-1004",
-      descricao: "DESINFETANTE FLORAL 1L",
-      ean: "7896000123456",
+      cod_produto: "CX-MASTER-01",
+      descricao: "CAIXA MASTER FIO DENTAL 50UN",
+      ean: "",
+      barra: "CX-MASTER-FD-050",
     },
     {
-      cod_produto: "PRD-1005",
+      cod_produto: "PLT-LOG-99",
+      descricao: "PALETE LOGÍSTICO REFRIGERADO",
+      ean: "",
+      barra: "PLT-R01-P02-N04",
+    },
+    {
+      cod_produto: "PRD-1006",
       descricao: "PAPEL SULFITE A4 75G PCT 500 FLS",
       ean: "7891027116521",
+      barra: "SULF-A4-75G",
     },
   ];
 
@@ -42,7 +53,8 @@ export function downloadProductExcelTemplate(): void {
   ws["!cols"] = [
     { wch: 18 }, // cod_produto
     { wch: 45 }, // descricao
-    { wch: 20 }, // ean
+    { wch: 18 }, // ean (numérico 12/13 dígitos)
+    { wch: 22 }, // barra (alfanumérico / Code 128)
   ];
 
   const wb = XLSX.utils.book_new();
@@ -74,7 +86,7 @@ export interface ParseExcelResult {
 
 /**
  * Lê e interpreta arquivo Excel (.xlsx, .xls) ou CSV carregado pelo usuário.
- * Mapeia cabeçalhos flexíveis e valida códigos EAN-13.
+ * Mapeia cabeçalhos flexíveis e valida códigos EAN-13 e Barras Alfanuméricas.
  */
 export async function parseProductsExcel(file: File): Promise<ParseExcelResult> {
   const buffer = await file.arrayBuffer();
@@ -108,6 +120,7 @@ export async function parseProductsExcel(file: File): Promise<ParseExcelResult> 
     let cod_produto = "";
     let descricao = "";
     let ean = "";
+    let barra = "";
 
     for (const [key, val] of Object.entries(row)) {
       const k = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -131,68 +144,89 @@ export async function parseProductsExcel(file: File): Promise<ParseExcelResult> 
       ) {
         if (!descricao) descricao = strVal;
       } else if (
+        k === "barra" ||
+        k === "barras" ||
+        k === "codigo_barra" ||
+        k === "codigo_barras" ||
+        k === "codigo_alfa" ||
+        k === "code128" ||
+        k === "alfa"
+      ) {
+        if (!barra) barra = strVal;
+      } else if (
         k === "ean" ||
         k === "gtin" ||
-        k === "codigo_barras" ||
-        k === "codigo_de_barras" ||
-        k === "barcode" ||
-        k === "barras"
+        k === "ean13" ||
+        k === "codigo_ean"
       ) {
         if (!ean) ean = strVal;
       }
     }
 
     // Se a linha estiver totalmente em branco, ignorar
-    if (!cod_produto && !descricao && !ean) continue;
+    if (!cod_produto && !descricao && !ean && !barra) continue;
 
     // Se não tiver código de produto, gerar um padrão
     if (!cod_produto) {
       cod_produto = `PRD-${String(idx + 1).padStart(4, "0")}`;
     }
 
-    // Validação de EAN
-    const digitsOnly = ean.replace(/\D/g, "");
     let status: "valid" | "warning" | "error" = "valid";
     let statusMessage = "Pronto para gravação";
-    let normalizedEan = digitsOnly;
+    let tipo: "ean13" | "code128" = "ean13";
 
     if (!descricao) {
       status = "error";
       statusMessage = "Descrição ausente";
       errorCount++;
-    } else if (!digitsOnly) {
+    } else if (!ean && !barra) {
       status = "error";
-      statusMessage = "Código EAN ausente";
+      statusMessage = "Informe o EAN ou a Barra alfanumérica";
       errorCount++;
-    } else if (digitsOnly.length === 12) {
-      // 12 dígitos -> calcular 13º dígito
-      const check = calcEan13CheckDigit(digitsOnly);
-      normalizedEan = `${digitsOnly}${check}`;
-      status = "warning";
-      statusMessage = `Dígito verificador ${check} calculado`;
-      warningCount++;
-    } else if (digitsOnly.length === 13) {
-      const check = calcEan13CheckDigit(digitsOnly.slice(0, 12));
-      if (check !== parseInt(digitsOnly[12] || "0", 10)) {
-        status = "warning";
-        normalizedEan = `${digitsOnly.slice(0, 12)}${check}`;
-        statusMessage = `Dígito corrigido para ${check}`;
-        warningCount++;
-      } else {
-        status = "valid";
-        validCount++;
-      }
+    } else if (barra && !ean) {
+      // Produto com Barra Alfanumérica (Code 128)
+      tipo = "code128";
+      status = "valid";
+      statusMessage = "Barra Alfanumérica (Code 128)";
+      validCount++;
     } else {
-      // Outro tamanho de código de barras
-      status = "warning";
-      statusMessage = `Código com ${digitsOnly.length} dígitos (Code 128)`;
-      warningCount++;
+      // Validação de EAN-13 numérico
+      tipo = "ean13";
+      const digitsOnly = ean.replace(/\D/g, "");
+
+      if (digitsOnly.length === 12) {
+        const check = calcEan13CheckDigit(digitsOnly);
+        ean = `${digitsOnly}${check}`;
+        status = "warning";
+        statusMessage = `Dígito verificador ${check} calculado`;
+        warningCount++;
+      } else if (digitsOnly.length === 13) {
+        const check = calcEan13CheckDigit(digitsOnly.slice(0, 12));
+        if (check !== parseInt(digitsOnly[12] || "0", 10)) {
+          status = "warning";
+          ean = `${digitsOnly.slice(0, 12)}${check}`;
+          statusMessage = `Dígito corrigido para ${check}`;
+          warningCount++;
+        } else {
+          status = "valid";
+          validCount++;
+        }
+      } else if (digitsOnly.length > 0) {
+        // Se foi informado no campo EAN mas tem tamanho diferente ou caracteres, converte para Barra
+        tipo = "code128";
+        if (!barra) barra = ean;
+        status = "warning";
+        statusMessage = `Código não-EAN (${ean.length} carac.) tratado como Barra`;
+        warningCount++;
+      }
     }
 
     items.push({
       cod_produto,
       descricao: descricao.toUpperCase(),
-      ean: normalizedEan,
+      ean: ean || undefined,
+      barra: barra || undefined,
+      tipo,
       status,
       statusMessage,
     });
@@ -227,7 +261,7 @@ export async function fetchProductsApi(search?: string): Promise<Produto[]> {
  * Salva lote de produtos importados no banco de dados.
  */
 export async function saveProductsBatchApi(
-  items: { cod_produto: string; descricao: string; ean: string }[]
+  items: { cod_produto: string; descricao: string; ean?: string; barra?: string }[]
 ): Promise<{ count: number; products: Produto[] }> {
   const res = await fetch("/api/produtos", {
     method: "POST",
@@ -245,6 +279,20 @@ export async function saveProductsBatchApi(
     count: json.count || items.length,
     products: json.products || [],
   };
+}
+
+/**
+ * Exclui um produto individual do banco de dados por ID.
+ */
+export async function deleteProductApi(id: string): Promise<boolean> {
+  const res = await fetch(`/api/produtos?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erro ao excluir produto: status ${res.status}`);
+  }
+  return true;
 }
 
 /**

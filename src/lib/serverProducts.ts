@@ -75,7 +75,8 @@ function toDbRow(p: Produto): Record<string, any> {
     id: p.id || crypto.randomUUID(),
     cod_produto: String(p.cod_produto || "").trim(),
     descricao: String(p.descricao || "").trim().toUpperCase(),
-    ean: String(p.ean || "").replace(/\D/g, ""),
+    ean: p.ean ? String(p.ean).replace(/\D/g, "") : null,
+    barra: p.barra ? String(p.barra).trim().toUpperCase() : null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -85,14 +86,15 @@ function fromDbRow(row: any): Produto {
     id: String(row.id),
     cod_produto: String(row.cod_produto || ""),
     descricao: String(row.descricao || ""),
-    ean: String(row.ean || ""),
+    ean: row.ean ? String(row.ean) : "",
+    barra: row.barra ? String(row.barra) : "",
     created_at: row.created_at || new Date().toISOString(),
     updated_at: row.updated_at,
   };
 }
 
 /**
- * Consulta produtos com suporte a busca textual por descrição, código ou EAN.
+ * Consulta produtos com suporte a busca textual por descrição, código, EAN ou Barra.
  */
 export async function getProducts(filters?: ProdutoFiltros): Promise<Produto[]> {
   const cfg = getSupabaseConfig();
@@ -116,7 +118,8 @@ export async function getProducts(filters?: ProdutoFiltros): Promise<Produto[]> 
               (p) =>
                 p.descricao.toLowerCase().includes(term) ||
                 p.cod_produto.toLowerCase().includes(term) ||
-                p.ean.includes(term)
+                (p.ean && p.ean.includes(term)) ||
+                (p.barra && p.barra.toLowerCase().includes(term))
             );
           }
           return list;
@@ -137,7 +140,8 @@ export async function getProducts(filters?: ProdutoFiltros): Promise<Produto[]> 
       (p) =>
         p.descricao.toLowerCase().includes(term) ||
         p.cod_produto.toLowerCase().includes(term) ||
-        p.ean.includes(term)
+        (p.ean && p.ean.includes(term)) ||
+        (p.barra && p.barra.toLowerCase().includes(term))
     );
   }
   return local;
@@ -151,7 +155,8 @@ export async function saveProduct(product: Partial<Produto>): Promise<Produto> {
     id: product.id || `prd-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     cod_produto: String(product.cod_produto || "").trim(),
     descricao: String(product.descricao || "").trim().toUpperCase(),
-    ean: String(product.ean || "").replace(/\D/g, ""),
+    ean: product.ean ? String(product.ean).replace(/\D/g, "") : "",
+    barra: product.barra ? String(product.barra).trim().toUpperCase() : "",
     created_at: product.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -200,7 +205,8 @@ export async function bulkSaveProducts(products: Partial<Produto>[]): Promise<{ 
     id: p.id || `prd-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
     cod_produto: String(p.cod_produto || "").trim(),
     descricao: String(p.descricao || "").trim().toUpperCase(),
-    ean: String(p.ean || "").replace(/\D/g, ""),
+    ean: p.ean ? String(p.ean).replace(/\D/g, "") : "",
+    barra: p.barra ? String(p.barra).trim().toUpperCase() : "",
     created_at: p.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }));

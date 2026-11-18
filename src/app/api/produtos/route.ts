@@ -39,18 +39,21 @@ export async function POST(req: NextRequest) {
       const validItems: Partial<Produto>[] = [];
 
       for (const item of body.products) {
-        if (!item.descricao || !item.ean) continue;
+        if (!item.descricao) continue;
+        if (!item.ean && !item.barra) continue;
+
         validItems.push({
           id: item.id,
           cod_produto: String(item.cod_produto || "").trim(),
           descricao: String(item.descricao || "").trim().toUpperCase(),
-          ean: String(item.ean || "").replace(/\D/g, ""),
+          ean: item.ean ? String(item.ean).replace(/\D/g, "") : "",
+          barra: item.barra ? String(item.barra).trim().toUpperCase() : "",
         });
       }
 
       if (validItems.length === 0) {
         return NextResponse.json(
-          { success: false, error: "Nenhum produto válido encontrado para salvar." },
+          { success: false, error: "Nenhum produto com descrição e código de barras válido encontrado para salvar." },
           { status: 400 }
         );
       }
@@ -72,9 +75,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!item.ean) {
+    if (!item.ean && !item.barra) {
       return NextResponse.json(
-        { success: false, error: "O código EAN de barras é obrigatório." },
+        { success: false, error: "Informe o código EAN-13 ou a Barra alfanumérica do produto." },
         { status: 400 }
       );
     }
@@ -84,6 +87,7 @@ export async function POST(req: NextRequest) {
       cod_produto: item.cod_produto,
       descricao: item.descricao,
       ean: item.ean,
+      barra: item.barra,
     });
 
     return NextResponse.json({

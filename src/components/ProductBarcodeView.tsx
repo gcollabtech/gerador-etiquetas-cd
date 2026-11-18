@@ -14,12 +14,14 @@ import {
   generateEan13Svg,
   formatEan13,
 } from "@/lib/ean13";
+import { generateCode128Svg } from "@/lib/code128";
 import { downloadProductLabelsPdf } from "@/lib/productPdfGenerator";
 import {
   downloadProductExcelTemplate,
   parseProductsExcel,
   fetchProductsApi,
   saveProductsBatchApi,
+  deleteProductApi,
   deleteProductsApi,
 } from "@/lib/productService";
 import {
@@ -49,6 +51,8 @@ import {
   FileUp,
   X,
   Calendar,
+  Binary,
+  Hash,
 } from "lucide-react";
 
 type ActiveTab = "catalogo" | "importar" | "impressao";
@@ -92,6 +96,7 @@ export function ProductBarcodeView() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [formDescricao, setFormDescricao] = useState("");
   const [formEan, setFormEan] = useState("");
+  const [formBarra, setFormBarra] = useState("");
   const [formCodigoProduto, setFormCodigoProduto] = useState("");
   const [formQuantidade, setFormQuantidade] = useState<number>(1);
   const [formError, setFormError] = useState<string | null>(null);
@@ -110,7 +115,9 @@ export function ProductBarcodeView() {
         const initialQueue: ProductLabelItem[] = data.slice(0, 4).map((p) => ({
           id: p.id,
           descricao: p.descricao,
-          codigoEan: p.ean,
+          codigoEan: p.ean || p.barra || "",
+          barra: p.barra || undefined,
+          tipoBarra: p.barra && !p.ean ? "code128" : "ean13",
           codigoProduto: p.cod_produto,
           quantidade: 5,
           createdAt: p.created_at || new Date().toISOString(),
@@ -138,7 +145,7 @@ export function ProductBarcodeView() {
     }
   };
 
-  // Produtos filtrados pela busca
+  // Produtos filtrados pela busca (incluindo Barra alfanumérica)
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return dbProducts;
     const term = searchTerm.trim().toLowerCase();
@@ -146,7 +153,8 @@ export function ProductBarcodeView() {
       (p) =>
         p.descricao.toLowerCase().includes(term) ||
         p.cod_produto.toLowerCase().includes(term) ||
-        p.ean.includes(term)
+        (p.ean && p.ean.includes(term)) ||
+        (p.barra && p.barra.toLowerCase().includes(term))
     );
   }, [dbProducts, searchTerm]);
 
@@ -179,7 +187,9 @@ export function ProductBarcodeView() {
     const newQueueItems: ProductLabelItem[] = selected.map((p) => ({
       id: `print-${p.id}-${Date.now()}`,
       descricao: p.descricao,
-      codigoEan: p.ean,
+      codigoEan: p.ean || p.barra || "",
+      barra: p.barra || undefined,
+      tipoBarra: p.barra && !p.ean ? "code128" : "ean13",
       codigoProduto: p.cod_produto,
       quantidade: Math.max(1, bulkQuantity),
       createdAt: new Date().toISOString(),
@@ -202,7 +212,9 @@ export function ProductBarcodeView() {
     const printItems: ProductLabelItem[] = selected.map((p) => ({
       id: p.id,
       descricao: p.descricao,
-      codigoEan: p.ean,
+      codigoEan: p.ean || p.barra || "",
+      barra: p.barra || undefined,
+      tipoBarra: p.barra && !p.ean ? "code128" : "ean13",
       codigoProduto: p.cod_produto,
       quantidade: Math.max(1, bulkQuantity),
       createdAt: new Date().toISOString(),
@@ -215,12 +227,37 @@ export function ProductBarcodeView() {
     });
   };
 
-  // Excluir produtos selecionados do banco de dados
+  // 1. Excluir produto individual
+  const handleDeleteSingleProduct = async (p: Produto) => {
+    const confirmMsg = `Tem certeza que deseja excluir o produto "${p.descricao}" (Código: ${p.cod_produto}) do banco de dados?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await deleteProductApi(p.id);
+      setDbProducts((prev) => prev.filter((item) => item.id !== p.id));
+      setSelectedProductIds((prev) => {
+        const next = new Set(prev);
+        next.delete(p.id);
+        return next;
+      });
+      setToastMsg({
+        text: `Produto "${p.descricao}" excluído com sucesso do banco de dados!`,
+        type: "success",
+      });
+    } catch (err: any) {
+      setToastMsg({
+        text: err.message || "Erro ao excluir o produto.",
+        type: "error",
+      });
+    }
+  };
+
+  // Excluir múltiplos produtos selecionados
   const handleDeleteSelected = async () => {
     const count = selectedProductIds.size;
     if (count === 0) return;
 
-    if (!confirm(`Tem certeza que deseja excluir ${count} produto(s) do banco de dados?`)) {
+    if (!window.confirm(`Tem certeza que deseja excluir ${count} produto(s) selecionado(s) do banco de dados?`)) {
       return;
     }
 
@@ -288,7 +325,8 @@ export function ProductBarcodeView() {
         validItems.map((p) => ({
           cod_produto: p.cod_produto,
           descricao: p.descricao,
-          ean: p.ean,
+          ean: p.ean || "",
+          barra: p.barra || "",
         }))
       );
 
@@ -300,7 +338,9 @@ export function ProductBarcodeView() {
         const queue: ProductLabelItem[] = validItems.map((p) => ({
           id: `excel-${Date.now()}-${p.cod_produto}`,
           descricao: p.descricao,
-          codigoEan: p.ean,
+          codigoEan: p.ean || p.barra || "",
+          barra: p.barra || undefined,
+          tipoBarra: p.tipo,
           codigoProduto: p.cod_produto,
           quantidade: Math.max(1, bulkQuantity),
           createdAt: new Date().toISOString(),
@@ -330,7 +370,7 @@ export function ProductBarcodeView() {
     }
   };
 
-  // Salvar Produto Manual no Banco
+  // 2. Salvar Produto Manual no Banco (com suporte a EAN ou Barra alfanumérica)
   const handleSaveManualProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -342,29 +382,43 @@ export function ProductBarcodeView() {
     }
 
     const eanClean = formEan.replace(/\D/g, "");
-    if (eanClean.length < 12) {
-      setFormError("O código EAN-13 deve ter pelo menos 12 dígitos.");
+    const barraClean = formBarra.trim().toUpperCase();
+
+    if (!eanClean && !barraClean) {
+      setFormError("Informe o código EAN-13 numérico OU a Barra alfanumérica.");
       return;
     }
 
-    const norm = validateAndNormalizeEan13(eanClean);
+    let normalizedEan = "";
+    if (eanClean) {
+      if (eanClean.length < 12) {
+        setFormError("O código EAN-13 deve ter pelo menos 12 dígitos.");
+        return;
+      }
+      const norm = validateAndNormalizeEan13(eanClean);
+      normalizedEan = norm.code13;
+    }
 
     try {
       await saveProductsBatchApi([
         {
           cod_produto: formCodigoProduto.trim() || `PRD-${Date.now().toString().slice(-4)}`,
           descricao: descClean,
-          ean: norm.code13,
+          ean: normalizedEan || undefined,
+          barra: barraClean || undefined,
         },
       ]);
 
       await loadProducts();
 
       // Adiciona à fila de impressão também
+      const isCode128 = !normalizedEan && Boolean(barraClean);
       const newItem: ProductLabelItem = {
         id: `prd-${Date.now()}`,
         descricao: descClean,
-        codigoEan: norm.code13,
+        codigoEan: normalizedEan || barraClean,
+        barra: barraClean || undefined,
+        tipoBarra: isCode128 ? "code128" : "ean13",
         codigoProduto: formCodigoProduto.trim() || undefined,
         quantidade: Math.max(1, Number(formQuantidade) || 1),
         createdAt: new Date().toISOString(),
@@ -374,6 +428,7 @@ export function ProductBarcodeView() {
       setShowManualModal(false);
       setFormDescricao("");
       setFormEan("");
+      setFormBarra("");
       setFormCodigoProduto("");
       setFormQuantidade(1);
 
@@ -401,13 +456,22 @@ export function ProductBarcodeView() {
     };
   }, [items, selectedPreviewIndex]);
 
-  // Geração do SVG do código EAN-13 para o preview
+  // Geração do SVG do código de barras para o preview (EAN-13 ou Code 128 Alfanumérico)
   const previewSvg = useMemo(() => {
-    const code = currentPreviewItem.codigoEan || "7891000315507";
+    const rawCode = currentPreviewItem.barra || currentPreviewItem.codigoEan || "7891000315507";
+    const isEan =
+      currentPreviewItem.tipoBarra === "ean13" ||
+      (!currentPreviewItem.tipoBarra && !currentPreviewItem.barra && /^\d{12,13}$/.test(rawCode));
+
     const svgW = Math.round(larguraMm * 7);
     const svgH = Math.round(alturaMm * 4);
-    return generateEan13Svg(code, svgW, svgH, 6);
-  }, [currentPreviewItem.codigoEan, larguraMm, alturaMm]);
+
+    if (isEan) {
+      return generateEan13Svg(rawCode, svgW, svgH, 6);
+    } else {
+      return generateCode128Svg(rawCode, svgW, svgH, 8);
+    }
+  }, [currentPreviewItem, larguraMm, alturaMm]);
 
   // Total de etiquetas para imprimir
   const totalEtiquetasParaImprimir = useMemo(() => {
@@ -475,11 +539,11 @@ export function ProductBarcodeView() {
                   4. Impressão de Códigos de Barras de Produtos
                 </h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30">
-                  EAN-13 Térmico • Nuvem
+                  EAN-13 & Barras Alfanuméricas • Nuvem
                 </span>
               </div>
               <p className="text-xs text-[var(--muted)]">
-                Importação em massa via Excel, gravação em banco de dados Supabase e emissão térmica de alta legibilidade para leitores ópticos.
+                Importação em massa via Excel com suporte a EAN-13 e Barras Alfanuméricas (Code 128), catálogo em nuvem e impressão térmica.
               </p>
             </div>
           </div>
@@ -489,7 +553,7 @@ export function ProductBarcodeView() {
               type="button"
               onClick={downloadProductExcelTemplate}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold cursor-pointer transition-all"
-              title="Baixar modelo com as colunas cod_produto, descricao e ean"
+              title="Baixar modelo com cod_produto, descricao, ean e barra"
             >
               <FileSpreadsheet size={15} />
               <span>Modelo Excel (.xlsx)</span>
@@ -561,7 +625,7 @@ export function ProductBarcodeView() {
       </div>
 
       {/* ───────────────────────────────────────────────────────────────── */}
-      {/* ABA 1: CATÁLOGO & CONSULTA COM FILTROS E SELEÇÃO PARA IMPRESSÃO  */}
+      {/* ABA 1: CATÁLOGO & CONSULTA COM FILTROS, BARRA E EXCLUSÃO          */}
       {/* ───────────────────────────────────────────────────────────────── */}
       {activeTab === "catalogo" && (
         <div className="space-y-4">
@@ -576,7 +640,7 @@ export function ProductBarcodeView() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Filtrar por Descrição, Código do Produto (cod_produto) ou EAN..."
+                placeholder="Filtrar por Descrição, Código (cod_produto), EAN ou Barra Alfanumérica..."
                 className="w-full pl-10 pr-4 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-xl text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
               />
               {searchTerm && (
@@ -657,13 +721,13 @@ export function ProductBarcodeView() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-bold cursor-pointer"
                 >
                   <Trash2 size={14} />
-                  <span>Excluir</span>
+                  <span>Excluir Selecionados</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Tabela de Produtos */}
+          {/* Tabela de Produtos com Coluna Barra e Botão de Deletar */}
           <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -685,15 +749,16 @@ export function ProductBarcodeView() {
                     </th>
                     <th className="py-3 px-4">Código (cod_produto)</th>
                     <th className="py-3 px-4">Descrição do Produto</th>
-                    <th className="py-3 px-4">Código EAN-13</th>
-                    <th className="py-3 px-4">Data Cadastro</th>
+                    <th className="py-3 px-4">EAN-13</th>
+                    <th className="py-3 px-4">Barra Alfanumérica</th>
+                    <th className="py-3 px-4">Data</th>
                     <th className="py-3 px-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--card-border)]">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-[var(--muted)]">
+                      <td colSpan={7} className="py-12 text-center text-[var(--muted)]">
                         {isLoadingProducts ? (
                           <div className="flex items-center justify-center gap-2">
                             <RefreshCw size={16} className="animate-spin text-[var(--collab-mostarda)]" />
@@ -742,29 +807,48 @@ export function ProductBarcodeView() {
                               {p.cod_produto}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[var(--foreground)] max-w-md truncate">
+                          <td className="py-3 px-4 font-semibold text-[var(--foreground)] max-w-xs truncate">
                             {p.descricao}
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <Barcode size={16} className="text-[var(--collab-mostarda)]" />
-                              <span className="font-mono font-bold text-xs tracking-wider">
-                                {formatEan13(p.ean)}
-                              </span>
-                            </div>
+                            {p.ean ? (
+                              <div className="flex items-center gap-1.5">
+                                <Barcode size={15} className="text-emerald-400 shrink-0" />
+                                <span className="font-mono font-bold text-xs tracking-wider text-emerald-400">
+                                  {formatEan13(p.ean)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-[var(--muted)] font-mono text-[11px]">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            {p.barra ? (
+                              <div className="flex items-center gap-1.5">
+                                <Binary size={15} className="text-[var(--collab-mostarda)] shrink-0" />
+                                <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[var(--collab-mostarda)]/10 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30">
+                                  {p.barra}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-[var(--muted)] font-mono text-[11px]">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-[var(--muted)] font-mono text-[11px]">
                             {p.created_at ? new Date(p.created_at).toLocaleDateString("pt-BR") : "—"}
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="inline-flex items-center gap-1.5">
+                              {/* Botão de Enviar para Fila de Impressão */}
                               <button
                                 type="button"
                                 onClick={() => {
                                   const singleQueueItem: ProductLabelItem = {
                                     id: `print-${p.id}-${Date.now()}`,
                                     descricao: p.descricao,
-                                    codigoEan: p.ean,
+                                    codigoEan: p.ean || p.barra || "",
+                                    barra: p.barra || undefined,
+                                    tipoBarra: p.barra && !p.ean ? "code128" : "ean13",
                                     codigoProduto: p.cod_produto,
                                     quantidade: 1,
                                     createdAt: new Date().toISOString(),
@@ -776,6 +860,16 @@ export function ProductBarcodeView() {
                                 title="Enviar para Fila de Impressão"
                               >
                                 Imprimir
+                              </button>
+
+                              {/* 1. Botão de Deletar Produto */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSingleProduct(p)}
+                                className="p-1 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                                title={`Excluir produto ${p.cod_produto} do banco de dados`}
+                              >
+                                <Trash2 size={13} />
                               </button>
                             </div>
                           </td>
@@ -814,29 +908,29 @@ export function ProductBarcodeView() {
                   <span>Importação de Planilha Excel (.xlsx / .xls)</span>
                 </h2>
                 <p className="text-xs text-[var(--muted)] mt-0.5">
-                  Faça o upload do arquivo com os produtos para cadastrar automaticamente no banco de dados e imprimir em massa.
+                  Faça o upload do arquivo com os produtos para cadastrar automaticamente no banco de dados com suporte a EAN-13 e Barras Alfanuméricas.
                 </p>
               </div>
 
-              {/* Botão de Download do Modelo */}
+              {/* Botão de Download do Modelo com Campo Barra */}
               <button
                 type="button"
                 onClick={downloadProductExcelTemplate}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md cursor-pointer transition-all shrink-0"
               >
                 <Download size={16} />
-                <span>1. Baixar Modelo Excel Oficial</span>
+                <span>1. Baixar Modelo Excel Oficial (.xlsx)</span>
               </button>
             </div>
 
-            {/* Dica das Colunas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Dica das 4 Colunas do Modelo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-1">
                 <span className="font-mono font-bold text-xs text-[var(--collab-mostarda)]">
                   cod_produto
                 </span>
                 <p className="text-[11px] text-[var(--muted)]">
-                  Código interno ou SKU do produto (ex: PRD-1001, 40029).
+                  Código interno ou SKU (ex: PRD-1001, 40029, CX-01).
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-1">
@@ -844,7 +938,7 @@ export function ProductBarcodeView() {
                   descricao
                 </span>
                 <p className="text-[11px] text-[var(--muted)]">
-                  Descrição completa em destaque na etiqueta (ex: SABÃO EM PÓ 1KG).
+                  Descrição completa em destaque (ex: SABÃO EM PÓ 1KG).
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-1">
@@ -852,7 +946,15 @@ export function ProductBarcodeView() {
                   ean
                 </span>
                 <p className="text-[11px] text-[var(--muted)]">
-                  Código de barras EAN-13 com 12 ou 13 dígitos numéricos.
+                  Código EAN-13 numérico comercial (12 ou 13 dígitos).
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-1">
+                <span className="font-mono font-bold text-xs text-amber-400">
+                  barra
+                </span>
+                <p className="text-[11px] text-[var(--muted)]">
+                  Barras alfanuméricas não-EAN (ex: CX-MASTER-01, PLT-A01).
                 </p>
               </div>
             </div>
@@ -933,7 +1035,7 @@ export function ProductBarcodeView() {
                 </div>
               </div>
 
-              {/* Tabela de Preview */}
+              {/* Tabela de Preview com Colunas EAN e Barra */}
               <div className="overflow-x-auto max-h-96 border border-[var(--card-border)] rounded-xl">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[var(--background)] sticky top-0 border-b border-[var(--card-border)] text-[var(--muted)] font-bold uppercase">
@@ -942,6 +1044,8 @@ export function ProductBarcodeView() {
                       <th className="py-2.5 px-3">Código</th>
                       <th className="py-2.5 px-3">Descrição</th>
                       <th className="py-2.5 px-3">EAN-13</th>
+                      <th className="py-2.5 px-3">Barra Alfanumérica</th>
+                      <th className="py-2.5 px-3">Tipo</th>
                       <th className="py-2.5 px-3">Status</th>
                     </tr>
                   </thead>
@@ -951,7 +1055,17 @@ export function ProductBarcodeView() {
                         <td className="py-2.5 px-3 text-[var(--muted)] font-mono">{idx + 1}</td>
                         <td className="py-2.5 px-3 font-mono font-bold">{row.cod_produto}</td>
                         <td className="py-2.5 px-3 font-semibold text-[var(--foreground)]">{row.descricao}</td>
-                        <td className="py-2.5 px-3 font-mono font-bold tracking-wider">{row.ean}</td>
+                        <td className="py-2.5 px-3 font-mono font-bold tracking-wider text-emerald-400">
+                          {row.ean || "—"}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono font-bold text-[var(--collab-mostarda)]">
+                          {row.barra || "—"}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--background)] border border-[var(--card-border)]">
+                            {row.tipo === "code128" ? "Barra Alfa" : "EAN-13"}
+                          </span>
+                        </td>
                         <td className="py-2.5 px-3">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block ${
@@ -1126,6 +1240,7 @@ export function ProductBarcodeView() {
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {items.map((it, idx) => {
                     const isSelected = idx === selectedPreviewIndex;
+                    const codeDisplay = it.barra || it.codigoEan;
                     return (
                       <div
                         key={it.id}
@@ -1141,7 +1256,12 @@ export function ProductBarcodeView() {
                             {it.descricao}
                           </strong>
                           <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--muted)] mt-0.5">
-                            <span>EAN: {it.codigoEan}</span>
+                            <span>Código: {codeDisplay}</span>
+                            {it.barra && (
+                              <span className="px-1 py-0.2 rounded bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)] font-bold text-[9px]">
+                                Alfa
+                              </span>
+                            )}
                             {it.codigoProduto && <span>• SKU: {it.codigoProduto}</span>}
                           </div>
                         </div>
@@ -1259,7 +1379,7 @@ export function ProductBarcodeView() {
                     {currentPreviewItem.descricao || "DESCRIÇÃO DO PRODUTO"}
                   </div>
 
-                  {/* Código de Barras EAN-13 SVG */}
+                  {/* Código de Barras SVG (EAN-13 ou Code 128 Alfanumérico) */}
                   <div
                     style={{
                       width: "100%",
@@ -1273,7 +1393,7 @@ export function ProductBarcodeView() {
                     dangerouslySetInnerHTML={{ __html: previewSvg }}
                   />
 
-                  {/* Número EAN + SKU opcional */}
+                  {/* Número do Código + SKU opcional */}
                   <div
                     style={{
                       width: "100%",
@@ -1286,7 +1406,9 @@ export function ProductBarcodeView() {
                       color: "#000000",
                     }}
                   >
-                    {formatoEanEspacado
+                    {currentPreviewItem.barra
+                      ? currentPreviewItem.barra
+                      : formatoEanEspacado
                       ? formatEan13(currentPreviewItem.codigoEan)
                       : currentPreviewItem.codigoEan}
                     {mostrarCodigoProduto && currentPreviewItem.codigoProduto && (
@@ -1369,15 +1491,16 @@ export function ProductBarcodeView() {
                   required
                   value={formDescricao}
                   onChange={(e) => setFormDescricao(e.target.value.toUpperCase())}
-                  placeholder="Ex: DETERGENTE LÍQUIDO NEUTRO 500ML"
+                  placeholder="Ex: CAIXA MASTER FIO DENTAL 50UN"
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-xl text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)] font-semibold"
                 />
               </div>
 
+              {/* Campo EAN-13 */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-[var(--foreground)] block">
-                    Código de Barras EAN-13 * :
+                    Código de Barras EAN-13 (opcional se houver Barra):
                   </label>
                   <button
                     type="button"
@@ -1392,18 +1515,35 @@ export function ProductBarcodeView() {
                     className="text-[var(--collab-mostarda)] hover:underline inline-flex items-center gap-1 cursor-pointer font-semibold text-[10px]"
                   >
                     <Sparkles size={11} />
-                    <span>Gerar Aleatório Válido</span>
+                    <span>Gerar EAN Válido</span>
                   </button>
                 </div>
                 <input
                   type="text"
-                  required
                   maxLength={13}
                   value={formEan}
                   onChange={(e) => setFormEan(e.target.value.replace(/\D/g, ""))}
-                  placeholder="7891000315507"
+                  placeholder="Ex: 7891000315507"
                   className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-xl text-xs text-[var(--foreground)] font-mono font-bold tracking-wider focus:outline-none focus:border-[var(--collab-mostarda)]"
                 />
+              </div>
+
+              {/* 2. Campo Barra Alfanumérica (Code 128) */}
+              <div className="space-y-1">
+                <label className="font-bold text-[var(--foreground)] block flex items-center justify-between">
+                  <span>Barra Alfanumérica (não-EAN / Code 128):</span>
+                  <span className="text-[10px] text-[var(--muted)] font-normal">Letras, números e traços</span>
+                </label>
+                <input
+                  type="text"
+                  value={formBarra}
+                  onChange={(e) => setFormBarra(e.target.value.toUpperCase())}
+                  placeholder="Ex: CX-MASTER-01, PALLET-B02-N4"
+                  className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-xl text-xs text-[var(--foreground)] font-mono font-bold tracking-wider focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+                <p className="text-[10px] text-[var(--muted)]">
+                  Utilize para produtos, caixas ou pallets com códigos que não seguem os 13 dígitos do padrão EAN.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -1,5 +1,6 @@
 import { ProductLabelItem, ProductLabelConfig } from "./productLabelTypes";
 import { getEan13Rectangles } from "./ean13";
+import { getCode128Rectangles } from "./code128";
 
 export const MM_TO_PT = 72 / 25.4;
 
@@ -141,13 +142,16 @@ export function buildProductLabelsPdf(
     sc.push(`(${escapePdfString(descText)}) Tj`);
     sc.push("ET");
 
-    // 2. Número do Código EAN e Código do Produto abaixo do código de barras
+    // 2. Número do Código de Barras e Código do Produto abaixo das barras
     const codeFontPt = Math.max(7, Math.min(11, Math.round(pageH * 0.12)));
     const codeY = marginY + 2;
 
-    const displayCode = config.formatoEanEspacado
-      ? formatEanSpaces(item.codigoEan)
-      : item.codigoEan;
+    const rawBarcode = item.barra || item.codigoEan || "";
+    const isEan13 = (item.tipoBarra === "ean13" || (!item.tipoBarra && !item.barra && /^\d{12,13}$/.test(rawBarcode)));
+
+    const displayCode = isEan13 && config.formatoEanEspacado
+      ? formatEanSpaces(rawBarcode)
+      : rawBarcode;
 
     const bottomText =
       config.mostrarCodigoProduto && item.codigoProduto
@@ -163,7 +167,7 @@ export function buildProductLabelsPdf(
     sc.push(`(${escapePdfString(bottomText)}) Tj`);
     sc.push("ET");
 
-    // 3. Código de Barras EAN-13 Centralizado (Maximizando a área útil)
+    // 3. Código de Barras (EAN-13 ou Code 128 Alfanumérico) Centralizado
     const barcodeBottomY = codeY + codeFontPt + 3;
     const barcodeTopY = descY - 4;
     const availableBarHeight = Math.max(16, barcodeTopY - barcodeBottomY);
@@ -171,14 +175,23 @@ export function buildProductLabelsPdf(
     const barcodeTargetW = Math.min(usableW, pageW * 0.90);
     const barcodeStartX = (pageW - barcodeTargetW) / 2;
 
-    const { rects } = getEan13Rectangles(
-      item.codigoEan,
-      barcodeStartX,
-      barcodeBottomY,
-      barcodeTargetW,
-      availableBarHeight,
-      6 // quiet zone modules
-    );
+    const rects = isEan13
+      ? getEan13Rectangles(
+          rawBarcode,
+          barcodeStartX,
+          barcodeBottomY,
+          barcodeTargetW,
+          availableBarHeight,
+          6 // quiet zone modules
+        ).rects
+      : getCode128Rectangles(
+          rawBarcode,
+          barcodeStartX,
+          barcodeBottomY,
+          barcodeTargetW,
+          availableBarHeight,
+          10
+        ).rects;
 
     for (const r of rects) {
       sc.push(
