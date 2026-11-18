@@ -227,7 +227,6 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       setFormError(err.message || "Erro inesperado ao salvar usuário.");
     } finally {
       setIsSaving(false);
-      refreshList();
     }
   };
 
@@ -238,7 +237,6 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     if (confirm(msg)) {
       toggleUserMustChangePassword(id, force);
       setUsers(getUsers());
-      refreshList();
     }
   };
 
@@ -248,8 +246,11 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       if (!res.success) {
         alert(res.error || "Não foi possível excluir o usuário.");
       } else {
-        setUsers(getUsers());
-        refreshList();
+        if (res.users && Array.isArray(res.users)) {
+          setUsers(res.users);
+        } else {
+          setUsers(getUsers());
+        }
       }
     }
   };
@@ -260,7 +261,6 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
       alert(res.error || "Não foi possível alterar o status do usuário.");
     } else {
       setUsers(getUsers());
-      refreshList();
     }
   };
 

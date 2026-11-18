@@ -69,13 +69,25 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    let id = searchParams.get("id");
+    let id: string | null = null;
+
+    if (req.nextUrl && req.nextUrl.searchParams) {
+      id = req.nextUrl.searchParams.get("id");
+    }
+
+    if (!id && req.url) {
+      try {
+        const parsed = new URL(req.url, "http://localhost:3002");
+        id = parsed.searchParams.get("id");
+      } catch {
+        // ignore
+      }
+    }
 
     if (!id) {
       try {
         const body = await req.json();
-        id = body.id;
+        id = body?.id || null;
       } catch {
         // ignore
       }
@@ -89,7 +101,11 @@ export async function DELETE(req: NextRequest) {
     }
 
     const res = deleteServerUser(id);
-    return NextResponse.json(res);
+    return NextResponse.json(res, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
   } catch (err: any) {
     console.error("Erro na API /api/users DELETE:", err);
     return NextResponse.json(

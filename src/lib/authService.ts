@@ -244,7 +244,7 @@ export async function saveUserAsync(
   }
 }
 
-export function deleteUser(id: string): { success: boolean; error?: string } {
+export function deleteUser(id: string, syncOnline: boolean = true): { success: boolean; error?: string } {
   const currentSession = getCurrentSession();
   if (currentSession?.user.id === id) {
     return { success: false, error: "Você não pode excluir o usuário que está atualmente conectado." };
@@ -253,8 +253,8 @@ export function deleteUser(id: string): { success: boolean; error?: string } {
   const updated = current.filter((u) => u.id !== id);
   saveUsers(updated);
 
-  // Sincroniza exclusão no servidor
-  if (typeof window !== "undefined") {
+  // Sincroniza exclusão no servidor apenas se syncOnline for true
+  if (syncOnline && typeof window !== "undefined") {
     fetch(`/api/users?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     }).catch((err) => console.error("Erro ao deletar usuário no servidor:", err));
@@ -263,24 +263,39 @@ export function deleteUser(id: string): { success: boolean; error?: string } {
   return { success: true };
 }
 
-export async function deleteUserAsync(id: string): Promise<{ success: boolean; error?: string }> {
-  const localRes = deleteUser(id);
+export async function deleteUserAsync(
+  id: string
+): Promise<{ success: boolean; users?: PortalUser[]; error?: string }> {
+  const currentSession = getCurrentSession();
+  if (currentSession?.user.id === id) {
+    return { success: false, error: "Você não pode excluir o usuário que está atualmente conectado." };
+  }
+
+  // Deleta localmente sem disparar fetch concorrente
+  const localRes = deleteUser(id, false);
   if (!localRes.success) return localRes;
+
+  const localUpdated = getUsers();
 
   try {
     const res = await fetch(`/api/users?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: {
+        "Cache-Control": "no-cache",
+      },
     });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users)) {
         saveUsers(data.users);
+        return { success: true, users: data.users };
       }
     }
   } catch (err) {
     console.error("Erro ao deletar usuário no servidor:", err);
   }
-  return { success: true };
+
+  return { success: true, users: localUpdated };
 }
 
 export function toggleUserStatus(id: string): { success: boolean; error?: string } {

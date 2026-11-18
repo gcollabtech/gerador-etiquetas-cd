@@ -4,16 +4,19 @@ import { PortalUser, PasswordResetRequest } from "./authTypes";
 import { DEFAULT_USERS } from "./authService";
 
 function getResolvedPaths() {
+  const canonical = "/Users/fragoso/Documents/collab-finance/collab-finance/gerador-etiquetas-cd/data";
   const possibleDirs = [
+    canonical,
     path.join(process.cwd(), "gerador-etiquetas-cd", "data"),
     path.join(process.cwd(), "data"),
-    "/Users/fragoso/Documents/collab-finance/collab-finance/gerador-etiquetas-cd/data",
   ];
 
   let selectedDir = possibleDirs.find((d) => fs.existsSync(d));
 
   if (!selectedDir) {
-    if (fs.existsSync(path.join(process.cwd(), "gerador-etiquetas-cd"))) {
+    if (fs.existsSync(canonical)) {
+      selectedDir = canonical;
+    } else if (fs.existsSync(path.join(process.cwd(), "gerador-etiquetas-cd"))) {
       selectedDir = path.join(process.cwd(), "gerador-etiquetas-cd", "data");
     } else {
       selectedDir = path.join(process.cwd(), "data");
