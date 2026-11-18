@@ -466,6 +466,117 @@ export function registrarCheckInPortaria(
   return { success: true, agendamento: updated };
 }
 
+// ── Cancelamento de Agendamento (Item 2.3) ────────────────────────────
+export function cancelarAgendamento(
+  id: string,
+  motivo: string,
+  canceladoPor: string = "Administração do CD"
+): { success: boolean; error?: string } {
+  const agendamentos = getAgendamentos();
+  const index = agendamentos.findIndex((a) => a.id === id);
+  const current = agendamentos[index];
+  if (index === -1 || !current) {
+    return { success: false, error: "Agendamento não localizado para cancelamento." };
+  }
+
+  const updated: EntregaAgendamento = {
+    ...current,
+    status: "cancelado",
+    motivoCancelamento: motivo,
+    dataCancelamento: new Date().toISOString(),
+    canceladoPor,
+    updatedAt: new Date().toISOString(),
+  };
+
+  agendamentos[index] = updated;
+  saveAgendamentos(agendamentos);
+  return { success: true };
+}
+
+// ── Remarcação de Agendamento (Item 2.3) ───────────────────────────────
+export function remarcarAgendamento(
+  id: string,
+  novaData: string,
+  novaJanela: JanelaHorario,
+  motivo: string,
+  alteradoPor: string = "Administração do CD"
+): { success: boolean; error?: string; agendamento?: EntregaAgendamento } {
+  const agendamentos = getAgendamentos();
+  const index = agendamentos.findIndex((a) => a.id === id);
+  const current = agendamentos[index];
+  if (index === -1 || !current) {
+    return { success: false, error: "Agendamento não localizado para remarcação." };
+  }
+
+  // Se não mudou nem data nem janela
+  if (current.data === novaData && current.janela === novaJanela) {
+    return { success: false, error: "Selecione uma data ou horário diferente para remarcar." };
+  }
+
+  // 1. Verifica bloqueios da nova janela
+  const bloqueios = getBloqueios();
+  const isBlocked = bloqueios.some(
+    (b) => b.data === novaData && (b.janela === "todas" || b.janela === novaJanela)
+  );
+  if (isBlocked) {
+    return {
+      success: false,
+      error: `A janela ${novaJanela} do dia ${novaData} está bloqueada para manutenção ou operação interna.`,
+    };
+  }
+
+  // 2. Verifica capacidade simultânea da nova janela (outros agendamentos)
+  const outrosAgendamentosJanela = agendamentos.filter(
+    (a) => a.id !== id && a.data === novaData && a.janela === novaJanela && a.status !== "cancelado"
+  );
+
+  if (outrosAgendamentosJanela.length >= MAX_FORNECEDORES_POR_JANELA) {
+    return {
+      success: false,
+      error: `A janela ${novaJanela} já atingiu a capacidade máxima de ${MAX_FORNECEDORES_POR_JANELA} fornecedores.`,
+    };
+  }
+
+  const volumesAtuais = outrosAgendamentosJanela.reduce(
+    (sum, a) => sum + (Number(a.quantidadeVolumes) || 0),
+    0
+  );
+
+  if (volumesAtuais + Number(current.quantidadeVolumes) > MAX_VOLUMES_POR_JANELA) {
+    return {
+      success: false,
+      error: `A inclusão desta carga (${current.quantidadeVolumes} vols) ultrapassaria o limite de ${MAX_VOLUMES_POR_JANELA} volumes da janela (atual: ${volumesAtuais} vols).`,
+    };
+  }
+
+  const historico = current.historicoRemarcacoes || [];
+  const novoHistorico = [
+    ...historico,
+    {
+      dataAnterior: current.data,
+      janelaAnterior: current.janela,
+      novaData,
+      novaJanela,
+      motivo,
+      alteradoEm: new Date().toISOString(),
+      alteradoPor,
+    },
+  ];
+
+  const updated: EntregaAgendamento = {
+    ...current,
+    data: novaData,
+    janela: novaJanela,
+    status: "agendado",
+    historicoRemarcacoes: novoHistorico,
+    updatedAt: new Date().toISOString(),
+  };
+
+  agendamentos[index] = updated;
+  saveAgendamentos(agendamentos);
+  return { success: true, agendamento: updated };
+}
+
 // ── Exclusão de Agendamento ───────────────────────────────────────────
 export function deleteAgendamento(id: string): { success: boolean; error?: string } {
   const agendamentos = getAgendamentos();
@@ -475,6 +586,38 @@ export function deleteAgendamento(id: string): { success: boolean; error?: strin
   }
   const filtered = agendamentos.filter((a) => a.id !== id);
   saveAgendamentos(filtered);
+  return { success: true };
+}
+
+// ── Gestão de Bloqueios de Janelas / Docas / Períodos (Item 2.3) ────────
+export function criarBloqueio(dados: {
+  data: string;
+  janela: JanelaHorario | "todas";
+  docaId?: string;
+  motivo: string;
+  periodo?: string;
+  criadoPor?: string;
+}): { success: boolean; error?: string; bloqueio?: BloqueioJanela } {
+  const bloqueios = getBloqueios();
+  const novoBloqueio: BloqueioJanela = {
+    id: `blq-${Date.now()}`,
+    data: dados.data,
+    janela: dados.janela,
+    docaId: dados.docaId || "Todas as Docas",
+    motivo: dados.motivo.trim() || "Manutenção ou operação interna",
+    periodo: dados.periodo || (dados.janela === "todas" ? "Dia Integral" : dados.janela),
+    criadoPor: dados.criadoPor || "Administração CD",
+    createdAt: new Date().toISOString(),
+  };
+
+  saveBloqueios([...bloqueios, novoBloqueio]);
+  return { success: true, bloqueio: novoBloqueio };
+}
+
+export function removerBloqueio(id: string): { success: boolean } {
+  const bloqueios = getBloqueios();
+  const filtrados = bloqueios.filter((b) => b.id !== id);
+  saveBloqueios(filtrados);
   return { success: true };
 }
 

@@ -98,4 +98,6 @@ export interface AddressPreset {
   name: string;
   description: string;
   params: AddressParams;
+  createdAt?: string;
+  isCustom?: boolean;
 }

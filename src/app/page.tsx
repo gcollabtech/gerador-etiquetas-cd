@@ -39,6 +39,11 @@ import {
   clearHistory,
   getPresets,
   saveCustomPreset,
+  updateCustomPreset,
+  deletePreset,
+  getLastParams,
+  saveLastParams,
+  resetPresetsToDefault,
   DEFAULT_PRESETS,
 } from "@/lib/historyStorage";
 import { generateCode128Svg } from "@/lib/code128";
@@ -56,6 +61,7 @@ import {
   Truck,
   Users,
   Settings,
+  Save,
 } from "lucide-react";
 
 export default function Home() {
@@ -96,6 +102,8 @@ export default function Home() {
 
   const [history, setHistory] = useState<GenerationHistoryItem[]>([]);
   const [presets, setPresets] = useState<AddressPreset[]>(DEFAULT_PRESETS);
+  const [activePresetId, setActivePresetId] = useState<string | null>("exemplo-cd-160");
+  const [isSaveModelModalOpen, setIsSaveModelModalOpen] = useState(false);
 
   useEffect(() => {
     const rawTheme = localStorage.getItem("cd-labels-theme");
@@ -111,19 +119,27 @@ export default function Home() {
     setHistory(getHistory());
     setPresets(getPresets());
 
+    // Recupera os últimos parâmetros parametrizados pelo usuário
+    const savedLastParams = getLastParams();
+    const effectiveParams = savedLastParams ? { ...params, ...savedLastParams } : params;
+    if (savedLastParams) {
+      setParams(effectiveParams);
+    }
+
     try {
       const initialBatch = generateStorageAddresses({
-        ruaInicio: "R01",
-        ruaFim: "R02",
-        predioInicio: "P01",
-        predioFim: "P02",
-        aptoInicio: "A01",
-        aptoFim: "A10",
-        nivelInicio: "N01",
-        nivelFim: "N04",
+        ruaInicio: effectiveParams.ruaInicio || "R01",
+        ruaFim: effectiveParams.ruaFim || "R02",
+        predioInicio: effectiveParams.predioInicio || "P01",
+        predioFim: effectiveParams.predioFim || "P02",
+        aptoInicio: effectiveParams.aptoInicio || "A01",
+        aptoFim: effectiveParams.aptoFim || "A10",
+        nivelInicio: effectiveParams.nivelInicio || "N01",
+        nivelFim: effectiveParams.nivelFim || "N04",
       });
       setAddresses(initialBatch);
-      setSelectedIds(new Set(initialBatch.map((a) => a.id)));
+      // As etiquetas geradas na tela iniciam desmarcadas para que o usuário selecione as que deseja imprimir
+      setSelectedIds(new Set());
       if (initialBatch[0]) {
         setPreviewAddress(initialBatch[0]);
       }
@@ -131,6 +147,11 @@ export default function Home() {
       console.error(e);
     }
   }, []);
+
+  // Mantém os parâmetros de etiqueta salvos continuamente para novas impressões
+  useEffect(() => {
+    saveLastParams(params);
+  }, [params]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -146,7 +167,8 @@ export default function Home() {
     try {
       const generated = generateStorageAddresses(params);
       setAddresses(generated);
-      setSelectedIds(new Set(generated.map((a) => a.id)));
+      // As etiquetas geradas na tela iniciam desmarcadas para que o usuário selecione as desejadas
+      setSelectedIds(new Set());
       if (generated[0]) {
         setPreviewAddress(generated[0]);
       }
@@ -200,13 +222,38 @@ export default function Home() {
   };
 
   const handleSelectPreset = (preset: AddressPreset) => {
-    setParams(preset.params);
+    setActivePresetId(preset.id);
+    setParams((prev) => ({
+      ...prev,
+      ...preset.params,
+    }));
   };
 
   const handleSaveCurrentAsPreset = (name: string, description: string) => {
-    saveCustomPreset(name, description, params);
+    const saved = saveCustomPreset(name, description, params);
     setPresets(getPresets());
-    alert(`Predefinição "${name}" salva com sucesso!`);
+    setActivePresetId(saved.id);
+  };
+
+  const handleUpdatePreset = (id: string, name: string, description: string) => {
+    updateCustomPreset(id, name, description, params);
+    setPresets(getPresets());
+  };
+
+  const handleDeletePreset = (id: string) => {
+    deletePreset(id);
+    setPresets(getPresets());
+    if (activePresetId === id) {
+      setActivePresetId(null);
+    }
+  };
+
+  const handleResetPresets = () => {
+    if (confirm("Deseja restaurar todos os modelos originais de fábrica do CD?")) {
+      const defaults = resetPresetsToDefault();
+      setPresets(defaults);
+      setActivePresetId("exemplo-cd-160");
+    }
   };
 
   const handleClearHistory = () => {
@@ -401,6 +448,20 @@ export default function Home() {
                 <>
                   <button
                     type="button"
+                    onClick={() => {
+                      setActiveTopic("config");
+                      setIsSaveModelModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
+                    title="Gravar modelo de etiqueta parametrizado para novas impressões"
+                  >
+                    <Save size={13} className="text-[var(--collab-mostarda)]" />
+                    <span className="hidden sm:inline">Gravar Modelo</span>
+                    <span className="sm:hidden">Gravar</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleGenerate}
                     disabled={!validation.valid}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--collab-mostarda)] text-black hover:opacity-90 transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -414,14 +475,17 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => {
-                      setPrintSelectedOnly(false);
+                      setPrintSelectedOnly(selectedIds.size > 0);
                       setActiveTopic("print");
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--secondary)] border border-[var(--card-border)] hover:border-[var(--collab-mostarda)] text-[var(--foreground)] transition-all cursor-pointer"
                     title="Ir para a Central de Impressão"
                   >
                     <Printer size={13} className="text-[var(--collab-mostarda)]" />
-                    <span className="hidden sm:inline">Imprimir / PDF</span>
+                    <span className="hidden sm:inline">
+                      {selectedIds.size > 0 ? `Imprimir Selecionadas (${selectedIds.size})` : "Imprimir / PDF"}
+                    </span>
+                    <span className="sm:hidden">Imprimir</span>
                   </button>
                 </>
               ) : (
@@ -484,8 +548,14 @@ export default function Home() {
                   onChange={setParams}
                   validation={validation}
                   presets={presets}
+                  activePresetId={activePresetId}
                   onSelectPreset={handleSelectPreset}
                   onSaveCurrentAsPreset={handleSaveCurrentAsPreset}
+                  onUpdatePreset={handleUpdatePreset}
+                  onDeletePreset={handleDeletePreset}
+                  onResetPresets={handleResetPresets}
+                  isExternalSaveModalOpen={isSaveModelModalOpen}
+                  onCloseExternalSaveModal={() => setIsSaveModelModalOpen(false)}
                 />
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-[var(--card)] border border-[var(--card-border)]">
@@ -680,8 +750,14 @@ export default function Home() {
                   onChange={setParams}
                   validation={validation}
                   presets={presets}
+                  activePresetId={activePresetId}
                   onSelectPreset={handleSelectPreset}
                   onSaveCurrentAsPreset={handleSaveCurrentAsPreset}
+                  onUpdatePreset={handleUpdatePreset}
+                  onDeletePreset={handleDeletePreset}
+                  onResetPresets={handleResetPresets}
+                  isExternalSaveModalOpen={isSaveModelModalOpen}
+                  onCloseExternalSaveModal={() => setIsSaveModelModalOpen(false)}
                 />
 
                 <GenerationSummaryCard
@@ -810,7 +886,7 @@ export default function Home() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRight: "0.4mm solid #CC0000",
+                    borderRight: "0.4mm solid #000000",
                     flexShrink: 0,
                     padding: "1mm 0.5mm",
                     boxSizing: "border-box",
@@ -860,37 +936,61 @@ export default function Home() {
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      marginBottom: "2.5mm", // subiu a informação dos endereços
+                      marginBottom: "6mm", // sobe as informações de endereço mantendo centralizado
                     }}
                   >
                     {addr.code}
                   </div>
                 </div>
 
-                {/* Right — wide bold arrow (14% para simetria e centralização perfeita) */}
+                {/* Right — directional arrow alinhada com a barra (14% simétrico) */}
                 <div
                   style={{
                     width: "14%",
                     height: "100%",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
+                    justifyContent: "space-between",
                     flexShrink: 0,
-                    padding: "0.5mm",
+                    padding: "0.5mm 1mm",
                     boxSizing: "border-box",
                   }}
                 >
-                  {isDown ? (
-                    <svg viewBox="0 0 48 80" style={{ width: "15mm", height: "28mm" }} fill="#000000">
-                      <rect x="11" y="2" width="26" height="42" />
-                      <polygon points="24,78 0,42 48,42" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 48 80" style={{ width: "15mm", height: "28mm" }} fill="#000000">
-                      <polygon points="24,2 0,38 48,38" />
-                      <rect x="11" y="36" width="26" height="42" />
-                    </svg>
-                  )}
+                  <div
+                    style={{
+                      width: "100%",
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {isDown ? (
+                      <svg viewBox="0 0 48 80" style={{ width: "12mm", height: "auto", maxHeight: "90%" }} fill="#000000">
+                        <rect x="11" y="2" width="26" height="42" />
+                        <polygon points="24,78 0,42 48,42" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 48 80" style={{ width: "12mm", height: "auto", maxHeight: "90%" }} fill="#000000">
+                        <polygon points="24,2 0,38 48,38" />
+                        <rect x="11" y="36" width="26" height="42" />
+                      </svg>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      fontSize: "10.5pt",
+                      lineHeight: "1",
+                      marginBottom: "6mm",
+                      visibility: "hidden",
+                      userSelect: "none",
+                    }}
+                  >
+                    &nbsp;
+                  </div>
                 </div>
               </div>
             </div>

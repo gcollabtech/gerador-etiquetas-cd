@@ -144,8 +144,8 @@ function drawSingleLabel(
       sc.push(`${(-tw / 2).toFixed(2)} -4 Td (Collab) Tj ET Q`);
     }
 
-    // Red separator line
-    sc.push("0.8 0 0 RG 1.5 w");
+    // Black separator line
+    sc.push("0 0 0 RG 1.5 w");
     sc.push(`${RED_LINE_X.toFixed(2)} ${yU.toFixed(2)} m`);
     sc.push(`${RED_LINE_X.toFixed(2)} ${(yU + hU).toFixed(2)} l S`);
     sc.push("0 0 0 RG");
@@ -169,13 +169,13 @@ function drawSingleLabel(
   const fontPt = customFontPt > 0 ? customFontPt : defaultFontPt;
 
   // Vertical layout: barcode on top, address text below
-  // Sobe um pouco a informação dos endereços para não ficar colada na margem inferior
+  // Sobe mais as informações de endereço (R01-P01-A01-N01) mantendo alinhado
   const textLineHeight = fontPt * 1.15;
-  const textBottomMargin = Math.max(8, innerH * 0.08); // subiu a posição das informações de endereço
+  const textBottomMargin = Math.max(16, innerH * 0.16); // eleva o texto de endereço
   const textY = yU + textBottomMargin;
 
-  // Barcode height: ampliado para preencher melhor a área de impressão
-  const maxBarcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 5);
+  // Barcode height: dimensionado para preencher a área superior
+  const maxBarcodeHeight = Math.max(16, hU - textLineHeight - textBottomMargin - 6);
   const defaultBarcodeHeight = Math.max(20, Math.round(innerH * 0.48));
 
   const customBarcodeHeightMm = Number(config.alturaCodigoBarrasMm);
@@ -210,11 +210,12 @@ function drawSingleLabel(
   sc.push(`(${escapePdfString(addr.code)}) Tj`);
   sc.push("ET");
 
-  // Directional arrow perfeitamente centralizada na coluna direita simétrica
-  const arrowH = Math.round(Math.min(hU * 0.88, 110));
-  const arrowW = Math.round(Math.min(arrowColW * 0.86, arrowH * 0.56));
+  // Seta direcional perfeitamente alinhada com a barra (a ponta da seta termina alinhada com a imagem da barra)
+  const arrowH = barcodeHeight;
+  const arrowY = barcodeY;
+  const maxArrowW = arrowColW * 0.82;
+  const arrowW = Math.round(Math.min(maxArrowW, arrowH * 0.52));
   const arrowX = arrowColX + (arrowColW - arrowW) / 2; // centered horizontally
-  const arrowY = yU + (hU - arrowH) / 2; // centered vertically
   drawVectorArrow(sc, arrowX, arrowY, arrowW, arrowH, addr.arrowDirection);
 
   sc.push("Q");

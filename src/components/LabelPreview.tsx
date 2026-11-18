@@ -156,7 +156,7 @@ export function LabelPreview({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRight: "2px solid #CC0000",
+                  borderRight: "2px solid #000000",
                   flexShrink: 0,
                   padding: "4px 2px",
                   boxSizing: "border-box",
@@ -216,45 +216,73 @@ export function LabelPreview({
                   alignItems: "center",
                   justifyContent: "center",
                   lineHeight: 1,
-                  paddingBottom: "8px", // sobe um pouco a informação dos endereços
+                  paddingBottom: "18px", // sobe significativamente as informações de endereço
                 }}
               >
                 {sampleAddress.code}
               </div>
             </div>
 
-            {/* Right column — directional arrow (14% simétrico) */}
+            {/* Right column — directional arrow alinhada com a barra (14% simétrico) */}
             <div
               style={{
                 width: "14%",
                 height: "100%",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "space-between",
                 flexShrink: 0,
-                padding: "2px",
+                padding: "1.5% 1%",
                 boxSizing: "border-box",
               }}
             >
-              {sampleAddress.arrowDirection === "down" ? (
-                <svg
-                  viewBox="0 0 42 64"
-                  style={{ width: "95%", height: "94%", maxHeight: "96%" }}
-                  fill="#000000"
-                >
-                  <rect x="12" y="2" width="18" height="34" />
-                  <polygon points="21,62 1,32 41,32" />
-                </svg>
-              ) : (
-                <svg
-                  viewBox="0 0 42 64"
-                  style={{ width: "95%", height: "94%", maxHeight: "96%" }}
-                  fill="#000000"
-                >
-                  <polygon points="21,2 1,32 41,32" />
-                  <rect x="12" y="28" width="18" height="34" />
-                </svg>
-              )}
+              {/* Arrow container: perfeitamente pareado com a imagem do código de barras */}
+              <div
+                style={{
+                  width: "100%",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  paddingTop: "2px",
+                }}
+              >
+                {sampleAddress.arrowDirection === "down" ? (
+                  <svg
+                    viewBox="0 0 42 64"
+                    style={{ width: "80%", height: "92%", maxHeight: "100%" }}
+                    fill="#000000"
+                  >
+                    <rect x="12" y="2" width="18" height="34" />
+                    <polygon points="21,62 1,32 41,32" />
+                  </svg>
+                ) : (
+                  <svg
+                    viewBox="0 0 42 64"
+                    style={{ width: "80%", height: "92%", maxHeight: "100%" }}
+                    fill="#000000"
+                  >
+                    <polygon points="21,2 1,32 41,32" />
+                    <rect x="12" y="28" width="18" height="34" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Espaçador inferior idêntico ao texto do endereço para travar o alinhamento da seta com o código de barras */}
+              <div
+                style={{
+                  width: "100%",
+                  fontSize: resolvedFontSize,
+                  lineHeight: 1,
+                  paddingBottom: "18px",
+                  visibility: "hidden",
+                  userSelect: "none",
+                }}
+              >
+                &nbsp;
+              </div>
             </div>
           </div>
         </div>

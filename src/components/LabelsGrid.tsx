@@ -94,28 +94,47 @@ export function LabelsGrid({
             <span>Etiquetas Geradas ({addresses.length.toLocaleString("pt-BR")} no lote)</span>
           </h3>
           <p className="text-xs text-[var(--muted)]">
-            {selectedCount} selecionada(s) para impressão ou exportação em PDF
+            {selectedCount > 0 ? (
+              <span className="text-[var(--foreground)] font-semibold">
+                <strong className="text-[var(--collab-mostarda)]">{selectedCount}</strong> de {addresses.length} etiqueta(s) selecionada(s) para impressão
+              </span>
+            ) : (
+              <span>
+                Nenhuma etiqueta selecionada. Marque as etiquetas abaixo para imprimir ou use os botões rápidos.
+              </span>
+            )}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => onOpenPrintModal(false)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] text-xs font-bold uppercase tracking-wider rounded transition-all shadow-sm cursor-pointer"
-          >
-            <Printer size={15} />
-            <span>Imprimir Lote Completo ({addresses.length})</span>
-          </button>
+          {selectedCount > 0 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenPrintModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] text-xs font-bold uppercase tracking-wider rounded transition-all shadow-sm cursor-pointer"
+              >
+                <Printer size={15} />
+                <span>Imprimir Selecionadas ({selectedCount})</span>
+              </button>
 
-          {selectedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenPrintModal(false)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--secondary)] hover:border-[var(--collab-mostarda)] border border-[var(--card-border)] text-[var(--foreground)] text-xs font-semibold rounded transition-all cursor-pointer"
+              >
+                <Printer size={14} className="text-[var(--collab-mostarda)]" />
+                <span>Imprimir Todas ({addresses.length})</span>
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => onOpenPrintModal(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-[var(--secondary)] hover:border-[var(--collab-mostarda)] border border-[var(--card-border)] text-[var(--foreground)] text-xs font-bold rounded transition-all cursor-pointer"
+              onClick={() => onOpenPrintModal(false)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] text-xs font-bold uppercase tracking-wider rounded transition-all shadow-sm cursor-pointer"
             >
-              <Printer size={14} className="text-[var(--collab-mostarda)]" />
-              <span>Imprimir Selecionadas ({selectedCount})</span>
+              <Printer size={15} />
+              <span>Imprimir Lote Completo ({addresses.length})</span>
             </button>
           )}
         </div>

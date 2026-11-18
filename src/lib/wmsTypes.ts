@@ -37,6 +37,16 @@ export interface CheckInInfo {
   observacoesChegada?: string;
 }
 
+export interface HistoricoRemarcacao {
+  dataAnterior: string;
+  janelaAnterior: JanelaHorario;
+  novaData: string;
+  novaJanela: JanelaHorario;
+  motivo: string;
+  alteradoEm: string;
+  alteradoPor: string;
+}
+
 export interface EntregaAgendamento {
   id: string;
   protocolo: string; // Ex: AGD-20261117-0042
@@ -60,6 +70,12 @@ export interface EntregaAgendamento {
   motoristaNome: string;
   motoristaTelefone: string;
   observacoes?: string;
+
+  // Cancelamento e Remarcação (Item 2.3)
+  motivoCancelamento?: string;
+  dataCancelamento?: string;
+  canceladoPor?: string;
+  historicoRemarcacoes?: HistoricoRemarcacao[];
 
   // Timestamps de fluxo e controle
   createdAt: string;
@@ -89,8 +105,9 @@ export interface BloqueioJanela {
   id: string;
   data: string; // YYYY-MM-DD
   janela: JanelaHorario | "todas";
-  docaId?: string;
+  docaId?: string; // "Doca 01", "Doca 02", "Todas as Docas"
   motivo: string;
+  periodo?: string; // Ex: "08:00 às 12:00", "Integral"
   criadoPor: string;
   createdAt: string;
 }

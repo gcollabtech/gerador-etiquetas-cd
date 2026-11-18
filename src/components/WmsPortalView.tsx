@@ -7,6 +7,7 @@ import {
   AgendamentoCanal,
   JanelaHorario,
   VeiculoTipo,
+  BloqueioJanela,
 } from "@/lib/wmsTypes";
 import {
   getAgendamentos,
@@ -17,6 +18,11 @@ import {
   toggleBloqueioJanela,
   getIndicadoresAgendamento,
   deleteAgendamento,
+  cancelarAgendamento,
+  remarcarAgendamento,
+  criarBloqueio,
+  removerBloqueio,
+  getBloqueios,
   resetAgendamentosToSeed,
   JANELAS_PADRAO,
   MAX_FORNECEDORES_POR_JANELA,
@@ -51,6 +57,11 @@ import {
   Hash,
   RotateCcw,
   Trash2,
+  CalendarClock,
+  CalendarX2,
+  CalendarDays,
+  Wrench,
+  Info,
 } from "lucide-react";
 
 interface WmsPortalViewProps {
@@ -86,6 +97,24 @@ export function WmsPortalView({
   const [modalDetalhesItem, setModalDetalhesItem] = useState<EntregaAgendamento | null>(null);
   const [modalCheckInItem, setModalCheckInItem] = useState<EntregaAgendamento | null>(null);
   const [modalExcluirItem, setModalExcluirItem] = useState<EntregaAgendamento | null>(null);
+
+  // Cancelamento e Remarcação (Item 2.3)
+  const [modalCancelarItem, setModalCancelarItem] = useState<EntregaAgendamento | null>(null);
+  const [motivoCancelamentoInput, setMotivoCancelamentoInput] = useState("");
+  const [modalRemarcarItem, setModalRemarcarItem] = useState<EntregaAgendamento | null>(null);
+  const [remarcarNovaData, setRemarcarNovaData] = useState("2026-11-17");
+  const [remarcarNovaJanela, setRemarcarNovaJanela] = useState<JanelaHorario>("08:00 - 10:00");
+  const [remarcarMotivoInput, setRemarcarMotivoInput] = useState("");
+  const [remarcarError, setRemarcarError] = useState<string | null>(null);
+
+  // Gestão de Bloqueios (Item 2.3)
+  const [modalGerenciarBloqueios, setModalGerenciarBloqueios] = useState(false);
+  const [bloqueioNovaData, setBloqueioNovaData] = useState("2026-11-17");
+  const [bloqueioNovaJanela, setBloqueioNovaJanela] = useState<JanelaHorario | "todas">("todas");
+  const [bloqueioNovaDoca, setBloqueioNovaDoca] = useState("Todas as Docas");
+  const [bloqueioNovoMotivo, setBloqueioNovoMotivo] = useState("");
+  const [bloqueioNovoPeriodo, setBloqueioNovoPeriodo] = useState("Dia Integral");
+
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [responsavelPortariaInput, setResponsavelPortariaInput] = useState("Portaria 01 — Carlos R.");
   const [obsPortariaInput, setObsPortariaInput] = useState("");
@@ -126,6 +155,11 @@ export function WmsPortalView({
     return getIndicadoresAgendamento(dataSelecionada);
   }, [dataSelecionada, refreshKey]);
 
+  const listaBloqueios = useMemo(() => {
+    void refreshKey;
+    return getBloqueios();
+  }, [refreshKey]);
+
   // Agendamentos filtrados
   const agendamentosFiltrados = useMemo(() => {
     return agendamentos.filter((a) => {
@@ -148,6 +182,94 @@ export function WmsPortalView({
   // Handlers
   const handleToggleBloqueio = (janela: JanelaHorario) => {
     toggleBloqueioJanela(dataSelecionada, janela, "Operação interna e manutenção programada", "Doca 02");
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleOpenCancelar = (agd: EntregaAgendamento) => {
+    setModalCancelarItem(agd);
+    setMotivoCancelamentoInput("");
+  };
+
+  const handleConfirmarCancelamento = () => {
+    if (!modalCancelarItem) return;
+    if (!motivoCancelamentoInput.trim()) {
+      setToastMsg({ text: "Informe a justificativa do cancelamento.", type: "error" });
+      return;
+    }
+    const res = cancelarAgendamento(modalCancelarItem.id, motivoCancelamentoInput.trim(), "Administração do CD");
+    if (res.success) {
+      setToastMsg({
+        text: `Agendamento ${modalCancelarItem.protocolo} cancelado. Vaga e capacidade liberadas!`,
+        type: "success",
+      });
+      setRefreshKey((k) => k + 1);
+      if (modalDetalhesItem?.id === modalCancelarItem.id) {
+        setModalDetalhesItem(null);
+      }
+      setModalCancelarItem(null);
+    } else {
+      setToastMsg({ text: res.error || "Erro ao cancelar agendamento.", type: "error" });
+    }
+  };
+
+  const handleOpenRemarcar = (agd: EntregaAgendamento) => {
+    setModalRemarcarItem(agd);
+    setRemarcarNovaData(agd.data);
+    setRemarcarNovaJanela(agd.janela);
+    setRemarcarMotivoInput("");
+    setRemarcarError(null);
+  };
+
+  const handleConfirmarRemarcacao = () => {
+    if (!modalRemarcarItem) return;
+    if (!remarcarMotivoInput.trim()) {
+      setRemarcarError("Informe a justificativa da remarcação.");
+      return;
+    }
+    const res = remarcarAgendamento(
+      modalRemarcarItem.id,
+      remarcarNovaData,
+      remarcarNovaJanela,
+      remarcarMotivoInput.trim(),
+      "Administração do CD"
+    );
+    if (res.success) {
+      setToastMsg({
+        text: `Agendamento ${modalRemarcarItem.protocolo} remarcado para ${remarcarNovaData} às ${remarcarNovaJanela}!`,
+        type: "success",
+      });
+      setRefreshKey((k) => k + 1);
+      if (modalDetalhesItem?.id === modalRemarcarItem.id) {
+        setModalDetalhesItem(null);
+      }
+      setModalRemarcarItem(null);
+    } else {
+      setRemarcarError(res.error || "Não foi possível remarcar o agendamento.");
+    }
+  };
+
+  const handleCriarBloqueio = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bloqueioNovoMotivo.trim()) {
+      setToastMsg({ text: "Informe o motivo do bloqueio.", type: "error" });
+      return;
+    }
+    criarBloqueio({
+      data: bloqueioNovaData,
+      janela: bloqueioNovaJanela,
+      docaId: bloqueioNovaDoca,
+      motivo: bloqueioNovoMotivo.trim(),
+      periodo: bloqueioNovoPeriodo,
+      criadoPor: "Administração do CD",
+    });
+    setToastMsg({ text: "Bloqueio operacional registrado com sucesso!", type: "success" });
+    setBloqueioNovoMotivo("");
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleRemoverBloqueio = (id: string) => {
+    removerBloqueio(id);
+    setToastMsg({ text: "Bloqueio removido com sucesso!", type: "success" });
     setRefreshKey((k) => k + 1);
   };
 
@@ -501,22 +623,78 @@ export function WmsPortalView({
       {/* ── ABA 1: GRADE DE JANELAS DE 2H EM 2H (Item 2.3) ────────────────── */}
       {activeTab === "janelas" && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--card)]/50 p-3 rounded-xl border border-[var(--card-border)] text-xs text-[var(--muted)]">
-            <span className="flex items-center gap-2">
-              <Boxes size={14} className="text-[var(--collab-mostarda)]" />
-              <span>
-                Regra Operacional: <strong>Máx. 2 Fornecedores</strong> e <strong>Máx. 500 Volumes</strong> por janela de 2 horas. Bloqueio automático ao atingir o limite.
-              </span>
-            </span>
-            <span className="font-mono text-[11px] text-[var(--foreground)]">
-              Data em exibição: <strong>{dataSelecionada}</strong>
-            </span>
+          {/* Barra de Controle de Data e Bloqueios Operacionais */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--card)] p-4 rounded-2xl border border-[var(--card-border)] shadow-sm">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays size={16} className="text-[var(--collab-mostarda)]" />
+                <span className="text-xs font-bold text-[var(--foreground)]">Data de Operação do CD:</span>
+                <input
+                  type="date"
+                  value={dataSelecionada}
+                  onChange={(e) => setDataSelecionada(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)] font-mono font-semibold focus:outline-none focus:border-[var(--collab-mostarda)] cursor-pointer"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalGerenciarBloqueios(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--card-border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-xs text-[var(--foreground)] font-medium cursor-pointer transition-all"
+                title="Gerenciar bloqueio de datas, horários, docas e períodos"
+              >
+                <Ban size={13} className="text-red-500" />
+                <span>Bloqueios & Manutenção</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-400 font-mono text-[10px] font-bold">
+                  {listaBloqueios.length}
+                </span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormJanela("08:00 - 10:00");
+                  setIsNovoAgendamentoOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] text-xs font-bold shadow-sm transition-all cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Novo Agendamento</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Destaque das Regras e Exemplo de Capacidade (Item 2.3) */}
+          <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-xs space-y-2">
+            <div className="flex items-center gap-2 text-amber-500 font-bold">
+              <Info size={15} />
+              <span>Regras de Agendamento & Capacidade Simultânea (Módulo 01 — Item 2.3)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-[var(--foreground)] leading-relaxed">
+              <div className="space-y-1">
+                <p>• <strong>Janelas de 2 em 2 horas:</strong> Cada janela recebe no <strong>máximo 2 fornecedores</strong> e até <strong>500 volumes</strong>.</p>
+                <p>• <strong>Controle Simultâneo:</strong> O sistema bloqueia novos agendamentos assim que <em>qualquer um</em> dos dois limites for atingido.</p>
+                <p>• <strong>Cancelamento & Remarcação:</strong> Permite remarcar para outra data/janela com validação automática de capacidade ou cancelar liberando a vaga.</p>
+                <p>• <strong>Anti-Duplicidade:</strong> Sistema impede duplicidade para a mesma Nota Fiscal ou Chave de Acesso da NF-e.</p>
+              </div>
+              <div className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] font-mono text-[11px] space-y-1.5">
+                <strong className="text-[var(--collab-mostarda)] block">Exemplo Prático de Capacidade (Janela 08h às 10h):</strong>
+                <p className="text-[var(--muted)]">Fornecedor A: 300 vols + Fornecedor B: 200 vols = <strong>500 volumes</strong>.</p>
+                <div className="px-2 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-[10px]">
+                  Situação: Janela 100% lotada — novos agendamentos bloqueados automaticamente.
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
             {janelasCapacidade.map((item) => {
               const fornecedoresPct = (item.totalFornecedores / item.maxFornecedores) * 100;
               const volumesPct = (item.totalVolumes / item.maxVolumes) * 100;
+              const isLotadaVolumes = item.totalVolumes >= item.maxVolumes;
+              const isLotadaFornec = item.totalFornecedores >= item.maxFornecedores;
               const isLotada = !item.disponivel && !item.bloqueada;
 
               return (
@@ -544,23 +722,33 @@ export function WmsPortalView({
                           {item.bloqueada ? (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-1">
                               <Ban size={10} />
-                              <span>Bloqueada</span>
+                              <span>Bloqueada (Manutenção / Operação)</span>
                             </span>
-                          ) : isLotada ? (
+                          ) : isLotadaVolumes && isLotadaFornec ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-1">
+                              <ShieldAlert size={10} />
+                              <span>Lotada (2 Fornec. e 500 Vols)</span>
+                            </span>
+                          ) : isLotadaVolumes ? (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1">
                               <ShieldAlert size={10} />
-                              <span>Janela Lotada</span>
+                              <span>Lotada (500 Volumes Atingidos)</span>
+                            </span>
+                          ) : isLotadaFornec ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1">
+                              <ShieldAlert size={10} />
+                              <span>Lotada (2 Fornecedores Atingidos)</span>
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
                               <CheckCircle2 size={10} />
-                              <span>Disponível</span>
+                              <span>Disponível ({item.maxFornecedores - item.totalFornecedores} vaga, {item.maxVolumes - item.totalVolumes} vols livres)</span>
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-[var(--muted)]">
                           {item.bloqueada
-                            ? `Motivo do bloqueio: ${item.motivoBloqueio || "Manutenção interna"}`
+                            ? `Motivo: ${item.motivoBloqueio || "Manutenção interna"}`
                             : `${item.totalFornecedores} de ${item.maxFornecedores} fornecedores • ${item.totalVolumes} de ${item.maxVolumes} volumes`}
                         </p>
                       </div>
@@ -679,7 +867,7 @@ export function WmsPortalView({
                               </span>
                             </div>
 
-                            <div className="flex items-center justify-end gap-1.5 pt-1">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1">
                               {agd.status === "confirmado" || agd.status === "em_transito" ? (
                                 <button
                                   type="button"
@@ -689,6 +877,30 @@ export function WmsPortalView({
                                   Check-in Portaria
                                 </button>
                               ) : null}
+
+                              {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRemarcar(agd)}
+                                  className="px-2 py-1 rounded bg-[var(--card)] hover:bg-sky-500/10 border border-[var(--card-border)] hover:border-sky-500/30 text-sky-400 text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1"
+                                  title="Remarcar agendamento (outra data/horário)"
+                                >
+                                  <CalendarClock size={12} />
+                                  <span>Remarcar</span>
+                                </button>
+                              )}
+
+                              {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCancelar(agd)}
+                                  className="px-2 py-1 rounded bg-[var(--card)] hover:bg-amber-500/10 border border-[var(--card-border)] hover:border-amber-500/30 text-amber-500 text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1"
+                                  title="Cancelar agendamento"
+                                >
+                                  <CalendarX2 size={12} />
+                                  <span>Cancelar</span>
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -871,6 +1083,28 @@ export function WmsPortalView({
                               </button>
                             )}
 
+                            {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenRemarcar(agd)}
+                                className="p-1 rounded text-[var(--muted)] hover:text-sky-400 hover:bg-sky-500/10 cursor-pointer transition-colors"
+                                title="Remarcar data/horário"
+                              >
+                                <CalendarClock size={14} />
+                              </button>
+                            )}
+
+                            {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCancelar(agd)}
+                                className="p-1 rounded text-[var(--muted)] hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                                title="Cancelar agendamento"
+                              >
+                                <CalendarX2 size={14} />
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => setModalDetalhesItem(agd)}
@@ -998,6 +1232,26 @@ export function WmsPortalView({
                 <div className="pt-2 border-t border-[var(--card-border)] flex items-center justify-between">
                   {renderStatusBadge(agd.status)}
                   <div className="flex items-center gap-1.5">
+                    {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRemarcar(agd)}
+                        className="p-1.5 rounded-lg border border-[var(--card-border)] text-[var(--muted)] hover:text-sky-400 hover:bg-sky-500/10 cursor-pointer transition-colors"
+                        title="Remarcar agendamento (outra data/janela)"
+                      >
+                        <CalendarClock size={13} />
+                      </button>
+                    )}
+                    {agd.status !== "cancelado" && agd.status !== "finalizado" && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCancelar(agd)}
+                        className="p-1.5 rounded-lg border border-[var(--card-border)] text-[var(--muted)] hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                        title="Cancelar agendamento"
+                      >
+                        <CalendarX2 size={13} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setModalExcluirItem(agd)}
@@ -1577,14 +1831,68 @@ export function WmsPortalView({
                   <span className="text-[var(--foreground)] italic">{modalDetalhesItem.observacoes}</span>
                 </div>
               )}
+
+              {modalDetalhesItem.motivoCancelamento && (
+                <div className="col-span-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                  <strong className="block text-xs font-bold">Cancelamento Administrativo:</strong>
+                  <p className="text-[11px] mt-0.5">{modalDetalhesItem.motivoCancelamento}</p>
+                  {modalDetalhesItem.dataCancelamento && (
+                    <span className="text-[10px] text-[var(--muted)] block mt-1">
+                      Cancelado em {new Date(modalDetalhesItem.dataCancelamento).toLocaleString()} por {modalDetalhesItem.canceladoPor || "Administração"}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {modalDetalhesItem.historicoRemarcacoes && modalDetalhesItem.historicoRemarcacoes.length > 0 && (
+                <div className="col-span-2 p-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 space-y-1">
+                  <strong className="block text-xs font-bold">Histórico de Remarcações ({modalDetalhesItem.historicoRemarcacoes.length}):</strong>
+                  {modalDetalhesItem.historicoRemarcacoes.map((h, i) => (
+                    <div key={i} className="text-[11px] border-t border-sky-500/20 pt-1 mt-1 text-[var(--foreground)]">
+                      <span>De <strong>{h.dataAnterior} ({h.janelaAnterior})</strong> para <strong>{h.novaData} ({h.novaJanela})</strong></span>
+                      <p className="text-[10px] text-[var(--muted)] italic">Motivo: {h.motivo} — por {h.alteradoPor} em {new Date(h.alteradoEm).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-2">
+            <div className="flex flex-wrap items-center justify-between text-xs pt-2 gap-2">
               <div className="flex items-center gap-2">
                 <span>Status:</span>
                 {renderStatusBadge(modalDetalhesItem.status)}
               </div>
               <div className="flex items-center gap-2">
+                {modalDetalhesItem.status !== "cancelado" && modalDetalhesItem.status !== "finalizado" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const item = modalDetalhesItem;
+                      setModalDetalhesItem(null);
+                      handleOpenRemarcar(item);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 font-semibold cursor-pointer transition-colors"
+                  >
+                    <CalendarClock size={13} />
+                    <span>Remarcar</span>
+                  </button>
+                )}
+
+                {modalDetalhesItem.status !== "cancelado" && modalDetalhesItem.status !== "finalizado" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const item = modalDetalhesItem;
+                      setModalDetalhesItem(null);
+                      handleOpenCancelar(item);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 font-semibold cursor-pointer transition-colors"
+                  >
+                    <CalendarX2 size={13} />
+                    <span>Cancelar</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setModalExcluirItem(modalDetalhesItem)}
@@ -1592,7 +1900,7 @@ export function WmsPortalView({
                   title="Excluir este agendamento"
                 >
                   <Trash2 size={13} />
-                  <span>Excluir Agendamento</span>
+                  <span>Excluir</span>
                 </button>
                 <button
                   type="button"
@@ -1602,6 +1910,351 @@ export function WmsPortalView({
                   Fechar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE REMARCAÇÃO DE AGENDAMENTO (Item 2.3) ─────────────────── */}
+      {modalRemarcarItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-[var(--card)] border border-sky-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div className="flex items-center gap-2 text-sky-400">
+                <CalendarClock size={20} />
+                <h3 className="font-heading font-bold text-base text-[var(--foreground)]">
+                  Remarcar Agendamento • {modalRemarcarItem.protocolo}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalRemarcarItem(null)}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 bg-[var(--background)] rounded-xl border border-[var(--card-border)] text-xs space-y-1 font-mono">
+              <div><span className="text-[var(--muted)]">Fornecedor:</span> <strong>{modalRemarcarItem.fornecedorNome}</strong></div>
+              <div><span className="text-[var(--muted)]">Carga:</span> <strong>{modalRemarcarItem.quantidadeVolumes} volumes</strong> (NF {modalRemarcarItem.numeroNotaFiscal})</div>
+              <div><span className="text-[var(--muted)]">Horário Atual:</span> {modalRemarcarItem.data} às {modalRemarcarItem.janela}</div>
+            </div>
+
+            {remarcarError && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium flex items-start gap-2">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <span>{remarcarError}</span>
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--foreground)] block">Nova Data Prevista *</label>
+                  <input
+                    type="date"
+                    required
+                    value={remarcarNovaData}
+                    onChange={(e) => {
+                      setRemarcarNovaData(e.target.value);
+                      setRemarcarError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] font-mono font-semibold focus:outline-none focus:border-sky-500 cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--foreground)] block">Nova Janela de Horário (2h em 2h) *</label>
+                  <select
+                    value={remarcarNovaJanela}
+                    onChange={(e) => {
+                      setRemarcarNovaJanela(e.target.value as JanelaHorario);
+                      setRemarcarError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] font-mono font-semibold focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    {JANELAS_PADRAO.map((j) => (
+                      <option key={j} value={j}>
+                        Janela {j}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-[var(--foreground)] block">Motivo / Justificativa da Remarcação *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={remarcarMotivoInput}
+                  onChange={(e) => setRemarcarMotivoInput(e.target.value)}
+                  placeholder="Ex: Atraso na rota da transportadora, reagendamento preventivo pelo fornecedor"
+                  className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-sky-500 text-xs"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-sky-500/5 border border-sky-500/20 text-[11px] text-[var(--muted)] leading-relaxed">
+                A remarcação valida automaticamente a capacidade máxima de <strong>2 fornecedores</strong> e <strong>500 volumes</strong> na janela pretendida. Se qualquer um dos limites for ultrapassado, a remarcação será recusada.
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setModalRemarcarItem(null)}
+                  className="px-4 py-2 rounded-xl border border-[var(--card-border)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-semibold cursor-pointer"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmarRemarcacao}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold cursor-pointer transition-all shadow-sm"
+                >
+                  <CalendarClock size={14} />
+                  <span>Confirmar Remarcação</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE CANCELAMENTO DE AGENDAMENTO (Item 2.3) ────────────────── */}
+      {modalCancelarItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--card)] border border-amber-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+                <CalendarX2 size={20} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-heading font-bold text-base text-[var(--foreground)]">
+                  Cancelar Agendamento de Entrega
+                </h3>
+                <p className="text-xs text-[var(--muted)]">
+                  O agendamento será cancelado na base do CD, liberando imediatamente a vaga e os volumes da janela para outros fornecedores.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--background)] p-3.5 rounded-xl border border-[var(--card-border)] text-xs space-y-1.5 font-mono">
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Protocolo:</span>
+                <strong className="text-[var(--collab-mostarda)]">{modalCancelarItem.protocolo}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Fornecedor:</span>
+                <strong className="text-[var(--foreground)] truncate max-w-[200px]">{modalCancelarItem.fornecedorNome}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Carga:</span>
+                <strong>{modalCancelarItem.quantidadeVolumes} vols • NF {modalCancelarItem.numeroNotaFiscal}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--muted)]">Janela:</span>
+                <strong>{modalCancelarItem.janela} • {modalCancelarItem.data}</strong>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-xs">
+              <label className="font-bold text-[var(--foreground)] block">
+                Motivo / Justificativa do Cancelamento *
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={motivoCancelamentoInput}
+                onChange={(e) => setMotivoCancelamentoInput(e.target.value)}
+                placeholder="Ex: Fornecedor cancelou a expedição por avaria na carga, erro de faturamento na NF"
+                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:border-amber-500 text-xs"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setModalCancelarItem(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--card-border)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-semibold cursor-pointer"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarCancelamento}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-black text-xs font-bold cursor-pointer transition-all shadow-sm"
+              >
+                <CalendarX2 size={13} />
+                <span>Confirmar Cancelamento</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE GESTÃO DE BLOQUEIOS DO CD (Item 2.3) ──────────────────── */}
+      {modalGerenciarBloqueios && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-[var(--card)] border border-[var(--card-border)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div className="flex items-center gap-2">
+                <Ban size={20} className="text-red-500" />
+                <div>
+                  <h3 className="font-heading font-bold text-base text-[var(--foreground)]">
+                    Bloqueio de Datas, Horários, Docas e Períodos (Item 2.3)
+                  </h3>
+                  <p className="text-xs text-[var(--muted)]">
+                    Controle de indisponibilidade para manutenção preventiva ou operação interna do CD.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalGerenciarBloqueios(false)}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Formulário para novo bloqueio */}
+            <form onSubmit={handleCriarBloqueio} className="p-4 bg-[var(--background)] border border-[var(--card-border)] rounded-xl space-y-3 text-xs">
+              <strong className="block text-xs font-bold text-[var(--foreground)]">
+                + Novo Bloqueio Operacional:
+              </strong>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--muted)] block">Data *</label>
+                  <input
+                    type="date"
+                    required
+                    value={bloqueioNovaData}
+                    onChange={(e) => setBloqueioNovaData(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)] font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--muted)] block">Janela / Horário *</label>
+                  <select
+                    value={bloqueioNovaJanela}
+                    onChange={(e) => setBloqueioNovaJanela(e.target.value as JanelaHorario | "todas")}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)] font-mono"
+                  >
+                    <option value="todas">Todas as Janelas (Dia Integral)</option>
+                    {JANELAS_PADRAO.map((j) => (
+                      <option key={j} value={j}>Janela {j}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--muted)] block">Doca Afetada</label>
+                  <select
+                    value={bloqueioNovaDoca}
+                    onChange={(e) => setBloqueioNovaDoca(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)]"
+                  >
+                    <option value="Todas as Docas">Todas as Docas do CD</option>
+                    <option value="Doca 01 — Secos">Doca 01 — Secos</option>
+                    <option value="Doca 02 — Fracionados">Doca 02 — Fracionados</option>
+                    <option value="Doca 03 — Carga Geral">Doca 03 — Carga Geral</option>
+                    <option value="Doca 04 — Alto Giro">Doca 04 — Alto Giro</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="font-bold text-[var(--muted)] block">Motivo do Bloqueio *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bloqueioNovoMotivo}
+                    onChange={(e) => setBloqueioNovoMotivo(e.target.value)}
+                    placeholder="Ex: Manutenção de nivelador hidráulico de doca, inventário anual"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[var(--muted)] block">Período / Turno</label>
+                  <input
+                    type="text"
+                    value={bloqueioNovoPeriodo}
+                    onChange={(e) => setBloqueioNovoPeriodo(e.target.value)}
+                    placeholder="Ex: Turno Manhã"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-sm transition-all"
+                >
+                  Registrar Bloqueio
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de bloqueios ativos */}
+            <div className="space-y-2">
+              <strong className="block text-xs font-bold text-[var(--foreground)]">
+                Bloqueios Ativos no CD ({listaBloqueios.length}):
+              </strong>
+
+              {listaBloqueios.length === 0 ? (
+                <div className="p-4 text-center rounded-xl bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--muted)]">
+                  Nenhum bloqueio cadastrado. Todas as docas e janelas estão operacionais.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {listaBloqueios.map((b) => (
+                    <div
+                      key={b.id}
+                      className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-red-400 font-mono">
+                            {b.data} • {b.janela === "todas" ? "Dia Integral" : b.janela}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-red-500/10 text-red-400 font-medium border border-red-500/20">
+                            {b.docaId || "Todas as Docas"}
+                          </span>
+                        </div>
+                        <p className="text-[var(--foreground)]">{b.motivo}</p>
+                        <span className="text-[10px] text-[var(--muted)] block">
+                          Cadastrado por {b.criadoPor} em {new Date(b.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoverBloqueio(b.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--card-border)] hover:bg-emerald-500/10 hover:border-emerald-500/30 text-emerald-400 font-semibold text-xs cursor-pointer transition-colors"
+                      >
+                        <Unlock size={12} />
+                        <span>Desbloquear</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-[var(--card-border)]">
+              <button
+                type="button"
+                onClick={() => setModalGerenciarBloqueios(false)}
+                className="px-5 py-2 rounded-xl bg-[var(--secondary)] hover:bg-[var(--secondary)]/80 text-[var(--foreground)] font-semibold text-xs cursor-pointer"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
