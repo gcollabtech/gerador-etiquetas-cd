@@ -3,24 +3,51 @@ import path from "node:path";
 import { PortalUser, PasswordResetRequest } from "./authTypes";
 import { DEFAULT_USERS } from "./authService";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const RESETS_FILE = path.join(DATA_DIR, "resets.json");
+function getResolvedPaths() {
+  const possibleDirs = [
+    path.join(process.cwd(), "gerador-etiquetas-cd", "data"),
+    path.join(process.cwd(), "data"),
+    "/Users/fragoso/Documents/collab-finance/collab-finance/gerador-etiquetas-cd/data",
+  ];
 
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  let selectedDir = possibleDirs.find((d) => fs.existsSync(d));
+
+  if (!selectedDir) {
+    if (fs.existsSync(path.join(process.cwd(), "gerador-etiquetas-cd"))) {
+      selectedDir = path.join(process.cwd(), "gerador-etiquetas-cd", "data");
+    } else {
+      selectedDir = path.join(process.cwd(), "data");
+    }
+    try {
+      fs.mkdirSync(selectedDir, { recursive: true });
+    } catch {
+      // ignore
+    }
   }
+
+  const usersFile = path.join(selectedDir, "users.json");
+  const resetsFile = path.join(selectedDir, "resets.json");
+
+  return { dir: selectedDir, usersFile, resetsFile, allDirs: possibleDirs };
+}
+
+function ensureDataDir(): string {
+  const { dir } = getResolvedPaths();
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
 }
 
 export function getServerUsers(): PortalUser[] {
   try {
-    ensureDataDir();
-    if (!fs.existsSync(USERS_FILE)) {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(DEFAULT_USERS, null, 2), "utf-8");
+    const { usersFile } = getResolvedPaths();
+    if (!fs.existsSync(usersFile)) {
+      ensureDataDir();
+      fs.writeFileSync(usersFile, JSON.stringify(DEFAULT_USERS, null, 2), "utf-8");
       return DEFAULT_USERS;
     }
-    const raw = fs.readFileSync(USERS_FILE, "utf-8");
+    const raw = fs.readFileSync(usersFile, "utf-8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed as PortalUser[];
@@ -35,7 +62,23 @@ export function getServerUsers(): PortalUser[] {
 export function saveServerUsers(users: PortalUser[]): void {
   try {
     ensureDataDir();
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
+    const { usersFile, allDirs } = getResolvedPaths();
+    const content = JSON.stringify(users, null, 2);
+    fs.writeFileSync(usersFile, content, "utf-8");
+
+    // Espelha para os outros diretórios válidos que possam existir
+    for (const d of allDirs) {
+      if (fs.existsSync(d)) {
+        const target = path.join(d, "users.json");
+        if (target !== usersFile) {
+          try {
+            fs.writeFileSync(target, content, "utf-8");
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
   } catch (err) {
     console.error("Erro ao gravar users.json no servidor:", err);
   }
@@ -79,17 +122,19 @@ export function mergeServerUsers(incomingUsers: PortalUser[]): PortalUser[] {
       merged.push({ ...inc, email: cleanEmail });
       modified = true;
     } else {
-      // Se a senha ou status foi atualizado mais recentemente
       const existing = merged[existingIdx];
-      if (
-        existing &&
-        inc.password &&
-        inc.password !== existing.password &&
-        inc.password !== "collab123" &&
-        inc.password !== "Gcoll@b123"
-      ) {
-        merged[existingIdx] = { ...existing, ...inc, email: cleanEmail };
-        modified = true;
+      if (existing) {
+        const newPass = inc.password?.trim() || existing.password;
+        const updatedObj: PortalUser = {
+          ...existing,
+          ...inc,
+          email: cleanEmail,
+          password: newPass,
+        };
+        if (JSON.stringify(updatedObj) !== JSON.stringify(existing)) {
+          merged[existingIdx] = updatedObj;
+          modified = true;
+        }
       }
     }
   }
@@ -102,11 +147,11 @@ export function mergeServerUsers(incomingUsers: PortalUser[]): PortalUser[] {
 
 export function getServerResets(): PasswordResetRequest[] {
   try {
-    ensureDataDir();
-    if (!fs.existsSync(RESETS_FILE)) {
+    const { resetsFile } = getResolvedPaths();
+    if (!fs.existsSync(resetsFile)) {
       return [];
     }
-    const raw = fs.readFileSync(RESETS_FILE, "utf-8");
+    const raw = fs.readFileSync(resetsFile, "utf-8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       return parsed as PasswordResetRequest[];
@@ -121,13 +166,28 @@ export function getServerResets(): PasswordResetRequest[] {
 export function saveServerReset(reset: PasswordResetRequest): void {
   try {
     ensureDataDir();
+    const { resetsFile, allDirs } = getResolvedPaths();
     const current = getServerResets().filter(
       (r) =>
         r.email.toLowerCase() !== reset.email.toLowerCase() &&
         new Date(r.expiresAt).getTime() > Date.now()
     );
     current.push(reset);
-    fs.writeFileSync(RESETS_FILE, JSON.stringify(current, null, 2), "utf-8");
+    const content = JSON.stringify(current, null, 2);
+    fs.writeFileSync(resetsFile, content, "utf-8");
+
+    for (const d of allDirs) {
+      if (fs.existsSync(d)) {
+        const target = path.join(d, "resets.json");
+        if (target !== resetsFile) {
+          try {
+            fs.writeFileSync(target, content, "utf-8");
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
   } catch (err) {
     console.error("Erro ao salvar resets.json no servidor:", err);
   }
@@ -147,11 +207,26 @@ export function getActiveServerReset(email: string): PasswordResetRequest | null
 export function removeServerReset(email: string): void {
   try {
     ensureDataDir();
+    const { resetsFile, allDirs } = getResolvedPaths();
     const cleanEmail = email.trim().toLowerCase();
     const current = getServerResets().filter(
       (r) => r.email.toLowerCase() !== cleanEmail
     );
-    fs.writeFileSync(RESETS_FILE, JSON.stringify(current, null, 2), "utf-8");
+    const content = JSON.stringify(current, null, 2);
+    fs.writeFileSync(resetsFile, content, "utf-8");
+
+    for (const d of allDirs) {
+      if (fs.existsSync(d)) {
+        const target = path.join(d, "resets.json");
+        if (target !== resetsFile) {
+          try {
+            fs.writeFileSync(target, content, "utf-8");
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
   } catch (err) {
     console.error("Erro ao remover reset do servidor:", err);
   }

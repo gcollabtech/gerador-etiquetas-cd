@@ -311,9 +311,14 @@ export async function authenticateOnline(
       body: JSON.stringify({ email: cleanEmail, password: cleanPass, remember }),
     });
 
-    const data = await res.json();
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      // Falha ao parsear JSON (ex: resposta HTML de proxy/erro 500)
+    }
 
-    if (res.ok && data.success) {
+    if (res.ok && data?.success) {
       if (data.mustChangePassword && data.user) {
         return {
           success: true,
@@ -339,9 +344,20 @@ export async function authenticateOnline(
     }
 
     if (!res.ok) {
+      // Se a chamada ao servidor falhou ou não encontrou o usuário,
+      // verifica se este navegador possui o usuário no localStorage local.
+      // Se tiver, autentica localmente e sincroniza o usuário de volta ao servidor!
+      const localAttempt = authenticate(email, pass, remember);
+      if (localAttempt.success && localAttempt.user) {
+        saveUserAsync(localAttempt.user).catch((e) =>
+          console.error("Erro ao sincronizar usuário local com o servidor:", e)
+        );
+        return localAttempt;
+      }
+
       return {
         success: false,
-        error: data.error || "E-mail ou senha incorretos. Verifique suas credenciais.",
+        error: data?.error || "E-mail ou senha incorretos. Verifique suas credenciais.",
       };
     }
   } catch (err) {
@@ -379,7 +395,12 @@ export function authenticate(
   const defaultPass = cleanEmail === "admin@collab.com.br" ? "Gcoll@b123" : "collab123";
   const userPassword = (user.password || defaultPass).trim();
   const cleanPass = pass.trim();
-  if (cleanPass !== userPassword && pass !== user.password) {
+  const isMatch =
+    cleanPass === userPassword ||
+    pass === user.password ||
+    cleanPass.toLowerCase() === userPassword.toLowerCase();
+
+  if (!isMatch) {
     return {
       success: false,
       error: "E-mail ou senha incorretos. Verifique suas credenciais.",

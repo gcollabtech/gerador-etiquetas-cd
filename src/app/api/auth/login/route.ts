@@ -64,9 +64,11 @@ export async function POST(req: NextRequest) {
       cleanEmail === "admin@collab.com.br" ? "Gcoll@b123" : "collab123";
     const userPassword = (user.password || defaultPass).trim();
 
-    // Verificação de senha flexível (permite senha com trim e case-sensitive)
+    // Verificação de senha flexível (permite senha exata, com trim e tolerância a maiúsculas no primeiro caractere/case)
     const isPasswordCorrect =
-      cleanPassword === userPassword || rawPassword === user.password;
+      cleanPassword === userPassword ||
+      rawPassword === user.password ||
+      cleanPassword.toLowerCase() === userPassword.toLowerCase();
 
     if (!isPasswordCorrect) {
       return NextResponse.json(
