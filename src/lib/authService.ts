@@ -211,9 +211,6 @@ export async function saveUserAsync(
     email: cleanEmail,
   };
 
-  // Salva no localStorage localmente sem disparar fetch duplicado
-  const localUpdated = saveUser(userToSave, false);
-
   try {
     const res = await fetch("/api/users", {
       method: "POST",
@@ -234,14 +231,15 @@ export async function saveUserAsync(
       return {
         success: false,
         error: errData.error || "Erro ao salvar usuário no servidor.",
-        users: localUpdated,
+        users: getUsers(),
       };
     }
-    return { success: true, users: localUpdated };
   } catch (err: any) {
-    console.error("Erro ao salvar usuário no servidor via API:", err);
-    return { success: true, users: localUpdated };
+    console.warn("Aviso ao salvar usuário no servidor via API, usando fallback local:", err);
   }
+
+  const localUpdated = saveUser(userToSave, false);
+  return { success: true, users: localUpdated };
 }
 
 export function deleteUser(id: string, syncOnline: boolean = true): { success: boolean; error?: string } {
@@ -272,12 +270,6 @@ export async function deleteUserAsync(
     return { success: false, error: "Você não pode excluir o usuário que está atualmente conectado." };
   }
 
-  // Deleta localmente sem disparar fetch concorrente
-  const localRes = deleteUser(id, false);
-  if (!localRes.success) return localRes;
-
-  const localUpdated = getUsers();
-
   try {
     const res = await fetch(`/api/users?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
@@ -291,12 +283,20 @@ export async function deleteUserAsync(
         saveUsers(data.users);
         return { success: true, users: data.users };
       }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errData.error || "Erro ao excluir usuário no servidor.",
+      };
     }
   } catch (err) {
-    console.error("Erro ao deletar usuário no servidor:", err);
+    console.warn("Aviso ao deletar usuário no servidor, usando fallback local:", err);
   }
 
-  return { success: true, users: localUpdated };
+  const localRes = deleteUser(id, false);
+  if (!localRes.success) return localRes;
+  return { success: true, users: getUsers() };
 }
 
 export function toggleUserStatus(id: string): { success: boolean; error?: string } {
