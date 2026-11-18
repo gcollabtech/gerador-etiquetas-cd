@@ -69,6 +69,8 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
   ]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     syncUsersFromServer().then((latest) => {
@@ -240,9 +242,11 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Tem certeza de que deseja excluir o usuário "${name}"?`)) {
-      const res = await deleteUserAsync(id);
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteUserAsync(userToDelete.id);
       if (!res.success) {
         alert(res.error || "Não foi possível excluir o usuário.");
       } else {
@@ -251,7 +255,12 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
         } else {
           setUsers(getUsers());
         }
+        setUserToDelete(null);
       }
+    } catch (err: any) {
+      alert(err.message || "Erro inesperado ao excluir usuário.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -585,7 +594,7 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(u.id, u.name)}
+                            onClick={() => setUserToDelete({ id: u.id, name: u.name })}
                             disabled={isCurrent}
                             className={`p-1.5 rounded-lg transition-colors ${
                               isCurrent
@@ -902,6 +911,43 @@ export function UsersPortalView({ currentUser }: UsersPortalViewProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal: Confirm Delete User */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="font-heading font-bold text-base text-[var(--foreground)]">Excluir Usuário</h3>
+                <p className="text-xs text-[var(--muted)]">Esta ação é irreversível</p>
+              </div>
+            </div>
+            <p className="text-xs text-[var(--foreground)] leading-relaxed">
+              Tem certeza de que deseja excluir permanentemente o cadastro de <strong>{userToDelete.name}</strong> do sistema e banco de dados?
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-xs font-heading font-black uppercase tracking-wider rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isDeleting ? "Excluindo..." : "Confirmar Exclusão"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,236 +1,314 @@
+import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 import { PortalUser, PasswordResetRequest } from "./authTypes";
 import { DEFAULT_USERS } from "./authService";
 
-function getResolvedPaths() {
-  const canonical = "/Users/fragoso/Documents/collab-finance/collab-finance/gerador-etiquetas-cd/data";
-  const possibleDirs = [
-    canonical,
-    path.join(process.cwd(), "gerador-etiquetas-cd", "data"),
-    path.join(process.cwd(), "data"),
-  ];
+const CANONICAL_DATA_DIR = "/Users/fragoso/Documents/collab-finance/collab-finance/gerador-etiquetas-cd/data";
 
-  let selectedDir = possibleDirs.find((d) => fs.existsSync(d));
-
-  if (!selectedDir) {
-    if (fs.existsSync(canonical)) {
-      selectedDir = canonical;
-    } else if (fs.existsSync(path.join(process.cwd(), "gerador-etiquetas-cd"))) {
-      selectedDir = path.join(process.cwd(), "gerador-etiquetas-cd", "data");
-    } else {
-      selectedDir = path.join(process.cwd(), "data");
-    }
+function getResolvedDataDir(): string {
+  if (fs.existsSync(CANONICAL_DATA_DIR)) return CANONICAL_DATA_DIR;
+  const inGerador = path.join(process.cwd(), "gerador-etiquetas-cd", "data");
+  if (fs.existsSync(inGerador)) return inGerador;
+  const inCwd = path.join(process.cwd(), "data");
+  if (!fs.existsSync(inCwd)) {
     try {
-      fs.mkdirSync(selectedDir, { recursive: true });
-    } catch {
-      // ignore
-    }
+      fs.mkdirSync(inCwd, { recursive: true });
+    } catch {}
   }
-
-  const usersFile = path.join(selectedDir, "users.json");
-  const resetsFile = path.join(selectedDir, "resets.json");
-
-  return { dir: selectedDir, usersFile, resetsFile, allDirs: possibleDirs };
+  return inCwd;
 }
 
-function ensureDataDir(): string {
-  const { dir } = getResolvedPaths();
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+function getDbPath(): string {
+  const dir = getResolvedDataDir();
+  return path.join(dir, "collab.sqlite");
+}
+
+let dbInstance: DatabaseSync | null = null;
+
+function getDb(): DatabaseSync {
+  if (!dbInstance) {
+    const dbPath = getDbPath();
+    dbInstance = new DatabaseSync(dbPath);
+    dbInstance.exec("PRAGMA journal_mode = WAL;");
+    dbInstance.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        cargo TEXT NOT NULL,
+        role TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'ativo',
+        permissions TEXT NOT NULL,
+        unidade_cd TEXT,
+        telefone TEXT,
+        must_change_password INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_login TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS password_resets (
+        email TEXT PRIMARY KEY,
+        user_name TEXT,
+        token TEXT NOT NULL,
+        code TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL
+      );
+    `);
+
+    // Semeia usuários se a tabela estiver vazia
+    try {
+      const countRow = dbInstance.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number } | undefined;
+      if (!countRow || countRow.count === 0) {
+        const jsonFile = path.join(path.dirname(dbPath), "users.json");
+        let usersToSeed = DEFAULT_USERS;
+        if (fs.existsSync(jsonFile)) {
+          try {
+            const raw = fs.readFileSync(jsonFile, "utf-8");
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              usersToSeed = parsed;
+            }
+          } catch {}
+        }
+
+        const insertStmt = dbInstance.prepare(`
+          INSERT OR REPLACE INTO users (
+            id, name, email, password, cargo, role, status, permissions,
+            unidade_cd, telefone, must_change_password, created_at, last_login
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const u of usersToSeed) {
+          insertStmt.run(
+            u.id,
+            u.name,
+            u.email.trim().toLowerCase(),
+            u.password || "collab123",
+            u.cargo || "Operador de CD",
+            u.role || "operador",
+            u.status || "ativo",
+            JSON.stringify(u.permissions || []),
+            u.unidadeCd || "CD Matriz — Big Master",
+            u.telefone || null,
+            u.mustChangePassword ? 1 : 0,
+            u.createdAt || new Date().toISOString(),
+            u.lastLogin || null
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao semear banco SQLite:", e);
+    }
   }
-  return dir;
+  return dbInstance;
+}
+
+function rowToUser(row: any): PortalUser {
+  let perms: any[] = [];
+  try {
+    perms = JSON.parse(row.permissions);
+  } catch {
+    perms = [];
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    password: row.password,
+    cargo: row.cargo,
+    role: row.role,
+    status: row.status,
+    permissions: perms,
+    unidadeCd: row.unidade_cd || undefined,
+    telefone: row.telefone || undefined,
+    mustChangePassword: Boolean(row.must_change_password),
+    createdAt: row.created_at,
+    lastLogin: row.last_login || undefined,
+  };
+}
+
+function syncJsonBackup(users: PortalUser[]): void {
+  try {
+    const dir = getResolvedDataDir();
+    const jsonFile = path.join(dir, "users.json");
+    fs.writeFileSync(jsonFile, JSON.stringify(users, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Erro ao sincronizar backup users.json:", err);
+  }
 }
 
 export function getServerUsers(): PortalUser[] {
   try {
-    const { usersFile } = getResolvedPaths();
-    if (!fs.existsSync(usersFile)) {
-      ensureDataDir();
-      fs.writeFileSync(usersFile, JSON.stringify(DEFAULT_USERS, null, 2), "utf-8");
-      return DEFAULT_USERS;
-    }
-    const raw = fs.readFileSync(usersFile, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed as PortalUser[];
+    const db = getDb();
+    const rows = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows.map(rowToUser);
     }
     return DEFAULT_USERS;
   } catch (err) {
-    console.error("Erro ao ler users.json no servidor:", err);
+    console.error("Erro ao ler usuários do SQLite:", err);
     return DEFAULT_USERS;
   }
 }
 
 export function saveServerUsers(users: PortalUser[]): void {
   try {
-    ensureDataDir();
-    const { usersFile, allDirs } = getResolvedPaths();
-    const content = JSON.stringify(users, null, 2);
-    fs.writeFileSync(usersFile, content, "utf-8");
+    const db = getDb();
+    const insertStmt = db.prepare(`
+      INSERT OR REPLACE INTO users (
+        id, name, email, password, cargo, role, status, permissions,
+        unidade_cd, telefone, must_change_password, created_at, last_login
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    // Espelha para os outros diretórios válidos que possam existir
-    for (const d of allDirs) {
-      if (fs.existsSync(d)) {
-        const target = path.join(d, "users.json");
-        if (target !== usersFile) {
-          try {
-            fs.writeFileSync(target, content, "utf-8");
-          } catch {
-            // ignore
-          }
-        }
-      }
+    for (const u of users) {
+      insertStmt.run(
+        u.id,
+        u.name,
+        u.email.trim().toLowerCase(),
+        u.password || "collab123",
+        u.cargo || "Operador de CD",
+        u.role || "operador",
+        u.status || "ativo",
+        JSON.stringify(u.permissions || []),
+        u.unidadeCd || "CD Matriz — Big Master",
+        u.telefone || null,
+        u.mustChangePassword ? 1 : 0,
+        u.createdAt || new Date().toISOString(),
+        u.lastLogin || null
+      );
     }
+    syncJsonBackup(users);
   } catch (err) {
-    console.error("Erro ao gravar users.json no servidor:", err);
+    console.error("Erro ao gravar usuários no SQLite:", err);
   }
 }
 
 export function saveOrUpdateServerUser(user: PortalUser): PortalUser[] {
-  const current = getServerUsers();
+  const db = getDb();
   const cleanEmail = user.email.trim().toLowerCase();
-  const idx = current.findIndex(
-    (u) => u.id === user.id || u.email.trim().toLowerCase() === cleanEmail
+
+  const insertStmt = db.prepare(`
+    INSERT OR REPLACE INTO users (
+      id, name, email, password, cargo, role, status, permissions,
+      unidade_cd, telefone, must_change_password, created_at, last_login
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertStmt.run(
+    user.id,
+    user.name.trim(),
+    cleanEmail,
+    user.password || "collab123",
+    user.cargo || "Operador de CD",
+    user.role || "operador",
+    user.status || "ativo",
+    JSON.stringify(user.permissions || []),
+    user.unidadeCd || "CD Matriz — Big Master",
+    user.telefone || null,
+    user.mustChangePassword ? 1 : 0,
+    user.createdAt || new Date().toISOString(),
+    user.lastLogin || null
   );
-  let updated: PortalUser[];
-  if (idx >= 0) {
-    updated = [...current];
-    updated[idx] = { ...current[idx], ...user, email: cleanEmail };
-  } else {
-    updated = [{ ...user, email: cleanEmail }, ...current];
-  }
-  saveServerUsers(updated);
+
+  const updated = getServerUsers();
+  syncJsonBackup(updated);
   return updated;
 }
 
 export function deleteServerUser(id: string): { success: boolean; users: PortalUser[]; error?: string } {
-  const current = getServerUsers();
-  const updated = current.filter((u) => u.id !== id);
-  saveServerUsers(updated);
-  return { success: true, users: updated };
+  try {
+    const db = getDb();
+    const deleteStmt = db.prepare("DELETE FROM users WHERE id = ?");
+    deleteStmt.run(id);
+
+    const updated = getServerUsers();
+    syncJsonBackup(updated);
+    return { success: true, users: updated };
+  } catch (err: any) {
+    console.error("Erro ao deletar usuário no SQLite:", err);
+    return { success: false, users: getServerUsers(), error: err.message };
+  }
 }
 
 export function mergeServerUsers(incomingUsers: PortalUser[]): PortalUser[] {
-  const current = getServerUsers();
-  let modified = false;
-  const merged = [...current];
-
   for (const inc of incomingUsers) {
-    const cleanEmail = inc.email.trim().toLowerCase();
-    const existingIdx = merged.findIndex(
-      (u) => u.id === inc.id || u.email.trim().toLowerCase() === cleanEmail
-    );
-    if (existingIdx === -1) {
-      merged.push({ ...inc, email: cleanEmail });
-      modified = true;
-    } else {
-      const existing = merged[existingIdx];
-      if (existing) {
-        const newPass = inc.password?.trim() || existing.password;
-        const updatedObj: PortalUser = {
-          ...existing,
-          ...inc,
-          email: cleanEmail,
-          password: newPass,
-        };
-        if (JSON.stringify(updatedObj) !== JSON.stringify(existing)) {
-          merged[existingIdx] = updatedObj;
-          modified = true;
-        }
-      }
-    }
+    saveOrUpdateServerUser(inc);
   }
-
-  if (modified) {
-    saveServerUsers(merged);
-  }
-  return merged;
+  return getServerUsers();
 }
 
 export function getServerResets(): PasswordResetRequest[] {
   try {
-    const { resetsFile } = getResolvedPaths();
-    if (!fs.existsSync(resetsFile)) {
-      return [];
-    }
-    const raw = fs.readFileSync(resetsFile, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed as PasswordResetRequest[];
-    }
-    return [];
+    const db = getDb();
+    const nowIso = new Date().toISOString();
+    const rows = db.prepare("SELECT * FROM password_resets WHERE expires_at > ?").all(nowIso) as any[];
+    return rows.map((r) => ({
+      email: r.email,
+      userName: r.user_name,
+      token: r.token,
+      code: r.code,
+      createdAt: r.created_at,
+      expiresAt: r.expires_at,
+    }));
   } catch (err) {
-    console.error("Erro ao ler resets.json no servidor:", err);
+    console.error("Erro ao ler resets do SQLite:", err);
     return [];
   }
 }
 
 export function saveServerReset(reset: PasswordResetRequest): void {
   try {
-    ensureDataDir();
-    const { resetsFile, allDirs } = getResolvedPaths();
-    const current = getServerResets().filter(
-      (r) =>
-        r.email.toLowerCase() !== reset.email.toLowerCase() &&
-        new Date(r.expiresAt).getTime() > Date.now()
+    const db = getDb();
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO password_resets (email, user_name, token, code, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      reset.email.trim().toLowerCase(),
+      reset.userName || null,
+      reset.token,
+      reset.code,
+      reset.createdAt,
+      reset.expiresAt
     );
-    current.push(reset);
-    const content = JSON.stringify(current, null, 2);
-    fs.writeFileSync(resetsFile, content, "utf-8");
-
-    for (const d of allDirs) {
-      if (fs.existsSync(d)) {
-        const target = path.join(d, "resets.json");
-        if (target !== resetsFile) {
-          try {
-            fs.writeFileSync(target, content, "utf-8");
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
   } catch (err) {
-    console.error("Erro ao salvar resets.json no servidor:", err);
+    console.error("Erro ao salvar reset no SQLite:", err);
   }
 }
 
 export function getActiveServerReset(email: string): PasswordResetRequest | null {
-  const cleanEmail = email.trim().toLowerCase();
-  const resets = getServerResets();
-  const found = resets.find(
-    (r) =>
-      r.email.toLowerCase() === cleanEmail &&
-      new Date(r.expiresAt).getTime() > Date.now()
-  );
-  return found || null;
+  try {
+    const db = getDb();
+    const cleanEmail = email.trim().toLowerCase();
+    const nowIso = new Date().toISOString();
+    const row = db.prepare(
+      "SELECT * FROM password_resets WHERE email = ? AND expires_at > ? LIMIT 1"
+    ).get(cleanEmail, nowIso) as any;
+
+    if (!row) return null;
+    return {
+      email: row.email,
+      userName: row.user_name,
+      token: row.token,
+      code: row.code,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function removeServerReset(email: string): void {
   try {
-    ensureDataDir();
-    const { resetsFile, allDirs } = getResolvedPaths();
+    const db = getDb();
     const cleanEmail = email.trim().toLowerCase();
-    const current = getServerResets().filter(
-      (r) => r.email.toLowerCase() !== cleanEmail
-    );
-    const content = JSON.stringify(current, null, 2);
-    fs.writeFileSync(resetsFile, content, "utf-8");
-
-    for (const d of allDirs) {
-      if (fs.existsSync(d)) {
-        const target = path.join(d, "resets.json");
-        if (target !== resetsFile) {
-          try {
-            fs.writeFileSync(target, content, "utf-8");
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
+    db.prepare("DELETE FROM password_resets WHERE email = ?").run(cleanEmail);
   } catch (err) {
-    console.error("Erro ao remover reset do servidor:", err);
+    console.error("Erro ao remover reset do SQLite:", err);
   }
 }
