@@ -97,25 +97,5 @@
     "telefone": "(11) 94321-0987",
     "createdAt": "2026-05-20T14:00:00Z",
     "lastLogin": "2026-11-14T09:10:00Z"
-  },
-  {
-    "id": "usr-1794860216335",
-    "name": "Flavio Koike",
-    "email": "flavio.koike@gcollab.com.br",
-    "password": "gcoll@b123",
-    "cargo": "Operador de Centro de Distribuição",
-    "role": "admin",
-    "status": "ativo",
-    "permissions": [
-      "wms",
-      "rastreamento",
-      "etiquetas",
-      "usuarios",
-      "configuracoes",
-      "etiquetas_produto"
-    ],
-    "unidadeCd": "CD Matriz — Big Master",
-    "createdAt": "2026-11-16T20:16:56.335Z",
-    "lastLogin": "2026-11-16T20:29:06.782Z"
   }
 ]

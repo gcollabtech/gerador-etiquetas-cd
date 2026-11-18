@@ -87,7 +87,10 @@ export function saveOrUpdateServerUser(user: PortalUser): PortalUser[] {
 export function deleteServerUser(id: string): { success: boolean; users: PortalUser[]; error?: string } {
   try {
     const current = getServerUsers();
-    const updated = current.filter((u) => u.id !== id);
+    const cleanTarget = id.trim().toLowerCase();
+    const updated = current.filter(
+      (u) => u.id !== id && u.email.trim().toLowerCase() !== cleanTarget
+    );
     saveServerUsers(updated);
     return { success: true, users: updated };
   } catch (err: any) {

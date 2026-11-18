@@ -159,7 +159,7 @@ export async function syncUsersFromServer(): Promise<PortalUser[]> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+      if (data.success && Array.isArray(data.users)) {
         saveUsers(data.users);
         return data.users;
       }
@@ -250,7 +250,8 @@ export function deleteUser(id: string, syncOnline: boolean = true): { success: b
     return { success: false, error: "Você não pode excluir o usuário que está atualmente conectado." };
   }
   const current = getUsers();
-  const updated = current.filter((u) => u.id !== id);
+  const cleanId = id.trim().toLowerCase();
+  const updated = current.filter((u) => u.id !== id && u.email.trim().toLowerCase() !== cleanId);
   saveUsers(updated);
 
   // Sincroniza exclusão no servidor apenas se syncOnline for true
@@ -376,17 +377,6 @@ export async function authenticateOnline(
     }
 
     if (!res.ok) {
-      // Se a chamada ao servidor falhou ou não encontrou o usuário,
-      // verifica se este navegador possui o usuário no localStorage local.
-      // Se tiver, autentica localmente e sincroniza o usuário de volta ao servidor!
-      const localAttempt = authenticate(email, pass, remember);
-      if (localAttempt.success && localAttempt.user) {
-        saveUserAsync(localAttempt.user).catch((e) =>
-          console.error("Erro ao sincronizar usuário local com o servidor:", e)
-        );
-        return localAttempt;
-      }
-
       return {
         success: false,
         error: data?.error || "E-mail ou senha incorretos. Verifique suas credenciais.",
