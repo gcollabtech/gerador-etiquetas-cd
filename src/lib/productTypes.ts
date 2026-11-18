@@ -1,0 +1,67 @@
+export interface Produto {
+  id: string; // produto(id)
+  cod_produto: string; // Código interno / SKU
+  descricao: string; // Descrição do produto
+  ean: string; // Código de barras EAN-13 / GTIN
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProdutoFiltros {
+  search?: string;
+  cod_produto?: string;
+  ean?: string;
+}
+
+export interface ProdutoImportPreview {
+  cod_produto: string;
+  descricao: string;
+  ean: string;
+  status: "valid" | "warning" | "error";
+  statusMessage?: string;
+}
+
+export const SEED_PRODUTOS: Produto[] = [
+  {
+    id: "prd-1001",
+    cod_produto: "PRD-1001",
+    descricao: "DETERGENTE LÍQUIDO NEUTRO 500ML",
+    ean: "7891000315507",
+    created_at: "2026-11-18T10:00:00Z",
+  },
+  {
+    id: "prd-1002",
+    cod_produto: "PRD-1002",
+    descricao: "SABÃO EM PÓ CONCENTRADO 1KG",
+    ean: "7891234567895",
+    created_at: "2026-11-18T10:05:00Z",
+  },
+  {
+    id: "prd-1003",
+    cod_produto: "PRD-1003",
+    descricao: "ÁGUA SANITÁRIA CLORADA 2L",
+    ean: "7898912345678",
+    created_at: "2026-11-18T10:10:00Z",
+  },
+  {
+    id: "prd-1004",
+    cod_produto: "PRD-1004",
+    descricao: "DESINFETANTE FLORAL 1L",
+    ean: "7896000123456",
+    created_at: "2026-11-18T10:15:00Z",
+  },
+  {
+    id: "prd-1005",
+    cod_produto: "PRD-1005",
+    descricao: "CANETA ESFEROGRÁFICA AZUL 1.0MM",
+    ean: "7891000315507",
+    created_at: "2026-11-18T10:20:00Z",
+  },
+  {
+    id: "prd-1006",
+    cod_produto: "PRD-1006",
+    descricao: "PAPEL SULFITE A4 75G PCT 500 FLS",
+    ean: "7891027116521",
+    created_at: "2026-11-18T10:25:00Z",
+  },
+];
