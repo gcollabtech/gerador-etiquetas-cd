@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
-  const users = getServerUsers();
+  const users = await getServerUsers();
   return NextResponse.json(
     {
       success: true,
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     if (body.action === "sync" && Array.isArray(body.users)) {
-      const merged = mergeServerUsers(body.users);
+      const merged = await mergeServerUsers(body.users);
       return NextResponse.json({
         success: true,
         users: merged,
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.user) {
-      const updated = saveOrUpdateServerUser(body.user);
+      const updated = await saveOrUpdateServerUser(body.user);
       return NextResponse.json({
         success: true,
         users: updated,
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (Array.isArray(body.users)) {
-      const merged = mergeServerUsers(body.users);
+      const merged = await mergeServerUsers(body.users);
       return NextResponse.json({
         success: true,
         users: merged,
@@ -100,7 +100,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const res = deleteServerUser(id);
+    const res = await deleteServerUser(id);
     return NextResponse.json(res, {
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate",

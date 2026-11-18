@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const users = getServerUsers();
+    const users = await getServerUsers();
     const userIdx = users.findIndex((u) => u.id === userId);
 
     if (userIdx === -1) {
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       lastLogin: new Date().toISOString(),
     };
     updatedUsers[userIdx] = updatedUser;
-    saveServerUsers(updatedUsers);
+    await saveServerUsers(updatedUsers);
 
     const session: AuthSession = {
       user: updatedUser,

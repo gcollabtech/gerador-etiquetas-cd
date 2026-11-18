@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const active = getActiveServerReset(email);
+  const active = await getActiveServerReset(email);
   return NextResponse.json({
     success: true,
     active,
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const users = getServerUsers();
+      const users = await getServerUsers();
       const user = users.find((u) => u.email.trim().toLowerCase() === cleanEmail);
       if (!user) {
         return NextResponse.json(
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         expiresAt: expires.toISOString(),
       };
 
-      saveServerReset(resetData);
+      await saveServerReset(resetData);
 
       return NextResponse.json({
         success: true,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const pending = getActiveServerReset(cleanEmail);
+      const pending = await getActiveServerReset(cleanEmail);
       if (!pending) {
         return NextResponse.json(
           {
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const users = getServerUsers();
+      const users = await getServerUsers();
       const userIdx = users.findIndex(
         (u) => u.email.trim().toLowerCase() === cleanEmail
       );
@@ -149,8 +149,8 @@ export async function POST(req: NextRequest) {
       };
       updatedUsers[userIdx] = updatedUser;
 
-      saveServerUsers(updatedUsers);
-      removeServerReset(cleanEmail);
+      await saveServerUsers(updatedUsers);
+      await removeServerReset(cleanEmail);
 
       return NextResponse.json({
         success: true,
