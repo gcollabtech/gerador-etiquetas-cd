@@ -56,6 +56,7 @@ import {
   Eye,
   ArrowRight,
   ShieldAlert,
+  ShieldCheck,
   Hash,
   RotateCcw,
   Trash2,
@@ -78,6 +79,7 @@ import { WmsPickingView } from "./wms/WmsPickingView";
 import { WmsConferenciaView } from "./wms/WmsConferenciaView";
 import { WmsExpedicaoView } from "./wms/WmsExpedicaoView";
 import { WmsInventarioView } from "./wms/WmsInventarioView";
+import { WmsQualidadeView } from "./wms/WmsQualidadeView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -86,7 +88,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "inventario" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "inventario" | "qualidade" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -510,12 +512,12 @@ export function WmsPortalView({
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>8 Módulos Operacionais Integrados</span>
+            <span>9 Módulos Operacionais Integrados</span>
           </div>
         </div>
 
-        {/* Grade dos 8 Módulos Operacionais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+        {/* Grade dos 9 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-9 gap-3">
           {[
             {
               id: "agendamento",
@@ -596,6 +598,16 @@ export function WmsPortalView({
               icon: ClipboardList,
               badge: "Auditoria & Saldo",
               active: activeTab === "inventario",
+            },
+            {
+              id: "qualidade",
+              targetTab: "qualidade" as WmsSubTab,
+              num: "09",
+              title: "Qualidade",
+              desc: "Inspeções, RNC, laudos e bloqueios",
+              icon: ShieldCheck,
+              badge: "CQ & Quarentena",
+              active: activeTab === "qualidade",
             },
           ].map((m) => {
             const ModIcon = m.icon;
@@ -1645,6 +1657,14 @@ export function WmsPortalView({
       {/* ── ABA 11: MÓDULO 08 — INVENTÁRIO ──────────────────────────────────── */}
       {activeTab === "inventario" && (
         <WmsInventarioView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 12: MÓDULO 09 — CONTROLE DE QUALIDADE ──────────────────────── */}
+      {activeTab === "qualidade" && (
+        <WmsQualidadeView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />

@@ -57,6 +57,7 @@ export type WmsSubTab =
   | "conferencia"
   | "expedicao"
   | "inventario"
+  | "qualidade"
   | "agendamentos"
   | "indicadores";
 
@@ -68,7 +69,7 @@ export interface WmsSubItem {
 }
 
 export interface WmsModuleItem {
-  id: "agendamento" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "inventario";
+  id: "agendamento" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "inventario" | "qualidade";
   subTabTarget: WmsSubTab;
   num: string;
   title: string;
@@ -155,7 +156,7 @@ export function Sidebar({
       title: "WMS — Gestão de CD",
       subtitle: "Recebimento, Estoque e Reposição",
       icon: Boxes,
-      badge: "8 Módulos",
+      badge: "9 Módulos",
     },
     {
       id: "rastreamento",
@@ -281,6 +282,15 @@ export function Sidebar({
       subtitle: "Geral, rotativo, cego e ajustes ERP",
       icon: ClipboardList,
       badge: "Módulo 08",
+    },
+    {
+      id: "qualidade",
+      subTabTarget: "qualidade",
+      num: "09",
+      title: "9. Controle de Qualidade",
+      subtitle: "Inspeções, RNC, laudos e bloqueios",
+      icon: ShieldCheck,
+      badge: "Módulo 09",
     },
   ];
 
@@ -488,7 +498,7 @@ export function Sidebar({
                   </div>
                 </button>
 
-                {/* Submenu for "WMS" — 8 Módulos Operacionais */}
+                {/* Submenu for "WMS" — 9 Módulos Operacionais */}
                 {isWms && isMainActive && wmsMenuExpanded && (
                   <div className="pl-2 pr-1 py-1 space-y-1.5 border-l-2 border-[var(--collab-mostarda)]/50 ml-5 my-1.5 animate-fadeIn">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] px-2 py-0.5 flex items-center justify-between">
@@ -496,7 +506,7 @@ export function Sidebar({
                         <Boxes size={11} className="text-[var(--collab-mostarda)]" />
                         <span>Módulos do WMS</span>
                       </span>
-                      <span className="text-[9px] font-mono text-[var(--collab-mostarda)] font-semibold">8 Módulos</span>
+                      <span className="text-[9px] font-mono text-[var(--collab-mostarda)] font-semibold">9 Módulos</span>
                     </div>
 
                     {wmsModules.map((wm) => {
