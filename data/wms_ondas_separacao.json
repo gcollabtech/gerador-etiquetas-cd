@@ -1,0 +1,21 @@
+[
+  {
+    "id": "onda-01",
+    "numero_onda": "ONDA-2026-0501",
+    "nome": "Onda 01 — Rota Sul & Alphaville (Corte 14h)",
+    "modo": "fixo",
+    "estrategia": "onda",
+    "data_criacao": "2026-11-19 08:30",
+    "horario_corte": "14:00",
+    "prioridade": "urgente",
+    "status": "em_separacao",
+    "pedidos_ids": ["ped-01", "ped-02"],
+    "quantidade_pedidos": 2,
+    "total_itens": 80,
+    "total_volumes_estimados": 5,
+    "cubagem_total_m3": 0.136,
+    "tarefas_geradas": 2,
+    "tarefas_concluidas": 0,
+    "criado_por": "Coord. Logístico Eduardo Silva"
+  }
+]

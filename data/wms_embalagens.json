@@ -1,0 +1,50 @@
+[
+  {
+    "id": "emb-01",
+    "codigo": "CX-P",
+    "nome": "Caixa Pequena (30×20×15 cm)",
+    "comprimento_cm": 30,
+    "largura_cm": 20,
+    "altura_cm": 15,
+    "volume_m3": 0.009,
+    "capacidade_peso_kg": 8,
+    "fator_utilizacao_pct": 85,
+    "ativa": true
+  },
+  {
+    "id": "emb-02",
+    "codigo": "CX-M",
+    "nome": "Caixa Média Padrão (40×30×25 cm)",
+    "comprimento_cm": 40,
+    "largura_cm": 30,
+    "altura_cm": 25,
+    "volume_m3": 0.03,
+    "capacidade_peso_kg": 18,
+    "fator_utilizacao_pct": 85,
+    "ativa": true
+  },
+  {
+    "id": "emb-03",
+    "codigo": "CX-G",
+    "nome": "Caixa Grande Expedição (60×40×35 cm)",
+    "comprimento_cm": 60,
+    "largura_cm": 40,
+    "altura_cm": 35,
+    "volume_m3": 0.084,
+    "capacidade_peso_kg": 30,
+    "fator_utilizacao_pct": 85,
+    "ativa": true
+  },
+  {
+    "id": "emb-04",
+    "codigo": "GAIOLA-ROLL",
+    "nome": "Gaiola Roll Container CD (120×80×150 cm)",
+    "comprimento_cm": 120,
+    "largura_cm": 80,
+    "altura_cm": 150,
+    "volume_m3": 1.44,
+    "capacidade_peso_kg": 400,
+    "fator_utilizacao_pct": 80,
+    "ativa": true
+  }
+]

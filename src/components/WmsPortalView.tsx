@@ -66,11 +66,13 @@ import {
   Info,
   PackageCheck,
   RefreshCw,
+  Package,
 } from "lucide-react";
 import { PortalUser } from "@/lib/authTypes";
 import { WmsRecebimentoView } from "./wms/WmsRecebimentoView";
 import { WmsArmazenagemView } from "./wms/WmsArmazenagemView";
 import { WmsReabastecimentoView } from "./wms/WmsReabastecimentoView";
+import { WmsPickingView } from "./wms/WmsPickingView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -79,7 +81,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -503,19 +505,19 @@ export function WmsPortalView({
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>4 Módulos Operacionais Integrados</span>
+            <span>5 Módulos Operacionais Integrados</span>
           </div>
         </div>
 
-        {/* Grade dos 4 Módulos Operacionais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Grade dos 5 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {[
             {
               id: "agendamento",
               targetTab: isAgendamentoModule ? activeTab : ("janelas" as WmsSubTab),
               num: "01",
               title: "Agendamento de Entregas",
-              desc: "Janelas (2h em 2h), controle de portaria, check-in e ocupação de docas",
+              desc: "Janelas (2h em 2h), portaria, check-in e ocupação docas",
               icon: Clock,
               badge: "Portaria & Janelas",
               active: isAgendamentoModule,
@@ -525,7 +527,7 @@ export function WmsPortalView({
               targetTab: "recebimento" as WmsSubTab,
               num: "02",
               title: "Recebimento de Mercadorias",
-              desc: "Leitura DANFE 44 dígitos, caixa master, conferência física e quarentena",
+              desc: "DANFE 44 dígitos, caixa master e conferência física",
               icon: PackageCheck,
               badge: "DANFE & Doca",
               active: activeTab === "recebimento",
@@ -535,7 +537,7 @@ export function WmsPortalView({
               targetTab: "armazenagem" as WmsSubTab,
               num: "03",
               title: "Armazenagem e Endereçamento",
-              desc: "Mapa visual do CD, sugestão inteligente por IA, movimentações e FIFO/FEFO",
+              desc: "Mapa visual CD, sugestão IA, movimentação e FIFO/FEFO",
               icon: Boxes,
               badge: "Mapa CD & Estoque",
               active: activeTab === "armazenagem",
@@ -545,10 +547,20 @@ export function WmsPortalView({
               targetTab: "reabastecimento" as WmsSubTab,
               num: "04",
               title: "Reabastecimento",
-              desc: "Reposição picking, flow rack fixo e tarefas guiadas do operador no coletor",
+              desc: "Reposição picking, flow rack fixo e coletor guiado",
               icon: RefreshCw,
               badge: "Picking & Coletor",
               active: activeTab === "reabastecimento",
+            },
+            {
+              id: "picking",
+              targetTab: "picking" as WmsSubTab,
+              num: "05",
+              title: "Picking / Separação",
+              desc: "Pedidos ERP, ondas, cubagem de caixas e coletor RF",
+              icon: Package,
+              badge: "Separação & Coletor",
+              active: activeTab === "picking",
             },
           ].map((m) => {
             const ModIcon = m.icon;
@@ -1566,6 +1578,14 @@ export function WmsPortalView({
       {/* ── ABA 7: MÓDULO 04 — REABASTECIMENTO DE PICKING & FLOW RACK ─────────── */}
       {activeTab === "reabastecimento" && (
         <WmsReabastecimentoView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 8: MÓDULO 05 — PICKING / SEPARAÇÃO ─────────────────────────── */}
+      {activeTab === "picking" && (
+        <WmsPickingView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />

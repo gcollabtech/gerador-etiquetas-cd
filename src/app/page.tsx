@@ -448,6 +448,8 @@ export default function Home() {
                           ? "Módulo 03 — Armazenagem"
                           : activeWmsTab === "reabastecimento"
                           ? "Módulo 04 — Reabastecimento"
+                          : activeWmsTab === "picking"
+                          ? "Módulo 05 — Picking / Separação"
                           : "Módulo 01 — Agendamento"}
                       </span>
                       {(activeWmsTab === "janelas" ||
@@ -477,6 +479,8 @@ export default function Home() {
                       ? "WMS: Módulo 03 — Armazenagem e Endereçamento (Mapa CD / IA / FIFO-FEFO)"
                       : activeWmsTab === "reabastecimento"
                       ? "WMS: Módulo 04 — Reabastecimento (Picking / Flow Rack / Coletor)"
+                      : activeWmsTab === "picking"
+                      ? "WMS: Módulo 05 — Picking / Separação (Pedidos ERP / Ondas / Coletor RF / Cubagem)"
                       : `WMS: Módulo 01 — Agendamento de Entregas (${
                           activeWmsTab === "janelas"
                             ? "Janelas 2h em 2h"

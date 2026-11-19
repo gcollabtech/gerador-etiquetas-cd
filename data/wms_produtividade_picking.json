@@ -1,0 +1,41 @@
+[
+  {
+    "id": "prod-01",
+    "operador_id": "usr-03",
+    "operador_nome": "Lucas Ferreira (Operador)",
+    "tarefa_id": "tar-pick-antiga-01",
+    "numero_tarefa": "TS-8790",
+    "pedido_id": "ped-ant-01",
+    "numero_pedido": "PED-2026-8790",
+    "loja_destino": "Loja 01 - Matriz Centro",
+    "data": "2026-11-19",
+    "hora_inicio": "08:00",
+    "hora_fim": "08:45",
+    "duracao_minutos": 45,
+    "quantidade_itens": 120,
+    "quantidade_linhas": 8,
+    "itens_por_hora": 160,
+    "linhas_por_hora": 10.7,
+    "divergencias": 0
+  },
+  {
+    "id": "prod-02",
+    "operador_id": "usr-04",
+    "operador_nome": "Marcos Vinicius (Operador)",
+    "tarefa_id": "tar-pick-antiga-02",
+    "numero_tarefa": "TS-8791",
+    "pedido_id": "ped-ant-02",
+    "numero_pedido": "PED-2026-8791",
+    "loja_destino": "Loja 03 - Pinheiros",
+    "data": "2026-11-19",
+    "hora_inicio": "08:10",
+    "hora_fim": "09:00",
+    "duracao_minutos": 50,
+    "quantidade_itens": 95,
+    "quantidade_linhas": 6,
+    "itens_por_hora": 114,
+    "linhas_por_hora": 7.2,
+    "divergencias": 1,
+    "observacao": "Item com avaria de embalagem substituído no picking"
+  }
+]
