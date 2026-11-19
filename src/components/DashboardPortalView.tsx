@@ -630,6 +630,28 @@ export function DashboardPortalView({
           </div>
 
           <div className="space-y-3">
+            {/* Alerta de Divergência do Módulo 02 WMS (Requisito 2.6) */}
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 space-y-1.5 text-xs animate-pulse">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-red-400 flex items-center gap-1.5">
+                  <AlertCircle size={14} />
+                  <span>Divergência de Recebimento (NF 000.012.345)</span>
+                </span>
+                <span className="text-[10px] text-red-400 font-mono font-bold">Quarentena</span>
+              </div>
+              <p className="text-[11px] text-[var(--muted)] leading-relaxed">
+                Falta física de 24 un (2 CX) no descarregamento da Doca 02 (SABÃO EM PÓ 1KG). Requer análise do gestor/supervisor.
+              </p>
+              <button
+                type="button"
+                onClick={() => onNavigate("wms")}
+                className="mt-1 inline-flex items-center gap-1 text-[11px] text-red-400 hover:text-red-300 font-bold hover:underline cursor-pointer"
+              >
+                <span>Analisar Ocorrência no Módulo 02</span>
+                <ChevronRight size={12} />
+              </button>
+            </div>
+
             {[
               {
                 time: "Há 12 min",

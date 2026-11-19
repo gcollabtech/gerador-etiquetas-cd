@@ -30,6 +30,7 @@ import {
   Calendar,
   Tag,
   Lock,
+  PackageCheck,
 } from "lucide-react";
 
 export type PortalTopic =
@@ -42,7 +43,7 @@ export type PortalTopic =
   | "tests"
   | "all";
 
-export type WmsSubTab = "janelas" | "portaria" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "agendamentos" | "indicadores";
 
 export interface WmsSubItem {
   id: WmsSubTab;
@@ -174,6 +175,7 @@ export function Sidebar({
   const wmsSubItems: WmsSubItem[] = [
     { id: "janelas", title: "Janelas (2h em 2h)", icon: Clock, badge: "Capacidade" },
     { id: "portaria", title: "Portaria & Check-in", icon: UserCheck, badge: "Chegadas" },
+    { id: "recebimento", title: "Módulo 02: Recebimento", icon: PackageCheck, badge: "DANFE / Doca" },
     { id: "agendamentos", title: "Lista Geral de Entregas", icon: FileText },
     { id: "indicadores", title: "Indicadores & Ocupação", icon: LayoutDashboard },
   ];

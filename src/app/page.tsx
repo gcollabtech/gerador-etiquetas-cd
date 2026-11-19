@@ -560,6 +560,7 @@ export default function Home() {
                 activeSubTab={activeWmsTab}
                 onSelectSubTab={setActiveWmsTab}
                 onNavigateToLabels={() => setActiveModule("etiquetas")}
+                currentUser={session.user}
               />
             ) : activeModule === "rastreamento" ? (
               <TrackingPortalView />

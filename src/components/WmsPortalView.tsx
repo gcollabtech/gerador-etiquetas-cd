@@ -64,20 +64,25 @@ import {
   CalendarDays,
   Wrench,
   Info,
+  PackageCheck,
 } from "lucide-react";
+import { PortalUser } from "@/lib/authTypes";
+import { WmsRecebimentoView } from "./wms/WmsRecebimentoView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
   activeSubTab?: WmsSubTab;
   onSelectSubTab?: (tab: WmsSubTab) => void;
+  currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
   activeSubTab,
   onSelectSubTab,
+  currentUser,
 }: WmsPortalViewProps) {
   // Estado de controle geral sincronizado com a Sidebar
   const [internalTab, setInternalTab] = useState<WmsSubTab>("janelas");
@@ -604,6 +609,22 @@ export function WmsPortalView({
 
         <button
           type="button"
+          onClick={() => setActiveTab("recebimento")}
+          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === "recebimento"
+              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+          }`}
+        >
+          <PackageCheck size={14} />
+          <span>3. Módulo 02 — Recebimento de Mercadorias</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)]">
+            Novo
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab("agendamentos")}
           className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "agendamentos"
@@ -612,7 +633,7 @@ export function WmsPortalView({
           }`}
         >
           <FileText size={14} />
-          <span>3. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
+          <span>4. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
         </button>
 
         <button
@@ -625,7 +646,7 @@ export function WmsPortalView({
           }`}
         >
           <TrendingUp size={14} />
-          <span>4. Indicadores & Capacidade</span>
+          <span>5. Indicadores & Capacidade</span>
         </button>
       </div>
 
@@ -1383,6 +1404,14 @@ export function WmsPortalView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── ABA 5: MÓDULO 02 — RECEBIMENTO DE MERCADORIAS ──────────────────── */}
+      {activeTab === "recebimento" && (
+        <WmsRecebimentoView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
       )}
 
       {/* ── MODAL DE NOVO AGENDAMENTO (Item 2.4 e 2.5) ────────────────────── */}
