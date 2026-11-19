@@ -1,0 +1,71 @@
+[
+  {
+    "id": "reg-001",
+    "cod_produto": "BEB-COCA-2L",
+    "descricao": "Refrigerante Coca-Cola 2L Pet (Fardo c/ 6)",
+    "ean": "7894900010015",
+    "estoque_min_picking": 50,
+    "estoque_max_picking": 200,
+    "quantidade_reposicao": 100,
+    "endereco_picking": "A-01-01-01-01",
+    "endereco_pulmao": "A-01-01-03-01",
+    "unidade_movimentacao": "FD",
+    "ativo": true
+  },
+  {
+    "id": "reg-002",
+    "cod_produto": "BEB-CERV-HEIN-LATA",
+    "descricao": "Cerveja Heineken Lata 350ml (Pack c/ 12)",
+    "ean": "7896045505417",
+    "estoque_min_picking": 60,
+    "estoque_max_picking": 250,
+    "quantidade_reposicao": 120,
+    "endereco_picking": "A-01-01-01-02",
+    "endereco_pulmao": "A-01-01-02-01",
+    "unidade_movimentacao": "CX",
+    "ativo": true
+  },
+  {
+    "id": "reg-003",
+    "cod_produto": "FAR-DIPIRONA-500MG",
+    "descricao": "Dipirona Monoidratada 500mg Caixa c/ 20 comp",
+    "ean": "7896714201017",
+    "estoque_min_picking": 200,
+    "estoque_max_picking": 1000,
+    "quantidade_reposicao": 500,
+    "endereco_picking": "A-01-02-01-01",
+    "endereco_flow_rack": "A-01-02-01-01",
+    "endereco_pulmao": "A-01-02-02-01",
+    "unidade_movimentacao": "CX",
+    "capacidade_caixas_flow_rack": 25,
+    "ativo": true
+  },
+  {
+    "id": "reg-004",
+    "cod_produto": "FAR-PARACETAMOL-750",
+    "descricao": "Paracetamol 750mg Blister c/ 10 comp",
+    "ean": "7896714202021",
+    "estoque_min_picking": 300,
+    "estoque_max_picking": 1500,
+    "quantidade_reposicao": 800,
+    "endereco_picking": "A-01-02-01-02",
+    "endereco_flow_rack": "A-01-02-01-02",
+    "endereco_pulmao": "A-01-02-02-01",
+    "unidade_movimentacao": "CX",
+    "capacidade_caixas_flow_rack": 30,
+    "ativo": true
+  },
+  {
+    "id": "reg-005",
+    "cod_produto": "HIG-SABONETE-DOVE",
+    "descricao": "Sabonete Dove Original 90g (Pack c/ 6)",
+    "ean": "7891150041234",
+    "estoque_min_picking": 80,
+    "estoque_max_picking": 400,
+    "quantidade_reposicao": 200,
+    "endereco_picking": "A-02-01-01-01",
+    "endereco_pulmao": "A-02-01-02-01",
+    "unidade_movimentacao": "PCT",
+    "ativo": true
+  }
+]

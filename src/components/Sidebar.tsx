@@ -31,6 +31,7 @@ import {
   Tag,
   Lock,
   PackageCheck,
+  RefreshCw,
 } from "lucide-react";
 
 export type PortalTopic =
@@ -43,7 +44,7 @@ export type PortalTopic =
   | "tests"
   | "all";
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "agendamentos" | "indicadores";
 
 export interface WmsSubItem {
   id: WmsSubTab;
@@ -177,6 +178,7 @@ export function Sidebar({
     { id: "portaria", title: "Portaria & Check-in", icon: UserCheck, badge: "Chegadas" },
     { id: "recebimento", title: "Módulo 02: Recebimento", icon: PackageCheck, badge: "DANFE / Doca" },
     { id: "armazenagem", title: "Módulo 03: Armazenagem", icon: Boxes, badge: "Mapa / Estoque" },
+    { id: "reabastecimento", title: "Módulo 04: Reabastecimento", icon: RefreshCw, badge: "Picking / Flow" },
     { id: "agendamentos", title: "Lista Geral de Entregas", icon: FileText },
     { id: "indicadores", title: "Indicadores & Ocupação", icon: LayoutDashboard },
   ];

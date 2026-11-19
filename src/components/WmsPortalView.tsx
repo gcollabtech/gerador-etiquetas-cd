@@ -65,10 +65,12 @@ import {
   Wrench,
   Info,
   PackageCheck,
+  RefreshCw,
 } from "lucide-react";
 import { PortalUser } from "@/lib/authTypes";
 import { WmsRecebimentoView } from "./wms/WmsRecebimentoView";
 import { WmsArmazenagemView } from "./wms/WmsArmazenagemView";
+import { WmsReabastecimentoView } from "./wms/WmsReabastecimentoView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -77,7 +79,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -632,6 +634,19 @@ export function WmsPortalView({
         >
           <Boxes size={14} />
           <span>4. Módulo 03 — Armazenagem</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("reabastecimento")}
+          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === "reabastecimento"
+              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+          }`}
+        >
+          <RefreshCw size={14} />
+          <span>5. Módulo 04 — Reabastecimento</span>
           <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)]">
             Novo
           </span>
@@ -647,7 +662,7 @@ export function WmsPortalView({
           }`}
         >
           <FileText size={14} />
-          <span>5. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
+          <span>6. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
         </button>
 
         <button
@@ -660,7 +675,7 @@ export function WmsPortalView({
           }`}
         >
           <TrendingUp size={14} />
-          <span>6. Indicadores & Capacidade</span>
+          <span>7. Indicadores & Capacidade</span>
         </button>
       </div>
 
@@ -1431,6 +1446,14 @@ export function WmsPortalView({
       {/* ── ABA 6: MÓDULO 03 — ARMAZENAGEM & ENDEREÇAMENTO ────────────────── */}
       {activeTab === "armazenagem" && (
         <WmsArmazenagemView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 7: MÓDULO 04 — REABASTECIMENTO DE PICKING & FLOW RACK ─────────── */}
+      {activeTab === "reabastecimento" && (
+        <WmsReabastecimentoView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />
