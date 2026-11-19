@@ -307,8 +307,8 @@ export default function Home() {
       subtitle: "Visão executiva em tempo real: KPIs logísticos, capacidade do CD e gestão operacional",
     },
     wms: {
-      title: "1. WMS — Warehouse Management System",
-      subtitle: "Módulos operacionais de recebimento, armazenagem, inventário e separação",
+      title: "WMS — Warehouse Management System",
+      subtitle: "Sistema Integrado de Gestão de Armazém: Agendamento, Recebimento, Armazenagem e Reabastecimento",
     },
     rastreamento: {
       title: "2. Rastreamento e Gestão de Cargas",
@@ -442,15 +442,28 @@ export default function Home() {
                     <>
                       <ChevronRight size={12} />
                       <span className="text-[var(--collab-mostarda)] truncate font-semibold">
-                        Agendamento de Entregas
+                        {activeWmsTab === "recebimento"
+                          ? "Módulo 02 — Recebimento"
+                          : activeWmsTab === "armazenagem"
+                          ? "Módulo 03 — Armazenagem"
+                          : activeWmsTab === "reabastecimento"
+                          ? "Módulo 04 — Reabastecimento"
+                          : "Módulo 01 — Agendamento"}
                       </span>
-                      <ChevronRight size={12} />
-                      <span className="text-[var(--foreground)] truncate font-medium">
-                        {activeWmsTab === "janelas" && "Janelas 2h em 2h"}
-                        {activeWmsTab === "portaria" && "Portaria & Check-in"}
-                        {activeWmsTab === "agendamentos" && "Lista de Entregas"}
-                        {activeWmsTab === "indicadores" && "Indicadores & Ocupação"}
-                      </span>
+                      {(activeWmsTab === "janelas" ||
+                        activeWmsTab === "portaria" ||
+                        activeWmsTab === "agendamentos" ||
+                        activeWmsTab === "indicadores") && (
+                        <>
+                          <ChevronRight size={12} />
+                          <span className="text-[var(--foreground)] truncate font-medium">
+                            {activeWmsTab === "janelas" && "Janelas 2h em 2h"}
+                            {activeWmsTab === "portaria" && "Portaria & Check-in"}
+                            {activeWmsTab === "agendamentos" && "Lista de Entregas"}
+                            {activeWmsTab === "indicadores" && "Indicadores & Ocupação"}
+                          </span>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -458,15 +471,21 @@ export default function Home() {
                   {activeModule === "etiquetas"
                     ? topicTitles[activeTopic].title
                     : activeModule === "wms"
-                    ? `WMS: Agendamento de Entregas — ${
-                        activeWmsTab === "janelas"
-                          ? "Janelas (2h em 2h)"
-                          : activeWmsTab === "portaria"
-                          ? "Portaria & Check-in"
-                          : activeWmsTab === "agendamentos"
-                          ? "Lista Geral"
-                          : "Indicadores"
-                      }`
+                    ? activeWmsTab === "recebimento"
+                      ? "WMS: Módulo 02 — Recebimento de Mercadorias (DANFE / Físico / Quarentena)"
+                      : activeWmsTab === "armazenagem"
+                      ? "WMS: Módulo 03 — Armazenagem e Endereçamento (Mapa CD / IA / FIFO-FEFO)"
+                      : activeWmsTab === "reabastecimento"
+                      ? "WMS: Módulo 04 — Reabastecimento (Picking / Flow Rack / Coletor)"
+                      : `WMS: Módulo 01 — Agendamento de Entregas (${
+                          activeWmsTab === "janelas"
+                            ? "Janelas 2h em 2h"
+                            : activeWmsTab === "portaria"
+                            ? "Portaria & Check-in"
+                            : activeWmsTab === "agendamentos"
+                            ? "Lista Geral"
+                            : "Indicadores"
+                        })`
                     : moduleTitles[activeModule]?.title}
                 </h1>
               </div>

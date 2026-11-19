@@ -53,6 +53,22 @@ export interface WmsSubItem {
   badge?: string;
 }
 
+export interface WmsModuleItem {
+  id: "agendamento" | "recebimento" | "armazenagem" | "reabastecimento";
+  subTabTarget: WmsSubTab;
+  num: string;
+  title: string;
+  subtitle: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  badge: string;
+  subItems?: Array<{
+    id: WmsSubTab;
+    title: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    badge?: string;
+  }>;
+}
+
 export interface MainMenuItem {
   id: MainPortalModule;
   title: string;
@@ -122,10 +138,10 @@ export function Sidebar({
     },
     {
       id: "wms",
-      title: "1. WMS",
-      subtitle: "Agendamento de Entregas",
+      title: "WMS — Gestão de CD",
+      subtitle: "Recebimento, Estoque e Reposição",
       icon: Boxes,
-      badge: "Módulo 01",
+      badge: "4 Módulos",
     },
     {
       id: "rastreamento",
@@ -173,14 +189,49 @@ export function Sidebar({
     { id: "all", title: "Visão Completa", icon: LayoutDashboard },
   ];
 
-  const wmsSubItems: WmsSubItem[] = [
-    { id: "janelas", title: "Janelas (2h em 2h)", icon: Clock, badge: "Capacidade" },
-    { id: "portaria", title: "Portaria & Check-in", icon: UserCheck, badge: "Chegadas" },
-    { id: "recebimento", title: "Módulo 02: Recebimento", icon: PackageCheck, badge: "DANFE / Doca" },
-    { id: "armazenagem", title: "Módulo 03: Armazenagem", icon: Boxes, badge: "Mapa / Estoque" },
-    { id: "reabastecimento", title: "Módulo 04: Reabastecimento", icon: RefreshCw, badge: "Picking / Flow" },
-    { id: "agendamentos", title: "Lista Geral de Entregas", icon: FileText },
-    { id: "indicadores", title: "Indicadores & Ocupação", icon: LayoutDashboard },
+  const wmsModules: WmsModuleItem[] = [
+    {
+      id: "agendamento",
+      subTabTarget: "janelas",
+      num: "01",
+      title: "1. Agendamento de Entregas",
+      subtitle: "Janelas 2h, portaria e recepção",
+      icon: Clock,
+      badge: "Módulo 01",
+      subItems: [
+        { id: "janelas", title: "Janelas (2h em 2h)", icon: Clock, badge: "Capacidade" },
+        { id: "portaria", title: "Portaria & Check-in", icon: UserCheck, badge: "Chegadas" },
+        { id: "agendamentos", title: "Lista Geral de Entregas", icon: FileText },
+        { id: "indicadores", title: "Indicadores & Ocupação", icon: LayoutDashboard },
+      ],
+    },
+    {
+      id: "recebimento",
+      subTabTarget: "recebimento",
+      num: "02",
+      title: "2. Recebimento de Mercadorias",
+      subtitle: "DANFE, física e quarentena",
+      icon: PackageCheck,
+      badge: "Módulo 02",
+    },
+    {
+      id: "armazenagem",
+      subTabTarget: "armazenagem",
+      num: "03",
+      title: "3. Armazenagem e Endereçamento",
+      subtitle: "Mapa visual, sugestão IA e FIFO/FEFO",
+      icon: Boxes,
+      badge: "Módulo 03",
+    },
+    {
+      id: "reabastecimento",
+      subTabTarget: "reabastecimento",
+      num: "04",
+      title: "4. Reabastecimento",
+      subtitle: "Picking, flow rack e coletor RF",
+      icon: RefreshCw,
+      badge: "Módulo 04",
+    },
   ];
 
   const initials = currentUser.name
@@ -387,56 +438,109 @@ export function Sidebar({
                   </div>
                 </button>
 
-                {/* Submenu for "WMS" — Agendamento de Entregas */}
+                {/* Submenu for "WMS" — 4 Módulos Operacionais */}
                 {isWms && isMainActive && wmsMenuExpanded && (
-                  <div className="pl-3 pr-1 py-1 space-y-0.5 border-l-2 border-[var(--collab-mostarda)]/50 ml-5 my-1 animate-fadeIn">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] px-2 py-1 flex items-center gap-1.5">
-                      <Calendar size={11} className="text-[var(--collab-mostarda)]" />
-                      <span>Agendamento de Entregas</span>
+                  <div className="pl-2 pr-1 py-1 space-y-1.5 border-l-2 border-[var(--collab-mostarda)]/50 ml-5 my-1.5 animate-fadeIn">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] px-2 py-0.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Boxes size={11} className="text-[var(--collab-mostarda)]" />
+                        <span>Módulos do WMS</span>
+                      </span>
+                      <span className="text-[9px] font-mono text-[var(--collab-mostarda)] font-semibold">4 Módulos</span>
                     </div>
 
-                    {wmsSubItems.map((sub) => {
-                      const SubIcon = sub.icon;
-                      const isSubActive = activeWmsTab === sub.id;
+                    {wmsModules.map((wm) => {
+                      const WmIcon = wm.icon;
+                      const isModuleActive =
+                        wm.id === "agendamento"
+                          ? activeWmsTab === "janelas" ||
+                            activeWmsTab === "portaria" ||
+                            activeWmsTab === "agendamentos" ||
+                            activeWmsTab === "indicadores"
+                          : activeWmsTab === wm.id;
 
                       return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectWmsTab?.(sub.id);
-                            if (isMobileOpen) onToggleMobile();
-                          }}
-                          className={`w-full text-left rounded-lg px-2.5 py-1.5 text-xs transition-all flex items-center justify-between cursor-pointer ${
-                            isSubActive
-                              ? "bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] font-bold border border-[var(--collab-mostarda)]/30"
-                              : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <SubIcon size={13} className={isSubActive ? "text-[var(--collab-mostarda)]" : "opacity-60"} />
-                            <span className="truncate">{sub.title}</span>
-                          </div>
+                        <div key={wm.id} className="space-y-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSelectWmsTab?.(wm.subTabTarget);
+                              if (isMobileOpen && !wm.subItems) onToggleMobile();
+                            }}
+                            className={`w-full text-left rounded-lg p-2 text-xs transition-all flex items-center justify-between group cursor-pointer ${
+                              isModuleActive
+                                ? "bg-[var(--collab-mostarda)]/15 text-[var(--foreground)] border border-[var(--collab-mostarda)]/40 font-semibold"
+                                : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
+                                  isModuleActive
+                                    ? "bg-[var(--collab-mostarda)] text-black"
+                                    : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--collab-mostarda)]"
+                                }`}
+                              >
+                                <WmIcon size={12} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`text-xs truncate ${isModuleActive ? "font-bold text-[var(--foreground)]" : "font-medium"}`}>
+                                  {wm.title}
+                                </div>
+                                <div className="text-[10px] text-[var(--muted)] truncate">
+                                  {wm.subtitle}
+                                </div>
+                              </div>
+                            </div>
 
-                          {sub.badge && (
-                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[var(--card)] text-[var(--collab-mostarda)] border border-[var(--card-border)]">
-                              {sub.badge}
+                            <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold shrink-0 ml-1 ${
+                              isModuleActive
+                                ? "bg-[var(--collab-mostarda)] text-black"
+                                : "bg-[var(--card)] text-[var(--muted)] border border-[var(--card-border)]"
+                            }`}>
+                              {wm.badge}
                             </span>
+                          </button>
+
+                          {/* Sub-itens específicos do Módulo 01 (Agendamento) quando ativo */}
+                          {wm.subItems && isModuleActive && (
+                            <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l border-[var(--card-border)] ml-3 my-0.5 animate-fadeIn">
+                              {wm.subItems.map((sub) => {
+                                const SubIcon = sub.icon;
+                                const isSubActive = activeWmsTab === sub.id;
+
+                                return (
+                                  <button
+                                    key={sub.id}
+                                    type="button"
+                                    onClick={() => {
+                                      onSelectWmsTab?.(sub.id);
+                                      if (isMobileOpen) onToggleMobile();
+                                    }}
+                                    className={`w-full text-left rounded-md px-2 py-1 text-[11px] transition-all flex items-center justify-between cursor-pointer ${
+                                      isSubActive
+                                        ? "bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)] font-bold"
+                                        : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      <SubIcon size={11} className={isSubActive ? "text-[var(--collab-mostarda)]" : "opacity-60"} />
+                                      <span className="truncate">{sub.title}</span>
+                                    </div>
+
+                                    {sub.badge && (
+                                      <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-[var(--card)] text-[var(--muted)] border border-[var(--card-border)]">
+                                        {sub.badge}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
-
-                    <div className="pt-2 mt-1 border-t border-[var(--card-border)]/50 space-y-0.5">
-                      <div className="px-2.5 py-1 text-[10px] text-[var(--muted)] flex items-center justify-between opacity-50">
-                        <span>2. Recebimento & Cego</span>
-                        <span className="text-[9px] font-mono">Em breve</span>
-                      </div>
-                      <div className="px-2.5 py-1 text-[10px] text-[var(--muted)] flex items-center justify-between opacity-50">
-                        <span>3. Armazenagem</span>
-                        <span className="text-[9px] font-mono">Em breve</span>
-                      </div>
-                    </div>
                   </div>
                 )}
 

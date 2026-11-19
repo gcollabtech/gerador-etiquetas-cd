@@ -448,55 +448,14 @@ export function WmsPortalView({
     }
   };
 
+  const isAgendamentoModule =
+    activeTab === "janelas" ||
+    activeTab === "portaria" ||
+    activeTab === "agendamentos" ||
+    activeTab === "indicadores";
+
   return (
     <div className="space-y-6">
-      {/* Header Principal do Módulo 01 */}
-      <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30">
-              WMS • Módulo 01
-            </span>
-            <span className="text-xs text-[var(--muted)] flex items-center gap-1">
-              <Building2 size={13} />
-              <span>CD-01 — Barueri Matriz</span>
-            </span>
-          </div>
-          <h1 className="font-heading text-xl sm:text-2xl font-bold text-[var(--foreground)]">
-            Agendamento de Entregas & Recepção
-          </h1>
-          <p className="text-xs text-[var(--muted)] max-w-2xl">
-            Gestão das janelas de recebimento (2h em 2h, máx. 2 fornecedores e 500 volumes), controle de portaria (check-in de chegada) e prevenção de filas nas docas.
-          </p>
-        </div>
-
-        {/* Ações de Topo */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs font-semibold">
-            <Calendar size={14} className="text-[var(--collab-mostarda)]" />
-            <input
-              type="date"
-              value={dataSelecionada}
-              onChange={(e) => setDataSelecionada(e.target.value)}
-              className="bg-transparent text-[var(--foreground)] focus:outline-none cursor-pointer text-xs font-medium"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setFormSuccessProtocolo(null);
-              setFormError(null);
-              setIsNovoAgendamentoOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] font-heading font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
-          >
-            <Plus size={16} />
-            <span>Novo Agendamento</span>
-          </button>
-        </div>
-      </div>
-
       {/* Toast de Notificação Feedback */}
       {toastMsg && (
         <div
@@ -520,164 +479,317 @@ export function WmsPortalView({
         </div>
       )}
 
-      {/* KPI Cards Rápidos (Item 2.7) */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
-          <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-            <span>Agendamentos</span>
-            <Calendar size={14} className="text-[var(--collab-mostarda)]" />
+      {/* ── BARRA SUPERIOR DE MÓDULOS WMS (MÓDULOS 01 A 04) ──────────────── */}
+      <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--card-border)] pb-3.5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--collab-mostarda)]/15 border border-[var(--collab-mostarda)]/30 text-[var(--collab-mostarda)] flex items-center justify-center shrink-0">
+              <Boxes size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-black text-base sm:text-lg text-[var(--foreground)]">
+                  WMS — Warehouse Management System
+                </h1>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)] font-bold">
+                  CD Big Master / Collab
+                </span>
+              </div>
+              <p className="text-xs text-[var(--muted)]">
+                Selecione o módulo operacional para gerenciar o fluxo físico e lógico de mercadorias
+              </p>
+            </div>
           </div>
-          <div className="font-heading text-xl font-bold text-[var(--foreground)]">
-            {indicadores.totalAgendamentosDia}
+
+          <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>4 Módulos Operacionais Integrados</span>
           </div>
-          <span className="text-[10px] text-[var(--muted)] block">Previstos para hoje</span>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
-          <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-            <span>Volume Total</span>
-            <Boxes size={14} className="text-sky-400" />
-          </div>
-          <div className="font-heading text-xl font-bold text-sky-400">
-            {indicadores.totalVolumesPrevistos}{" "}
-            <span className="text-xs font-normal text-[var(--muted)]">/ 2.500</span>
-          </div>
-          <span className="text-[10px] text-[var(--muted)] block">Capacidade máxima do dia</span>
-        </div>
+        {/* Grade dos 4 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            {
+              id: "agendamento",
+              targetTab: isAgendamentoModule ? activeTab : ("janelas" as WmsSubTab),
+              num: "01",
+              title: "Agendamento de Entregas",
+              desc: "Janelas (2h em 2h), controle de portaria, check-in e ocupação de docas",
+              icon: Clock,
+              badge: "Portaria & Janelas",
+              active: isAgendamentoModule,
+            },
+            {
+              id: "recebimento",
+              targetTab: "recebimento" as WmsSubTab,
+              num: "02",
+              title: "Recebimento de Mercadorias",
+              desc: "Leitura DANFE 44 dígitos, caixa master, conferência física e quarentena",
+              icon: PackageCheck,
+              badge: "DANFE & Doca",
+              active: activeTab === "recebimento",
+            },
+            {
+              id: "armazenagem",
+              targetTab: "armazenagem" as WmsSubTab,
+              num: "03",
+              title: "Armazenagem e Endereçamento",
+              desc: "Mapa visual do CD, sugestão inteligente por IA, movimentações e FIFO/FEFO",
+              icon: Boxes,
+              badge: "Mapa CD & Estoque",
+              active: activeTab === "armazenagem",
+            },
+            {
+              id: "reabastecimento",
+              targetTab: "reabastecimento" as WmsSubTab,
+              num: "04",
+              title: "Reabastecimento",
+              desc: "Reposição picking, flow rack fixo e tarefas guiadas do operador no coletor",
+              icon: RefreshCw,
+              badge: "Picking & Coletor",
+              active: activeTab === "reabastecimento",
+            },
+          ].map((m) => {
+            const ModIcon = m.icon;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setActiveTab(m.targetTab)}
+                className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 group relative overflow-hidden ${
+                  m.active
+                    ? "bg-[var(--collab-mostarda)]/10 border-[var(--collab-mostarda)] shadow-sm ring-1 ring-[var(--collab-mostarda)]/40"
+                    : "bg-[var(--background)] border-[var(--card-border)] hover:border-[var(--collab-mostarda)]/50 hover:bg-[var(--secondary)]"
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                        m.active
+                          ? "bg-[var(--collab-mostarda)] text-black font-bold"
+                          : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--collab-mostarda)] group-hover:scale-105"
+                      }`}
+                    >
+                      <ModIcon size={16} />
+                    </div>
 
-        <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
-          <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-            <span>Ocupação CD</span>
-            <TrendingUp size={14} className="text-emerald-400" />
-          </div>
-          <div className="font-heading text-xl font-bold text-emerald-400">
-            {indicadores.taxaOcupacaoGeralPct}%
-          </div>
-          <span className="text-[10px] text-[var(--muted)] block">Taxa média de janelas</span>
-        </div>
+                    <span
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                        m.active
+                          ? "bg-[var(--collab-mostarda)] text-black"
+                          : "bg-[var(--card)] text-[var(--muted)] border border-[var(--card-border)]"
+                      }`}
+                    >
+                      Módulo {m.num}
+                    </span>
+                  </div>
 
-        <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
-          <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-            <span>Pontualidade</span>
-            <Timer size={14} className="text-amber-400" />
-          </div>
-          <div className="font-heading text-xl font-bold text-amber-400">
-            {indicadores.entregasNoHorario}{" "}
-            <span className="text-xs font-normal text-[var(--muted)]">
-              ({indicadores.entregasAtrasadas} atrasadas)
-            </span>
-          </div>
-          <span className="text-[10px] text-[var(--muted)] block">Check-in de portaria</span>
-        </div>
+                  <div>
+                    <h3
+                      className={`text-xs sm:text-sm font-bold font-heading line-clamp-1 ${
+                        m.active ? "text-[var(--collab-mostarda)]" : "text-[var(--foreground)]"
+                      }`}
+                    >
+                      {m.title}
+                    </h3>
+                    <p className="text-[11px] text-[var(--muted)] line-clamp-2 mt-0.5 leading-relaxed">
+                      {m.desc}
+                    </p>
+                  </div>
+                </div>
 
-        <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1 col-span-2 lg:col-span-1">
-          <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-            <span>Tempo Médio Espera</span>
-            <Clock size={14} className="text-purple-400" />
-          </div>
-          <div className="font-heading text-xl font-bold text-purple-400">
-            {indicadores.tempoMedioEsperaMinutos} min
-          </div>
-          <span className="text-[10px] text-[var(--muted)] block">Portaria até início descarga</span>
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--card-border)]/60 text-[10px]">
+                  <span
+                    className={`font-medium ${
+                      m.active ? "text-[var(--collab-mostarda)] font-bold" : "text-[var(--muted)]"
+                    }`}
+                  >
+                    {m.badge}
+                  </span>
+                  <span
+                    className={`text-[11px] font-bold ${
+                      m.active ? "text-[var(--collab-mostarda)]" : "text-[var(--muted)] group-hover:translate-x-0.5 transition-transform"
+                    }`}
+                  >
+                    →
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Navegação por Sub-Abas do Módulo 01 */}
-      <div className="flex border-b border-[var(--card-border)] gap-2 overflow-x-auto text-xs font-semibold">
-        <button
-          type="button"
-          onClick={() => setActiveTab("janelas")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "janelas"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <Clock size={14} />
-          <span>1. Janelas de Agendamento (2h em 2h)</span>
-        </button>
+      {/* ── CONTEXTO ESPECÍFICO DO MÓDULO 01 (AGENDAMENTO DE ENTREGAS) ───── */}
+      {isAgendamentoModule && (
+        <div className="space-y-5 animate-fadeIn">
+          {/* Header e Ações do Módulo 01 */}
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30">
+                  WMS • Módulo 01
+                </span>
+                <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                  <Building2 size={13} />
+                  <span>CD-01 — Barueri Matriz</span>
+                </span>
+              </div>
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-[var(--foreground)]">
+                Agendamento de Entregas & Recepção
+              </h2>
+              <p className="text-xs text-[var(--muted)] max-w-2xl">
+                Gestão das janelas de recebimento (2h em 2h, máx. 2 fornecedores e 500 volumes), controle de portaria (check-in de chegada) e prevenção de filas nas docas.
+              </p>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("portaria")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "portaria"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <UserCheck size={14} />
-          <span>2. Controle de Portaria & Check-in</span>
-        </button>
+            {/* Ações de Topo do Módulo 01 */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs font-semibold">
+                <Calendar size={14} className="text-[var(--collab-mostarda)]" />
+                <input
+                  type="date"
+                  value={dataSelecionada}
+                  onChange={(e) => setDataSelecionada(e.target.value)}
+                  className="bg-transparent text-[var(--foreground)] focus:outline-none cursor-pointer text-xs font-medium"
+                />
+              </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("recebimento")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "recebimento"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <PackageCheck size={14} />
-          <span>3. Módulo 02 — Recebimento</span>
-        </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormSuccessProtocolo(null);
+                  setFormError(null);
+                  setIsNovoAgendamentoOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--collab-mostarda)] hover:bg-[var(--mostarda-300)] text-[#080808] font-heading font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Novo Agendamento</span>
+              </button>
+            </div>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("armazenagem")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "armazenagem"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <Boxes size={14} />
-          <span>4. Módulo 03 — Armazenagem</span>
-        </button>
+          {/* KPI Cards Rápidos de Agendamento */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Agendamentos</span>
+                <Calendar size={14} className="text-[var(--collab-mostarda)]" />
+              </div>
+              <div className="font-heading text-xl font-bold text-[var(--foreground)]">
+                {indicadores.totalAgendamentosDia}
+              </div>
+              <span className="text-[10px] text-[var(--muted)] block">Previstos para hoje</span>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("reabastecimento")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "reabastecimento"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <RefreshCw size={14} />
-          <span>5. Módulo 04 — Reabastecimento</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[var(--collab-mostarda)]/20 text-[var(--collab-mostarda)]">
-            Novo
-          </span>
-        </button>
+            <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Volume Total</span>
+                <Boxes size={14} className="text-sky-400" />
+              </div>
+              <div className="font-heading text-xl font-bold text-sky-400">
+                {indicadores.totalVolumesPrevistos}{" "}
+                <span className="text-xs font-normal text-[var(--muted)]">/ 2.500</span>
+              </div>
+              <span className="text-[10px] text-[var(--muted)] block">Capacidade máxima do dia</span>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("agendamentos")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "agendamentos"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <FileText size={14} />
-          <span>6. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
-        </button>
+            <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Ocupação CD</span>
+                <TrendingUp size={14} className="text-emerald-400" />
+              </div>
+              <div className="font-heading text-xl font-bold text-emerald-400">
+                {indicadores.taxaOcupacaoGeralPct}%
+              </div>
+              <span className="text-[10px] text-[var(--muted)] block">Taxa média de janelas</span>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("indicadores")}
-          className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "indicadores"
-              ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
-              : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-          }`}
-        >
-          <TrendingUp size={14} />
-          <span>7. Indicadores & Capacidade</span>
-        </button>
-      </div>
+            <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Pontualidade</span>
+                <Timer size={14} className="text-amber-400" />
+              </div>
+              <div className="font-heading text-xl font-bold text-amber-400">
+                {indicadores.entregasNoHorario}{" "}
+                <span className="text-xs font-normal text-[var(--muted)]">
+                  ({indicadores.entregasAtrasadas} atrasadas)
+                </span>
+              </div>
+              <span className="text-[10px] text-[var(--muted)] block">Check-in de portaria</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] space-y-1 col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Tempo Médio Espera</span>
+                <Clock size={14} className="text-purple-400" />
+              </div>
+              <div className="font-heading text-xl font-bold text-purple-400">
+                {indicadores.tempoMedioEsperaMinutos} min
+              </div>
+              <span className="text-[10px] text-[var(--muted)] block">Portaria até início descarga</span>
+            </div>
+          </div>
+
+          {/* Sub-Abas de Navegação das Funções do Módulo 01 */}
+          <div className="flex border-b border-[var(--card-border)] gap-2 overflow-x-auto text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveTab("janelas")}
+              className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "janelas"
+                  ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <Clock size={14} />
+              <span>1. Janelas de Agendamento (2h em 2h)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("portaria")}
+              className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "portaria"
+                  ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <UserCheck size={14} />
+              <span>2. Controle de Portaria & Check-in</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("agendamentos")}
+              className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "agendamentos"
+                  ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <FileText size={14} />
+              <span>3. Lista Geral & Canais ({agendamentosFiltrados.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("indicadores")}
+              className={`pb-3 px-3.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "indicadores"
+                  ? "border-[var(--collab-mostarda)] text-[var(--collab-mostarda)] font-bold"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <TrendingUp size={14} />
+              <span>4. Indicadores & Capacidade</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── ABA 1: GRADE DE JANELAS DE 2H EM 2H (Item 2.3) ────────────────── */}
       {activeTab === "janelas" && (
