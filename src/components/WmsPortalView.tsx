@@ -67,12 +67,14 @@ import {
   PackageCheck,
   RefreshCw,
   Package,
+  ClipboardCheck,
 } from "lucide-react";
 import { PortalUser } from "@/lib/authTypes";
 import { WmsRecebimentoView } from "./wms/WmsRecebimentoView";
 import { WmsArmazenagemView } from "./wms/WmsArmazenagemView";
 import { WmsReabastecimentoView } from "./wms/WmsReabastecimentoView";
 import { WmsPickingView } from "./wms/WmsPickingView";
+import { WmsConferenciaView } from "./wms/WmsConferenciaView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -81,7 +83,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -505,12 +507,12 @@ export function WmsPortalView({
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>5 Módulos Operacionais Integrados</span>
+            <span>6 Módulos Operacionais Integrados</span>
           </div>
         </div>
 
-        {/* Grade dos 5 Módulos Operacionais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Grade dos 6 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
             {
               id: "agendamento",
@@ -561,6 +563,16 @@ export function WmsPortalView({
               icon: Package,
               badge: "Separação & Coletor",
               active: activeTab === "picking",
+            },
+            {
+              id: "conferencia",
+              targetTab: "conferencia" as WmsSubTab,
+              num: "06",
+              title: "Conferência",
+              desc: "Cega/dirigida, volumes, trava de divergências e romaneio",
+              icon: ClipboardCheck,
+              badge: "Auditoria & Carga",
+              active: activeTab === "conferencia",
             },
           ].map((m) => {
             const ModIcon = m.icon;
@@ -1586,6 +1598,14 @@ export function WmsPortalView({
       {/* ── ABA 8: MÓDULO 05 — PICKING / SEPARAÇÃO ─────────────────────────── */}
       {activeTab === "picking" && (
         <WmsPickingView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 9: MÓDULO 06 — CONFERÊNCIA ─────────────────────────────────── */}
+      {activeTab === "conferencia" && (
+        <WmsConferenciaView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />

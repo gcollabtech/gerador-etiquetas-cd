@@ -1,0 +1,476 @@
+[
+  {
+    "id": "conf-001",
+    "numero_pedido": "PED-2026-0842",
+    "pedido_id": "ped-001",
+    "loja_destino": "Loja 08 - Shopping Eldorado",
+    "cod_loja": "LJ-008",
+    "regiao": "Capital",
+    "rota_entrega": "Rota 01 - Zona Sul Express",
+    "transportadora": "Transportadora TransCollab Log",
+    "tipo_conferencia": "dirigida",
+    "status": "em_conferencia",
+    "conferente_id": "usr-03",
+    "conferente_nome": "Marcos Oliveira (Conferente)",
+    "numero_recontagens": 0,
+    "data_inicio": "2026-11-19 10:15",
+    "total_itens_esperados": 40,
+    "total_itens_conferidos": 20,
+    "total_volumes": 2,
+    "itens": [
+      {
+        "id": "citem-1",
+        "cod_produto": "PRD-1001",
+        "descricao": "DETERGENTE LÍQUIDO NEUTRO 500ML",
+        "ean": "7891000100018",
+        "barra_alfa": "DET-NEUTRO-500",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 20,
+        "unidade_medida": "UN",
+        "lote_esperado": "L26-A101",
+        "lote_conferido": "L26-A101",
+        "validade_esperada": "2027-05-15",
+        "validade_conferida": "2027-05-15",
+        "status_item": "conforme"
+      },
+      {
+        "id": "citem-2",
+        "cod_produto": "PRD-1002",
+        "descricao": "SABÃO EM PÓ CONCENTRADO 1KG",
+        "ean": "7891000100025",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 0,
+        "unidade_medida": "CX",
+        "lote_esperado": "L26-B202",
+        "validade_esperada": "2027-08-20",
+        "status_item": "pendente"
+      }
+    ],
+    "volumes": [
+      {
+        "id": "vol-001-1",
+        "codigo_volume": "VOL-0842-01",
+        "numero_volume": 1,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Média Padrão 40x30x25",
+        "peso_kg": 10.5,
+        "cubagem_m3": 0.03,
+        "itens": [
+          {
+            "cod_produto": "PRD-1001",
+            "descricao": "DETERGENTE LÍQUIDO NEUTRO 500ML",
+            "quantidade": 20,
+            "lote": "L26-A101",
+            "validade": "2027-05-15"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      },
+      {
+        "id": "vol-001-2",
+        "codigo_volume": "VOL-0842-02",
+        "numero_volume": 2,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Média Padrão 40x30x25",
+        "peso_kg": 20.0,
+        "cubagem_m3": 0.03,
+        "itens": [
+          {
+            "cod_produto": "PRD-1002",
+            "descricao": "SABÃO EM PÓ CONCENTRADO 1KG",
+            "quantidade": 20,
+            "lote": "L26-B202",
+            "validade": "2027-08-20"
+          }
+        ],
+        "etiqueta_gerada": false,
+        "conferido": false
+      }
+    ],
+    "divergencias": [],
+    "romaneio_gerado": false
+  },
+  {
+    "id": "conf-002",
+    "numero_pedido": "PED-2026-0843",
+    "pedido_id": "ped-002",
+    "loja_destino": "Loja 15 - Center Norte",
+    "cod_loja": "LJ-015",
+    "regiao": "Capital",
+    "rota_entrega": "Rota 02 - Zona Norte Express",
+    "transportadora": "Transportadora TransCollab Log",
+    "tipo_conferencia": "cega",
+    "status": "divergencia_identificada",
+    "conferente_id": "usr-04",
+    "conferente_nome": "Juliana Santos (Conferente)",
+    "numero_recontagens": 0,
+    "data_inicio": "2026-11-19 09:30",
+    "total_itens_esperados": 40,
+    "total_itens_conferidos": 35,
+    "total_volumes": 2,
+    "itens": [
+      {
+        "id": "citem-3",
+        "cod_produto": "PRD-1003",
+        "descricao": "DESINFETANTE LAVANDA 2L",
+        "ean": "7891000100032",
+        "quantidade_esperada": 15,
+        "quantidade_conferida": 15,
+        "unidade_medida": "GL",
+        "lote_esperado": "L26-C303",
+        "lote_conferido": "L26-C303",
+        "validade_esperada": "2026-12-10",
+        "validade_conferida": "2026-12-10",
+        "status_item": "conforme"
+      },
+      {
+        "id": "citem-4",
+        "cod_produto": "PRD-1004",
+        "descricao": "AMACIANTE CONCENTRADO TOQUE FLORAL 1.5L",
+        "ean": "7891000100049",
+        "quantidade_esperada": 25,
+        "quantidade_conferida": 20,
+        "unidade_medida": "FR",
+        "lote_esperado": "L26-D404",
+        "lote_conferido": "L26-D404",
+        "validade_esperada": "2027-03-30",
+        "validade_conferida": "2027-03-30",
+        "status_item": "divergente",
+        "divergencia_tipo": "falta",
+        "divergencia_motivo": "Falta física de 5 frascos no volume 2 (separado 20, pedido 25)"
+      }
+    ],
+    "volumes": [
+      {
+        "id": "vol-002-1",
+        "codigo_volume": "VOL-0843-01",
+        "numero_volume": 1,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Grande CX-G",
+        "peso_kg": 30.0,
+        "cubagem_m3": 0.072,
+        "itens": [
+          {
+            "cod_produto": "PRD-1003",
+            "descricao": "DESINFETANTE LAVANDA 2L",
+            "quantidade": 15,
+            "lote": "L26-C303",
+            "validade": "2026-12-10"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      },
+      {
+        "id": "vol-002-2",
+        "codigo_volume": "VOL-0843-02",
+        "numero_volume": 2,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "peso_kg": 30.0,
+        "cubagem_m3": 0.03,
+        "itens": [
+          {
+            "cod_produto": "PRD-1004",
+            "descricao": "AMACIANTE CONCENTRADO TOQUE FLORAL 1.5L",
+            "quantidade": 20,
+            "lote": "L26-D404",
+            "validade": "2027-03-30"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": false
+      }
+    ],
+    "divergencias": [
+      {
+        "id": "div-001",
+        "data_hora": "2026-11-19 09:48",
+        "operador_nome": "Juliana Santos (Conferente)",
+        "tipo": "falta",
+        "cod_produto": "PRD-1004",
+        "descricao": "AMACIANTE CONCENTRADO TOQUE FLORAL 1.5L",
+        "qtd_esperada": 25,
+        "qtd_conferida": 20,
+        "lote_esperado": "L26-D404",
+        "lote_conferido": "L26-D404",
+        "motivo": "Falta física de 5 frascos no volume 2 (separado 20, pedido 25)",
+        "status_resolucao": "pendente_analise"
+      }
+    ],
+    "romaneio_gerado": false
+  },
+  {
+    "id": "conf-003",
+    "numero_pedido": "PED-2026-0844",
+    "pedido_id": "ped-003",
+    "loja_destino": "Loja 03 - Campinas Iguatemi",
+    "cod_loja": "LJ-003",
+    "regiao": "Interior",
+    "rota_entrega": "Rota 10 - Campinas / RMC",
+    "transportadora": "Rápido Paulista Cargas",
+    "tipo_conferencia": "dirigida",
+    "status": "conferido",
+    "conferente_id": "usr-03",
+    "conferente_nome": "Marcos Oliveira (Conferente)",
+    "numero_recontagens": 0,
+    "data_inicio": "2026-11-19 08:30",
+    "data_fim": "2026-11-19 08:52",
+    "total_itens_esperados": 40,
+    "total_itens_conferidos": 40,
+    "total_volumes": 2,
+    "itens": [
+      {
+        "id": "citem-5",
+        "cod_produto": "PRD-1005",
+        "descricao": "ÁGUA SANITÁRIA PURIFICADA 1L",
+        "ean": "7891000100056",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 20,
+        "unidade_medida": "FR",
+        "lote_esperado": "L26-E505",
+        "lote_conferido": "L26-E505",
+        "validade_esperada": "2026-11-25",
+        "validade_conferida": "2026-11-25",
+        "status_item": "conforme"
+      },
+      {
+        "id": "citem-6",
+        "cod_produto": "PRD-1006",
+        "descricao": "ESPONJA DE LIMPEZA DUPLA FACE (FD C/ 10)",
+        "ean": "7891000100063",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 20,
+        "unidade_medida": "FD",
+        "lote_esperado": "L26-F606",
+        "lote_conferido": "L26-F606",
+        "validade_esperada": "2029-01-01",
+        "validade_conferida": "2029-01-01",
+        "status_item": "conforme"
+      }
+    ],
+    "volumes": [
+      {
+        "id": "vol-003-1",
+        "codigo_volume": "VOL-0844-01",
+        "numero_volume": 1,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "peso_kg": 20.0,
+        "cubagem_m3": 0.03,
+        "itens": [
+          {
+            "cod_produto": "PRD-1005",
+            "descricao": "ÁGUA SANITÁRIA PURIFICADA 1L",
+            "quantidade": 20,
+            "lote": "L26-E505",
+            "validade": "2026-11-25"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      },
+      {
+        "id": "vol-003-2",
+        "codigo_volume": "VOL-0844-02",
+        "numero_volume": 2,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Pequena CX-P",
+        "peso_kg": 4.0,
+        "cubagem_m3": 0.012,
+        "itens": [
+          {
+            "cod_produto": "PRD-1006",
+            "descricao": "ESPONJA DE LIMPEZA DUPLA FACE (FD C/ 10)",
+            "quantidade": 20,
+            "lote": "L26-F606",
+            "validade": "2029-01-01"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      }
+    ],
+    "divergencias": [],
+    "romaneio_gerado": true,
+    "data_romaneio": "2026-11-19 08:55"
+  },
+  {
+    "id": "conf-004",
+    "numero_pedido": "PED-2026-0845",
+    "pedido_id": "ped-004",
+    "loja_destino": "Loja 12 - Santos Gonzaga",
+    "cod_loja": "LJ-012",
+    "regiao": "Litoral",
+    "rota_entrega": "Rota 04 - Baixada Santista",
+    "transportadora": "Expresso Litoral Sul",
+    "tipo_conferencia": "dirigida",
+    "status": "liberado_expedicao",
+    "conferente_id": "usr-04",
+    "conferente_nome": "Juliana Santos (Conferente)",
+    "numero_recontagens": 0,
+    "data_inicio": "2026-11-19 08:00",
+    "data_fim": "2026-11-19 08:25",
+    "total_itens_esperados": 35,
+    "total_itens_conferidos": 35,
+    "total_volumes": 2,
+    "itens": [
+      {
+        "id": "citem-7",
+        "cod_produto": "PRD-1001",
+        "descricao": "DETERGENTE LÍQUIDO NEUTRO 500ML",
+        "ean": "7891000100018",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 20,
+        "unidade_medida": "UN",
+        "lote_esperado": "L26-A101",
+        "lote_conferido": "L26-A101",
+        "validade_esperada": "2027-05-15",
+        "validade_conferida": "2027-05-15",
+        "status_item": "conforme"
+      },
+      {
+        "id": "citem-8",
+        "cod_produto": "PRD-1003",
+        "descricao": "DESINFETANTE LAVANDA 2L",
+        "ean": "7891000100032",
+        "quantidade_esperada": 15,
+        "quantidade_conferida": 15,
+        "unidade_medida": "GL",
+        "lote_esperado": "L26-C303",
+        "lote_conferido": "L26-C303",
+        "validade_esperada": "2026-12-10",
+        "validade_conferida": "2026-12-10",
+        "status_item": "conforme"
+      }
+    ],
+    "volumes": [
+      {
+        "id": "vol-004-1",
+        "codigo_volume": "VOL-0845-01",
+        "numero_volume": 1,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "peso_kg": 10.5,
+        "cubagem_m3": 0.03,
+        "itens": [
+          {
+            "cod_produto": "PRD-1001",
+            "descricao": "DETERGENTE LÍQUIDO NEUTRO 500ML",
+            "quantidade": 20,
+            "lote": "L26-A101",
+            "validade": "2027-05-15"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      },
+      {
+        "id": "vol-004-2",
+        "codigo_volume": "VOL-0845-02",
+        "numero_volume": 2,
+        "total_volumes": 2,
+        "tipo_embalagem": "Caixa Grande CX-G",
+        "peso_kg": 30.0,
+        "cubagem_m3": 0.072,
+        "itens": [
+          {
+            "cod_produto": "PRD-1003",
+            "descricao": "DESINFETANTE LAVANDA 2L",
+            "quantidade": 15,
+            "lote": "L26-C303",
+            "validade": "2026-12-10"
+          }
+        ],
+        "etiqueta_gerada": true,
+        "conferido": true
+      }
+    ],
+    "divergencias": [],
+    "romaneio_gerado": true,
+    "data_romaneio": "2026-11-19 08:28"
+  },
+  {
+    "id": "conf-005",
+    "numero_pedido": "PED-2026-0846",
+    "pedido_id": "ped-005",
+    "loja_destino": "Loja 20 - Osasco Centro",
+    "cod_loja": "LJ-020",
+    "regiao": "Grande SP",
+    "rota_entrega": "Rota 03 - Grande SP Oeste",
+    "transportadora": "Frota Própria Collab",
+    "tipo_conferencia": "cega",
+    "status": "aguardando_conferencia",
+    "total_itens_esperados": 45,
+    "total_itens_conferidos": 0,
+    "total_volumes": 3,
+    "numero_recontagens": 0,
+    "itens": [
+      {
+        "id": "citem-9",
+        "cod_produto": "PRD-1002",
+        "descricao": "SABÃO EM PÓ CONCENTRADO 1KG",
+        "ean": "7891000100025",
+        "quantidade_esperada": 25,
+        "quantidade_conferida": 0,
+        "unidade_medida": "CX",
+        "lote_esperado": "L26-B202",
+        "validade_esperada": "2027-08-20",
+        "status_item": "pendente"
+      },
+      {
+        "id": "citem-10",
+        "cod_produto": "PRD-1005",
+        "descricao": "ÁGUA SANITÁRIA PURIFICADA 1L",
+        "ean": "7891000100056",
+        "quantidade_esperada": 20,
+        "quantidade_conferida": 0,
+        "unidade_medida": "FR",
+        "lote_esperado": "L26-E505",
+        "validade_esperada": "2026-11-25",
+        "status_item": "pendente"
+      }
+    ],
+    "volumes": [
+      {
+        "id": "vol-005-1",
+        "codigo_volume": "VOL-0846-01",
+        "numero_volume": 1,
+        "total_volumes": 3,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "peso_kg": 25.0,
+        "cubagem_m3": 0.03,
+        "itens": [],
+        "etiqueta_gerada": false,
+        "conferido": false
+      },
+      {
+        "id": "vol-005-2",
+        "codigo_volume": "VOL-0846-02",
+        "numero_volume": 2,
+        "total_volumes": 3,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "peso_kg": 20.0,
+        "cubagem_m3": 0.03,
+        "itens": [],
+        "etiqueta_gerada": false,
+        "conferido": false
+      },
+      {
+        "id": "vol-005-3",
+        "codigo_volume": "VOL-0846-03",
+        "numero_volume": 3,
+        "total_volumes": 3,
+        "tipo_embalagem": "Caixa Pequena CX-P",
+        "peso_kg": 5.0,
+        "cubagem_m3": 0.012,
+        "itens": [],
+        "etiqueta_gerada": false,
+        "conferido": false
+      }
+    ],
+    "divergencias": [],
+    "romaneio_gerado": false
+  }
+]
