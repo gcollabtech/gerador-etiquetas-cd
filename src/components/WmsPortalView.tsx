@@ -68,6 +68,7 @@ import {
   RefreshCw,
   Package,
   ClipboardCheck,
+  ClipboardList,
 } from "lucide-react";
 import { PortalUser } from "@/lib/authTypes";
 import { WmsRecebimentoView } from "./wms/WmsRecebimentoView";
@@ -76,6 +77,7 @@ import { WmsReabastecimentoView } from "./wms/WmsReabastecimentoView";
 import { WmsPickingView } from "./wms/WmsPickingView";
 import { WmsConferenciaView } from "./wms/WmsConferenciaView";
 import { WmsExpedicaoView } from "./wms/WmsExpedicaoView";
+import { WmsInventarioView } from "./wms/WmsInventarioView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -84,7 +86,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "inventario" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -508,12 +510,12 @@ export function WmsPortalView({
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>7 Módulos Operacionais Integrados</span>
+            <span>8 Módulos Operacionais Integrados</span>
           </div>
         </div>
 
-        {/* Grade dos 7 Módulos Operacionais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        {/* Grade dos 8 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
           {[
             {
               id: "agendamento",
@@ -584,6 +586,16 @@ export function WmsPortalView({
               icon: Truck,
               badge: "Cargas & Saída",
               active: activeTab === "expedicao",
+            },
+            {
+              id: "inventario",
+              targetTab: "inventario" as WmsSubTab,
+              num: "08",
+              title: "Inventário",
+              desc: "Geral, cíclico, cego e ajustes ERP",
+              icon: ClipboardList,
+              badge: "Auditoria & Saldo",
+              active: activeTab === "inventario",
             },
           ].map((m) => {
             const ModIcon = m.icon;
@@ -1625,6 +1637,14 @@ export function WmsPortalView({
       {/* ── ABA 10: MÓDULO 07 — EXPEDIÇÃO ──────────────────────────────────── */}
       {activeTab === "expedicao" && (
         <WmsExpedicaoView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 11: MÓDULO 08 — INVENTÁRIO ──────────────────────────────────── */}
+      {activeTab === "inventario" && (
+        <WmsInventarioView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />

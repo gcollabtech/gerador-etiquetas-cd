@@ -454,6 +454,8 @@ export default function Home() {
                           ? "Módulo 06 — Conferência"
                           : activeWmsTab === "expedicao"
                           ? "Módulo 07 — Expedição"
+                          : activeWmsTab === "inventario"
+                          ? "Módulo 08 — Inventário"
                           : "Módulo 01 — Agendamento"}
                       </span>
                       {(activeWmsTab === "janelas" ||
@@ -489,6 +491,8 @@ export default function Home() {
                       ? "WMS: Módulo 06 — Conferência (Cega & Dirigida / Volumes / Romaneio)"
                       : activeWmsTab === "expedicao"
                       ? "WMS: Módulo 07 — Expedição (Cargas / Docas / Carregamento / Romaneio Digital)"
+                      : activeWmsTab === "inventario"
+                      ? "WMS: Módulo 08 — Inventário (Geral / Rotativo / Cego / Recontagens / ERP)"
                       : `WMS: Módulo 01 — Agendamento de Entregas (${
                           activeWmsTab === "janelas"
                             ? "Janelas 2h em 2h"

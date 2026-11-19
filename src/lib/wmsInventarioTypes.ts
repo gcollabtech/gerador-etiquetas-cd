@@ -1,0 +1,438 @@
+// src/lib/wmsInventarioTypes.ts
+// Definições de tipos e modelos para o MÓDULO 08 — INVENTÁRIO
+
+export type TipoInventario =
+  | "geral"
+  | "rotativo"
+  | "ciclico"
+  | "por_endereco"
+  | "por_produto"
+  | "por_lote";
+
+export type StatusPlanoInventario =
+  | "planejado"
+  | "em_contagem"
+  | "em_recontagem"
+  | "aguardando_aprovacao"
+  | "ajustado"
+  | "cancelado";
+
+export type ModoContagem = "cego" | "aberto";
+
+export type StatusItemInventario =
+  | "pendente"
+  | "contado"
+  | "conforme"
+  | "divergente"
+  | "recontagem_solicitada"
+  | "ajustado";
+
+export interface ContagemRegistro {
+  id: string;
+  rodada: number; // 1, 2 ou 3
+  operador_id: string;
+  operador_nome: string;
+  data_hora: string;
+  quantidade_contada: number;
+  lote_contado?: string;
+  validade_contada?: string;
+  divergencia_detectada: boolean;
+  diferenca_quantidade: number; // contada - sistêmica
+  valor_diferenca_estimado: number;
+}
+
+export interface ItemPlanoInventario {
+  id: string;
+  cod_produto: string;
+  descricao: string;
+  ean: string;
+  barra_alfa?: string;
+  endereco: string; // Ex: "R01-P01-N01-A01" (Rua, Prédio, Nível, Apartamento)
+  setor: string; // "Porta-Paletes", "Flow Rack", "Pulmão", "Picking"
+  lote_sistema: string;
+  validade_sistema: string;
+  saldo_sistema: number;
+  custo_unitario_estimado: number; // Para cálculo do impacto financeiro
+  status_item: StatusItemInventario;
+  contagens: ContagemRegistro[];
+  quantidade_final_apurada?: number;
+  diferenca_final?: number;
+  valor_ajuste_final?: number;
+  justificativa_ajuste?: string;
+  aprovador_nome?: string;
+  aprovador_data?: string;
+  ajuste_aprovado?: boolean;
+}
+
+export interface PlanoInventario {
+  id: string;
+  numero_plano: string; // Ex: "INV-2026-0012"
+  titulo: string;
+  tipo: TipoInventario;
+  modo_contagem: ModoContagem; // "cego" ou "aberto"
+  bloquear_movimentacoes_endereco: boolean;
+  data_criacao: string;
+  data_agendada: string;
+  data_conclusao?: string;
+  responsavel_criacao: string;
+  operadores_alocados: string[];
+  status: StatusPlanoInventario;
+  itens: ItemPlanoInventario[];
+  total_itens: number;
+  itens_contados: number;
+  itens_conformes: number;
+  itens_divergentes: number;
+  acuracidade_pct: number;
+  valor_total_divergencias: number;
+  rodada_atual: number; // 1, 2 ou 3
+  erp_sincronizado: boolean;
+  erp_protocolo_ajuste?: string;
+  observacoes?: string;
+}
+
+export interface IndicadoresInventario {
+  acuracidadeGeralPct: number;
+  acuracidadePorSetor: {
+    portaPaletes: number;
+    flowRack: number;
+    pulmao: number;
+    picking: number;
+  };
+  totalItensInventariados: number;
+  totalDivergenciasAtivas: number;
+  valorTotalSobras: number;
+  valorTotalFaltas: number;
+  valorLiquidoDiferenca: number;
+  totalRecontagensRealizadas: number;
+  planosAtivos: number;
+  taxaAprovacaoAjustesPct: number;
+}
+
+// ── SEED INICIAL DE PLANOS DE INVENTÁRIO ─────────────────────────────────────
+
+export const PLANOS_INVENTARIO_SEED: PlanoInventario[] = [
+  {
+    id: "inv-001",
+    numero_plano: "INV-2026-0012",
+    titulo: "Inventário Rotativo Semanal — Flow Rack Setor A & B",
+    tipo: "rotativo",
+    modo_contagem: "cego",
+    bloquear_movimentacoes_endereco: true,
+    data_criacao: "2026-11-19 08:00",
+    data_agendada: "2026-11-19",
+    responsavel_criacao: "Carlos Rezende (Supervisor WMS)",
+    operadores_alocados: ["Marcos Oliveira (Auditor)", "Juliana Santos (Conferente)"],
+    status: "em_contagem",
+    rodada_atual: 1,
+    total_itens: 4,
+    itens_contados: 2,
+    itens_conformes: 1,
+    itens_divergentes: 1,
+    acuracidade_pct: 95.0,
+    valor_total_divergencias: 13.5,
+    erp_sincronizado: false,
+    observacoes: "Contagem cega de rotina semanal para itens de alto giro no Flow Rack.",
+    itens: [
+      {
+        id: "inv-item-1",
+        cod_produto: "PRD-1001",
+        descricao: "DETERGENTE LÍQUIDO NEUTRO 500ML",
+        ean: "7891000100018",
+        barra_alfa: "DET-NEUTRO-500",
+        endereco: "R01-P01-N01-A01",
+        setor: "Flow Rack",
+        lote_sistema: "L26-A101",
+        validade_sistema: "2027-05-15",
+        saldo_sistema: 120,
+        custo_unitario_estimado: 2.7,
+        status_item: "conforme",
+        contagens: [
+          {
+            id: "cnt-1",
+            rodada: 1,
+            operador_id: "usr-03",
+            operador_nome: "Marcos Oliveira",
+            data_hora: "2026-11-19 09:30",
+            quantidade_contada: 120,
+            lote_contado: "L26-A101",
+            divergencia_detectada: false,
+            diferenca_quantidade: 0,
+            valor_diferenca_estimado: 0,
+          },
+        ],
+        quantidade_final_apurada: 120,
+        diferenca_final: 0,
+        valor_ajuste_final: 0,
+      },
+      {
+        id: "inv-item-2",
+        cod_produto: "PRD-1002",
+        descricao: "SABÃO EM PÓ CONCENTRADO 1KG",
+        ean: "7891000100025",
+        endereco: "R01-P01-N01-A02",
+        setor: "Flow Rack",
+        lote_sistema: "L26-B202",
+        validade_sistema: "2027-08-20",
+        saldo_sistema: 80,
+        custo_unitario_estimado: 12.5,
+        status_item: "divergente",
+        contagens: [
+          {
+            id: "cnt-2",
+            rodada: 1,
+            operador_id: "usr-03",
+            operador_nome: "Marcos Oliveira",
+            data_hora: "2026-11-19 09:42",
+            quantidade_contada: 78,
+            lote_contado: "L26-B202",
+            divergencia_detectada: true,
+            diferenca_quantidade: -2,
+            valor_diferenca_estimado: -25.0,
+          },
+        ],
+        quantidade_final_apurada: 78,
+        diferenca_final: -2,
+        valor_ajuste_final: -25.0,
+        justificativa_ajuste: "Falta física identificada na 1ª contagem cega.",
+      },
+      {
+        id: "inv-item-3",
+        cod_produto: "PRD-1003",
+        descricao: "DESINFETANTE LAVANDA 2L",
+        ean: "7891000100032",
+        endereco: "R01-P02-N01-A01",
+        setor: "Flow Rack",
+        lote_sistema: "L26-C303",
+        validade_sistema: "2026-12-10",
+        saldo_sistema: 45,
+        custo_unitario_estimado: 8.9,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-4",
+        cod_produto: "PRD-1004",
+        descricao: "AMACIANTE CONCENTRADO TOQUE FLORAL 1.5L",
+        ean: "7891000100049",
+        endereco: "R01-P02-N01-A02",
+        setor: "Flow Rack",
+        lote_sistema: "L26-D404",
+        validade_sistema: "2027-03-30",
+        saldo_sistema: 60,
+        custo_unitario_estimado: 11.2,
+        status_item: "pendente",
+        contagens: [],
+      },
+    ],
+  },
+  {
+    id: "inv-002",
+    numero_plano: "INV-2026-0011",
+    titulo: "Inventário por Endereço — Pulmão Rua 02",
+    tipo: "por_endereco",
+    modo_contagem: "cego",
+    bloquear_movimentacoes_endereco: true,
+    data_criacao: "2026-11-18 14:00",
+    data_agendada: "2026-11-18",
+    data_conclusao: "2026-11-18 17:30",
+    responsavel_criacao: "Carlos Rezende (Supervisor WMS)",
+    operadores_alocados: ["Juliana Santos (Conferente)"],
+    status: "ajustado",
+    rodada_atual: 2,
+    total_itens: 2,
+    itens_contados: 2,
+    itens_conformes: 2,
+    itens_divergentes: 0,
+    acuracidade_pct: 100.0,
+    valor_total_divergencias: 0,
+    erp_sincronizado: true,
+    erp_protocolo_ajuste: "ERP-INV-2026-44810",
+    observacoes: "Inventário concluído e reconciliado com sucesso no ERP Collab.",
+    itens: [
+      {
+        id: "inv-item-5",
+        cod_produto: "PRD-1005",
+        descricao: "ÁGUA SANITÁRIA PURIFICADA 1L",
+        ean: "7891000100056",
+        endereco: "R02-P01-N02-A01",
+        setor: "Pulmão",
+        lote_sistema: "L26-E505",
+        validade_sistema: "2026-11-25",
+        saldo_sistema: 350,
+        custo_unitario_estimado: 3.2,
+        status_item: "ajustado",
+        contagens: [
+          {
+            id: "cnt-5-1",
+            rodada: 1,
+            operador_id: "usr-04",
+            operador_nome: "Juliana Santos",
+            data_hora: "2026-11-18 15:10",
+            quantidade_contada: 345,
+            lote_contado: "L26-E505",
+            divergencia_detectada: true,
+            diferenca_quantidade: -5,
+            valor_diferenca_estimado: -16.0,
+          },
+          {
+            id: "cnt-5-2",
+            rodada: 2,
+            operador_id: "usr-03",
+            operador_nome: "Marcos Oliveira",
+            data_hora: "2026-11-18 16:30",
+            quantidade_contada: 350,
+            lote_contado: "L26-E505",
+            divergencia_detectada: false,
+            diferenca_quantidade: 0,
+            valor_diferenca_estimado: 0,
+          },
+        ],
+        quantidade_final_apurada: 350,
+        diferenca_final: 0,
+        valor_ajuste_final: 0,
+        justificativa_ajuste: "Na 2ª contagem constatou-se que 5 frascos estavam na parte posterior do palete.",
+        aprovador_nome: "Carlos Rezende",
+        aprovador_data: "2026-11-18 17:00",
+        ajuste_aprovado: true,
+      },
+      {
+        id: "inv-item-6",
+        cod_produto: "PRD-1006",
+        descricao: "ESPONJA DE LIMPEZA DUPLA FACE (FD C/ 10)",
+        ean: "7891000100063",
+        endereco: "R02-P01-N01-A02",
+        setor: "Porta-Paletes",
+        lote_sistema: "L26-F606",
+        validade_sistema: "2029-01-01",
+        saldo_sistema: 200,
+        custo_unitario_estimado: 7.5,
+        status_item: "conforme",
+        contagens: [
+          {
+            id: "cnt-6-1",
+            rodada: 1,
+            operador_id: "usr-04",
+            operador_nome: "Juliana Santos",
+            data_hora: "2026-11-18 15:45",
+            quantidade_contada: 200,
+            lote_contado: "L26-F606",
+            divergencia_detectada: false,
+            diferenca_quantidade: 0,
+            valor_diferenca_estimado: 0,
+          },
+        ],
+        quantidade_final_apurada: 200,
+        diferenca_final: 0,
+        valor_ajuste_final: 0,
+      },
+    ],
+  },
+  {
+    id: "inv-003",
+    numero_plano: "INV-2026-0013",
+    titulo: "Inventário Geral CD Big Master 2026 - Trimestral",
+    tipo: "geral",
+    modo_contagem: "cego",
+    bloquear_movimentacoes_endereco: true,
+    data_criacao: "2026-11-19 10:00",
+    data_agendada: "2026-11-20",
+    responsavel_criacao: "Carlos Rezende (Supervisor WMS)",
+    operadores_alocados: ["Marcos Oliveira", "Juliana Santos"],
+    status: "planejado",
+    rodada_atual: 1,
+    total_itens: 6,
+    itens_contados: 0,
+    itens_conformes: 0,
+    itens_divergentes: 0,
+    acuracidade_pct: 100.0,
+    valor_total_divergencias: 0,
+    erp_sincronizado: false,
+    observacoes: "Inventário geral programado para o final de semana com fechamento de docas.",
+    itens: [
+      {
+        id: "inv-item-7",
+        cod_produto: "PRD-1001",
+        descricao: "DETERGENTE LÍQUIDO NEUTRO 500ML",
+        ean: "7891000100018",
+        endereco: "R01-P01-N01-A01",
+        setor: "Flow Rack",
+        lote_sistema: "L26-A101",
+        validade_sistema: "2027-05-15",
+        saldo_sistema: 120,
+        custo_unitario_estimado: 2.7,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-8",
+        cod_produto: "PRD-1002",
+        descricao: "SABÃO EM PÓ CONCENTRADO 1KG",
+        ean: "7891000100025",
+        endereco: "R01-P01-N01-A02",
+        setor: "Flow Rack",
+        lote_sistema: "L26-B202",
+        validade_sistema: "2027-08-20",
+        saldo_sistema: 80,
+        custo_unitario_estimado: 12.5,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-9",
+        cod_produto: "PRD-1003",
+        descricao: "DESINFETANTE LAVANDA 2L",
+        ean: "7891000100032",
+        endereco: "R01-P02-N01-A01",
+        setor: "Flow Rack",
+        lote_sistema: "L26-C303",
+        validade_sistema: "2026-12-10",
+        saldo_sistema: 45,
+        custo_unitario_estimado: 8.9,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-10",
+        cod_produto: "PRD-1004",
+        descricao: "AMACIANTE CONCENTRADO TOQUE FLORAL 1.5L",
+        ean: "7891000100049",
+        endereco: "R01-P02-N01-A02",
+        setor: "Flow Rack",
+        lote_sistema: "L26-D404",
+        validade_sistema: "2027-03-30",
+        saldo_sistema: 60,
+        custo_unitario_estimado: 11.2,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-11",
+        cod_produto: "PRD-1005",
+        descricao: "ÁGUA SANITÁRIA PURIFICADA 1L",
+        ean: "7891000100056",
+        endereco: "R02-P01-N02-A01",
+        setor: "Pulmão",
+        lote_sistema: "L26-E505",
+        validade_sistema: "2026-11-25",
+        saldo_sistema: 350,
+        custo_unitario_estimado: 3.2,
+        status_item: "pendente",
+        contagens: [],
+      },
+      {
+        id: "inv-item-12",
+        cod_produto: "PRD-1006",
+        descricao: "ESPONJA DE LIMPEZA DUPLA FACE (FD C/ 10)",
+        ean: "7891000100063",
+        endereco: "R02-P01-N01-A02",
+        setor: "Porta-Paletes",
+        lote_sistema: "L26-F606",
+        validade_sistema: "2029-01-01",
+        saldo_sistema: 200,
+        custo_unitario_estimado: 7.5,
+        status_item: "pendente",
+        contagens: [],
+      },
+    ],
+  },
+];
