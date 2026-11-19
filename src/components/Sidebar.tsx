@@ -146,10 +146,10 @@ export function Sidebar({
   const mainMenuItems: MainMenuItem[] = [
     {
       id: "dashboard",
-      title: "Dashboard",
-      subtitle: "Indicadores, CD e gestão",
+      title: "1. Indicadores & Relatórios",
+      subtitle: "Dashboard gerencial, KPIs e relatórios",
       icon: LayoutDashboard,
-      badge: "Geral",
+      badge: "Tempo Real",
     },
     {
       id: "wms",

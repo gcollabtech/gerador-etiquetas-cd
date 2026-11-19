@@ -1,9 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PortalUser, MainPortalModule } from "@/lib/authTypes";
 import {
+  DashboardCompletoData,
+  FiltrosRelatorio,
+  RelatorioLinhaItem,
+} from "@/lib/dashboardTypes";
+import {
+  fetchDashboardData,
+  exportarRelatorioCsv,
+  exportarRelatorioExcel,
+  imprimirRelatorioPdf,
+} from "@/lib/dashboardService";
+import {
   LayoutDashboard,
+  Gauge,
+  FileSpreadsheet,
   TrendingUp,
   TrendingDown,
   Truck,
@@ -20,7 +33,6 @@ import {
   Sparkles,
   PackageCheck,
   Activity,
-  Gauge,
   Zap,
   Calendar,
   Warehouse,
@@ -29,6 +41,18 @@ import {
   HelpCircle,
   ChevronRight,
   ArrowRight,
+  Download,
+  Printer,
+  FileText,
+  Search,
+  Package,
+  XCircle,
+  RotateCcw,
+  Ban,
+  Check,
+  Percent,
+  Timer,
+  SlidersHorizontal,
 } from "lucide-react";
 
 interface DashboardPortalViewProps {
@@ -40,18 +64,134 @@ export function DashboardPortalView({
   currentUser,
   onNavigate,
 }: DashboardPortalViewProps) {
-  const [timeRange, setTimeRange] = useState<"hoje" | "7d" | "30d">("hoje");
+  const [activeSubTab, setActiveSubTab] = useState<"gerencial" | "kpis" | "relatorios">("gerencial");
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [dashboardData, setDashboardData] = useState<DashboardCompletoData | null>(null);
+
+  // Filtros de Relatório (Item Relatórios)
+  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "7d" | "30d" | "todos">("todos");
+  const [filtroLoja, setFiltroLoja] = useState<string>("todos");
+  const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
+  const [filtroProduto, setFiltroProduto] = useState<string>("");
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todos");
+  const [filtroOperador, setFiltroOperador] = useState<string>("todos");
+  const [filtroSetor, setFiltroSetor] = useState<string>("todos");
+  const [filtroLote, setFiltroLote] = useState<string>("");
+  const [filtroNotaFiscal, setFiltroNotaFiscal] = useState<string>("");
+  const [filtroTransportadora, setFiltroTransportadora] = useState<string>("todos");
+
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
+
+  const carregarDados = async (filtrosCustom?: FiltrosRelatorio) => {
+    try {
+      const res = await fetchDashboardData(filtrosCustom);
+      setDashboardData(res);
+    } catch (err) {
+      console.error("Erro ao obter dashboard:", err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 400);
+    carregarDados({
+      periodoPredefinido: filtroPeriodo === "todos" ? undefined : filtroPeriodo,
+      loja: filtroLoja,
+      fornecedor: filtroFornecedor,
+      produto: filtroProduto || undefined,
+      categoria: filtroCategoria,
+      operador: filtroOperador,
+      setor: filtroSetor,
+      lote: filtroLote || undefined,
+      notaFiscal: filtroNotaFiscal || undefined,
+      transportadora: filtroTransportadora,
+    });
   };
+
+  // Disparo de filtros ao alterar campos
+  const aplicarFiltros = () => {
+    setIsRefreshing(true);
+    carregarDados({
+      periodoPredefinido: filtroPeriodo === "todos" ? undefined : filtroPeriodo,
+      loja: filtroLoja,
+      fornecedor: filtroFornecedor,
+      produto: filtroProduto || undefined,
+      categoria: filtroCategoria,
+      operador: filtroOperador,
+      setor: filtroSetor,
+      lote: filtroLote || undefined,
+      notaFiscal: filtroNotaFiscal || undefined,
+      transportadora: filtroTransportadora,
+    });
+  };
+
+  const limparFiltros = () => {
+    setFiltroPeriodo("todos");
+    setFiltroLoja("todos");
+    setFiltroFornecedor("todos");
+    setFiltroProduto("");
+    setFiltroCategoria("todos");
+    setFiltroOperador("todos");
+    setFiltroSetor("todos");
+    setFiltroLote("");
+    setFiltroNotaFiscal("");
+    setFiltroTransportadora("todos");
+    carregarDados();
+  };
+
+  const handleExportCsv = () => {
+    if (!dashboardData) return;
+    exportarRelatorioCsv(dashboardData.relatorio);
+    setExportNotice("Arquivo CSV exportado com sucesso (UTF-8 formatado para Excel PT-BR)!");
+    setTimeout(() => setExportNotice(null), 4000);
+  };
+
+  const handleExportExcel = () => {
+    if (!dashboardData) return;
+    exportarRelatorioExcel(dashboardData.relatorio);
+    setExportNotice("Planilha Excel (.xls / XML Spreadsheet) exportada com sucesso!");
+    setTimeout(() => setExportNotice(null), 4000);
+  };
+
+  const handleExportPdf = () => {
+    if (!dashboardData) return;
+    imprimirRelatorioPdf(dashboardData.relatorio, {
+      loja: filtroLoja,
+      fornecedor: filtroFornecedor,
+      categoria: filtroCategoria,
+      setor: filtroSetor,
+    });
+  };
+
+  if (loading || !dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 text-center space-y-3">
+        <RefreshCw size={28} className="animate-spin text-[var(--collab-mostarda)]" />
+        <p className="text-xs text-[var(--muted)] font-mono">Consolidando métricas e indicadores do CD Big Master...</p>
+      </div>
+    );
+  }
+
+  const { recebimento, armazenagem, picking, expedicao, kpis, relatorio } = dashboardData;
 
   return (
     <div className="space-y-6">
+      {/* Notificação de Exportação */}
+      {exportNotice && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border text-xs font-bold bg-emerald-950/90 border-emerald-500 text-emerald-200 animate-in fade-in">
+          <CheckCircle2 size={16} />
+          <span>{exportNotice}</span>
+        </div>
+      )}
+
       {/* ── Top Executive Welcome Banner ─────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0d0d0d] via-[#141414] to-[#1a1410] border border-[var(--card-border)] p-6 sm:p-7 shadow-sm text-white">
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-[var(--collab-mostarda)]/15 rounded-full blur-3xl pointer-events-none" />
@@ -62,653 +202,741 @@ export function DashboardPortalView({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--collab-mostarda)] text-black uppercase tracking-wider">
                 <Sparkles size={11} fill="currentColor" />
-                <span>Centro de Distribuição Matriz</span>
+                <span>CD Big Master • Centro de Distribuição</span>
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Operação em Tempo Real • Turno 1 Normal</span>
+                <span>Indicadores e Relatórios em Tempo Real</span>
               </span>
             </div>
 
             <h1 className="font-heading text-xl sm:text-2xl font-black tracking-tight text-white">
-              Painel de Controle Logístico & Indicadores do CD
+              Painel de Indicadores & Relatórios Gerenciais
             </h1>
 
             <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-              Bem-vindo, <strong>{currentUser.name}</strong> ({currentUser.cargo}). Acompanhe a volumetria diária, ocupação de porta-paletes, indicadores OTIF e produtividade de expedição.
+              Bem-vindo, <strong>{currentUser.name}</strong> ({currentUser.cargo}). Acompanhe a operação integrada de{" "}
+              <strong>Recebimento, Armazenagem, Picking e Expedição</strong>, além de KPIs obrigatórios e relatórios analíticos com exportação.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
-            {/* Filter Pill */}
-            <div className="inline-flex items-center bg-black/40 border border-white/10 rounded-xl p-1 text-xs">
-              {(
-                [
-                  { id: "hoje", label: "Hoje" },
-                  { id: "7d", label: "Últimos 7 dias" },
-                  { id: "30d", label: "Mês atual" },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setTimeRange(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                    timeRange === tab.id
-                      ? "bg-[var(--collab-mostarda)] text-black font-bold shadow-sm"
-                      : "text-gray-300 hover:text-white"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-50"
               title="Atualizar dados do dashboard"
             >
-              <RefreshCw
-                size={14}
-                className={isRefreshing ? "animate-spin text-[var(--collab-mostarda)]" : ""}
-              />
-              <span className="hidden sm:inline">Atualizar</span>
+              <RefreshCw size={14} className={isRefreshing ? "animate-spin text-[var(--collab-mostarda)]" : ""} />
+              <span>Atualizar Dados</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Bloco 1: KPIs Principais de Logística & Gestão ────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Gauge size={16} className="text-[var(--collab-mostarda)]" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              1. Indicadores Chave de Desempenho (KPIs Logísticos)
-            </h2>
-          </div>
-          <span className="text-[11px] text-[var(--muted)]">
-            Metas homologadas Grupo Collab
+      {/* ── Navegação entre os 3 Pilares ─────────────────────────────────── */}
+      <div className="flex border-b border-[var(--card-border)] gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("gerencial")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSubTab === "gerencial"
+              ? "bg-[var(--card)] text-[var(--collab-mostarda)] border-t-2 border-[var(--collab-mostarda)] border-x border-[var(--card-border)] shadow-sm"
+              : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+          }`}
+        >
+          <LayoutDashboard size={15} />
+          <span>Dashboard Gerencial (Tempo Real)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("kpis")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSubTab === "kpis"
+              ? "bg-[var(--card)] text-[var(--collab-mostarda)] border-t-2 border-[var(--collab-mostarda)] border-x border-[var(--card-border)] shadow-sm"
+              : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+          }`}
+        >
+          <Gauge size={15} />
+          <span>KPIs Obrigatórios (11 Indicadores)</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-mono">
+            OTIF 98.6%
           </span>
-        </div>
+        </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: OTIF */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-3 hover:border-[var(--collab-mostarda)]/50 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
-                OTIF Global
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <CheckCircle2 size={16} />
-              </div>
-            </div>
-
-            <div>
-              <div className="text-2xl sm:text-3xl font-black font-heading text-[var(--foreground)] tracking-tight">
-                98.4%
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 mt-0.5">
-                <ArrowUpRight size={13} />
-                <span>+0.8% vs. meta (98.0%)</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-[var(--muted)] pt-1 border-t border-[var(--card-border)]">
-              On-Time In-Full de entregas realizadas no prazo e completas.
-            </p>
-          </div>
-
-          {/* Card 2: Pedidos Expedidos */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-3 hover:border-[var(--collab-mostarda)]/50 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
-                Expedição Diária
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] flex items-center justify-center">
-                <Truck size={16} />
-              </div>
-            </div>
-
-            <div>
-              <div className="text-2xl sm:text-3xl font-black font-heading text-[var(--foreground)] tracking-tight">
-                1.428 <span className="text-sm font-medium text-[var(--muted)]">pedidos</span>
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 mt-0.5">
-                <TrendingUp size={13} />
-                <span>+12.4% acima da média diária</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-[var(--muted)] pt-1 border-t border-[var(--card-border)]">
-              984 pedidos faturados e 444 em docas de carregamento.
-            </p>
-          </div>
-
-          {/* Card 3: Acuracidade de Estoque */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-3 hover:border-[var(--collab-mostarda)]/50 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
-                Acuracidade Estoque
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                <PackageCheck size={16} />
-              </div>
-            </div>
-
-            <div>
-              <div className="text-2xl sm:text-3xl font-black font-heading text-[var(--foreground)] tracking-tight">
-                99.82%
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 mt-0.5">
-                <CheckCircle2 size={13} />
-                <span>Meta atingida (≥99.5%)</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-[var(--muted)] pt-1 border-t border-[var(--card-border)]">
-              Auditorias cíclicas de contagem cega nas Ruas R01 a R16.
-            </p>
-          </div>
-
-          {/* Card 4: Ciclo Order-to-Delivery */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-3 hover:border-[var(--collab-mostarda)]/50 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
-                Tempo Médio de Ciclo
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
-                <Clock size={16} />
-              </div>
-            </div>
-
-            <div>
-              <div className="text-2xl sm:text-3xl font-black font-heading text-[var(--foreground)] tracking-tight">
-                4h 15m
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 mt-0.5">
-                <TrendingDown size={13} />
-                <span>-18 minutos de ganho médio</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-[var(--muted)] pt-1 border-t border-[var(--card-border)]">
-              Desde a liberação do WMS até a saída na portaria do CD.
-            </p>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("relatorios")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeSubTab === "relatorios"
+              ? "bg-[var(--card)] text-[var(--collab-mostarda)] border-t-2 border-[var(--collab-mostarda)] border-x border-[var(--card-border)] shadow-sm"
+              : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]"
+          }`}
+        >
+          <FileSpreadsheet size={15} />
+          <span>Central de Relatórios & Exportação</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/20 text-amber-300 font-mono">
+            {relatorio.length} Linhas
+          </span>
+        </button>
       </div>
 
-      {/* ── Bloco 2: Estrutura Física & Capacidade do Centro de Distribuição ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna 1 & 2: Capacidade de Armazenagem e Ocupação */}
-        <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--card-border)]">
-            <div className="flex items-center gap-2">
-              <Warehouse size={18} className="text-[var(--collab-mostarda)]" />
-              <div>
-                <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">
-                  Estrutura Física e Ocupação do CD (Porta-Paletes)
-                </h3>
-                <p className="text-xs text-[var(--muted)]">
-                  Capacidade total, níveis verticais e endereçamento físico
-                </p>
+      {/* ── PILAR 1: DASHBOARD GERENCIAL (TEMPO REAL) ───────────────────────── */}
+      {activeSubTab === "gerencial" && (
+        <div className="space-y-6">
+          {/* Grade dos 4 Blocos Principais: Recebimento, Armazenagem, Picking, Expedição */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* Bloco 1: Recebimento */}
+            <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4 hover:border-emerald-500/40 transition-all">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">
+                    <PackageCheck size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">Recebimento</h3>
+                    <p className="text-[10px] text-[var(--muted)]">Entrada física e fiscal</p>
+                  </div>
+                </div>
+                <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  {recebimento.notasRecebidas} Recebidas
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Notas Agendadas:</span>
+                  <span className="font-mono font-bold text-sky-400">{recebimento.notasAgendadas}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Notas em Doca:</span>
+                  <span className="font-mono font-bold text-amber-400">{recebimento.notasEmDoca}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Notas em Recebimento:</span>
+                  <span className="font-mono font-bold text-emerald-400">{recebimento.notasEmRecebimento}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Notas em Quarentena:</span>
+                  <span className="font-mono font-bold text-rose-400">{recebimento.notasEmQuarentena}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Aguardando Armazenagem:</span>
+                  <span className="font-mono font-bold text-purple-400">{recebimento.notasAguardandoArmazenagem}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-black/20 border border-[var(--card-border)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--muted)] flex items-center gap-1.5">
+                  <Timer size={13} className="text-emerald-400" /> Tempo Médio Recebimento:
+                </span>
+                <span className="font-mono font-bold text-emerald-400 text-xs">
+                  {recebimento.tempoMedioRecebimentoMinutos} min
+                </span>
               </div>
             </div>
 
-            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-[var(--collab-mostarda)]/10 text-[var(--collab-mostarda)] border border-[var(--collab-mostarda)]/30 self-start sm:self-auto">
-              Taxa Global: 82%
-            </span>
-          </div>
-
-          {/* Ocupação Principal Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-[var(--foreground)]">
-                10.496 posições ocupadas de 12.800 totais
-              </span>
-              <span className="text-[var(--muted)]">
-                2.304 posições livres (18%)
-              </span>
-            </div>
-
-            <div className="w-full h-3.5 bg-[var(--secondary)] rounded-full overflow-hidden flex border border-[var(--card-border)]">
-              <div
-                className="h-full bg-gradient-to-r from-[#FF6400] to-orange-500 rounded-l-full"
-                style={{ width: "82%" }}
-                title="82% Ocupado"
-              />
-              <div
-                className="h-full bg-emerald-500/30"
-                style={{ width: "18%" }}
-                title="18% Livre para armazenagem"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-[var(--muted)]">
-              <span>● Ocupado (Pulmão & Picking Ativo)</span>
-              <span>● Disponível para Recebimento Imediato</span>
-            </div>
-          </div>
-
-          {/* Blocos do CD e Ruas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            {[
-              {
-                bloco: "Bloco A — Cargas Secas & Geral",
-                ruas: "Ruas R01 a R04 • 3.200 posições",
-                ocupacao: 88,
-                status: "Ocupação Alta",
-                statusColor: "text-amber-500 bg-amber-500/10",
-              },
-              {
-                bloco: "Bloco B — Alimentos & Perecíveis",
-                ruas: "Ruas R05 a R08 • 3.200 posições",
-                ocupacao: 74,
-                status: "Normal",
-                statusColor: "text-emerald-500 bg-emerald-500/10",
-              },
-              {
-                bloco: "Bloco C — Alto Giro (Fast-Picking)",
-                ruas: "Ruas R09 a R12 • 3.200 posições",
-                ocupacao: 91,
-                status: "Reabastecer N01",
-                statusColor: "text-rose-500 bg-rose-500/10",
-              },
-              {
-                bloco: "Bloco D — Pulmão Superior & Reserva",
-                ruas: "Ruas R13 a R16 • 3.200 posições",
-                ocupacao: 76,
-                status: "Normal",
-                statusColor: "text-emerald-500 bg-emerald-500/10",
-              },
-            ].map((b, i) => (
-              <div
-                key={i}
-                className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-2"
-              >
-                <div className="flex items-start justify-between gap-2">
+            {/* Bloco 2: Armazenagem */}
+            <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4 hover:border-purple-500/40 transition-all">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center font-bold">
+                    <Boxes size={18} />
+                  </div>
                   <div>
-                    <h4 className="text-xs font-bold text-[var(--foreground)]">
-                      {b.bloco}
-                    </h4>
-                    <p className="text-[11px] text-[var(--muted)]">{b.ruas}</p>
+                    <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">Armazenagem</h3>
+                    <p className="text-[10px] text-[var(--muted)]">Mapa CD & Posições</p>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${b.statusColor}`}
-                  >
-                    {b.status}
-                  </span>
                 </div>
+                <span className="font-mono text-xs font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                  {armazenagem.ocupacaoTotalPercentual}% Ocupado
+                </span>
+              </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--muted)]">Ocupação:</span>
-                    <strong className="font-mono text-[var(--foreground)]">
-                      {b.ocupacao}%
-                    </strong>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <div className="flex justify-between text-[11px] mb-1">
+                    <span className="text-[var(--muted)]">Ocupação Total:</span>
+                    <span className="font-mono font-bold">
+                      {armazenagem.posicoesOcupadas} / {armazenagem.posicoesTotais}
+                    </span>
                   </div>
-                  <div className="w-full h-2 bg-[var(--card)] rounded-full overflow-hidden border border-[var(--card-border)]">
+                  <div className="w-full bg-black/20 h-2 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${
-                        b.ocupacao > 90
-                          ? "bg-rose-500"
-                          : b.ocupacao > 80
-                          ? "bg-[var(--collab-mostarda)]"
-                          : "bg-emerald-500"
-                      }`}
-                      style={{ width: `${b.ocupacao}%` }}
+                      className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full"
+                      style={{ width: `${armazenagem.ocupacaoTotalPercentual}%` }}
                     />
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Quick link to label generator */}
-          <div className="p-3 rounded-xl bg-[var(--secondary)]/50 border border-[var(--card-border)] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Barcode size={18} className="text-[var(--collab-mostarda)] shrink-0" />
-              <div className="text-xs">
-                <span className="font-bold text-[var(--foreground)]">
-                  Precisa etiquetar ou reendereçar novas posições físicas?
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Endereços Disponíveis:</span>
+                  <span className="font-mono font-bold text-emerald-400">{armazenagem.enderecosDisponiveis}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Endereços Bloqueados:</span>
+                  <span className="font-mono font-bold text-amber-400">{armazenagem.enderecosBloqueados}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Produtos Armazenados:</span>
+                  <span className="font-mono font-bold text-sky-400">{armazenagem.produtosArmazenados} SKUs</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-black/20 border border-[var(--card-border)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--muted)] flex items-center gap-1.5">
+                  <Clock size={13} className="text-amber-400" /> Próximos do Vencimento:
                 </span>
-                <p className="text-[11px] text-[var(--muted)]">
-                  Gere lotes completos no padrão CODE 128 com setas de orientação automáticas.
-                </p>
+                <span className="font-mono font-bold text-amber-400 text-xs">
+                  {armazenagem.produtosProximosVencimento} Lotes
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => onNavigate("etiquetas_produto")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--card-border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-semibold transition-all cursor-pointer shadow-sm"
-                title="Emitir etiquetas térmicas de produto com código EAN-13"
-              >
-                <span>Etiquetas Produto (EAN-13)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate("etiquetas")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--collab-mostarda)] text-black text-xs font-bold hover:opacity-90 transition-all cursor-pointer shrink-0 shadow-sm"
-              >
-                <span>Gerar Etiquetas CD</span>
-                <ArrowRight size={13} />
-              </button>
+            {/* Bloco 3: Picking / Separação */}
+            <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4 hover:border-amber-500/40 transition-all">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold">
+                    <Package size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">Picking</h3>
+                    <p className="text-[10px] text-[var(--muted)]">Separação & Ondas</p>
+                  </div>
+                </div>
+                <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  {picking.linhasSeparadasPorHora} Linhas/h
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Pedidos Pendentes:</span>
+                  <span className="font-mono font-bold text-amber-400">{picking.pedidosPendentes}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Pedidos em Separação:</span>
+                  <span className="font-mono font-bold text-sky-400">{picking.pedidosEmSeparacao}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Pedidos Concluídos:</span>
+                  <span className="font-mono font-bold text-emerald-400">{picking.pedidosConcluidos}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Linhas Separadas por Hora:</span>
+                  <span className="font-mono font-bold text-emerald-400">{picking.linhasSeparadasPorHora}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-black/20 border border-[var(--card-border)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--muted)] flex items-center gap-1.5">
+                  <Users size={13} className="text-amber-400" /> Operadores no Turno:
+                </span>
+                <span className="font-mono font-bold text-amber-400 text-xs">
+                  {picking.produtividadePorOperador.length} Ativos
+                </span>
+              </div>
+            </div>
+
+            {/* Bloco 4: Expedição */}
+            <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4 hover:border-sky-500/40 transition-all">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center font-bold">
+                    <Truck size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">Expedição</h3>
+                    <p className="text-[10px] text-[var(--muted)]">Cargas & Saída CD</p>
+                  </div>
+                </div>
+                <span className="font-mono text-xs font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                  {expedicao.cargasExpedidas} Cargas
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Aguardando Conferência:</span>
+                  <span className="font-mono font-bold text-amber-400">{expedicao.pedidosAguardandoConferencia}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Pedidos Liberados:</span>
+                  <span className="font-mono font-bold text-emerald-400">{expedicao.pedidosLiberados}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Cargas em Andamento:</span>
+                  <span className="font-mono font-bold text-purple-400">{expedicao.cargasEmAndamento}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-[var(--card-border)]/50">
+                  <span className="text-[var(--muted)]">Cargas Expedidas:</span>
+                  <span className="font-mono font-bold text-sky-400">{expedicao.cargasExpedidas}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-black/20 border border-[var(--card-border)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--muted)] flex items-center gap-1.5">
+                  <AlertCircle size={13} className="text-rose-400" /> Cargas Atrasadas:
+                </span>
+                <span className={`font-mono font-bold text-xs ${expedicao.cargasAtrasadas > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                  {expedicao.cargasAtrasadas} Cargas
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Coluna 3: Docas, Frota e Gestão de Portaria */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-5 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
+          {/* Produtividade Detalhada por Operador (Item Picking) */}
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Truck size={18} className="text-[var(--collab-mostarda)]" />
+                <Users size={18} className="text-[var(--collab-mostarda)]" />
                 <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">
-                  Docas & Operações de Frota
+                  Produtividade Operacional por Operador (Picking & Separação)
                 </h3>
               </div>
-              <span className="text-[10px] uppercase font-bold text-[var(--muted)]">
-                14 Docas
-              </span>
+              <span className="text-xs text-[var(--muted)]">Rendimento em tempo real</span>
             </div>
 
-            <div className="space-y-3">
-              {/* Doca status 1 */}
-              <div className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <div>
-                    <span className="text-xs font-bold text-[var(--foreground)] block">
-                      Docas de Recebimento
-                    </span>
-                    <span className="text-[11px] text-[var(--muted)]">
-                      5 de 6 ativas (descarga em andamento)
-                    </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {picking.produtividadePorOperador.map((op, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-black/20 border border-[var(--card-border)] space-y-2 text-xs">
+                  <div className="font-bold text-[var(--foreground)] truncate">{op.operador}</div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-[var(--muted)] block">Linhas/Hora:</span>
+                      <span className="font-mono font-bold text-emerald-400 text-sm">{op.linhasPorHora}</span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--muted)] block">Caixas Separadas:</span>
+                      <span className="font-mono font-bold text-[var(--foreground)] text-sm">{op.caixasSeparadas}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[var(--card-border)]">
+                    <span className="text-[var(--muted)]">Assertividade:</span>
+                    <span className="font-mono font-bold text-emerald-400">{op.assertividade}%</span>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-bold text-emerald-500">
-                  83%
-                </span>
-              </div>
-
-              {/* Doca status 2 */}
-              <div className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[var(--collab-mostarda)]" />
-                  <div>
-                    <span className="text-xs font-bold text-[var(--foreground)] block">
-                      Docas de Expedição
-                    </span>
-                    <span className="text-[11px] text-[var(--muted)]">
-                      8 de 8 operando (janela da tarde)
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs font-mono font-bold text-[var(--collab-mostarda)]">
-                  100%
-                </span>
-              </div>
-
-              {/* Doca status 3 */}
-              <div className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                  <div>
-                    <span className="text-xs font-bold text-[var(--foreground)] block">
-                      Veículos em Trânsito / Rotas
-                    </span>
-                    <span className="text-[11px] text-[var(--muted)]">
-                      18 frotas monitoradas via telemetria
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs font-mono font-bold text-blue-500">
-                  18 / 20
-                </span>
-              </div>
+              ))}
             </div>
-          </div>
-
-          <div className="pt-3 border-t border-[var(--card-border)] space-y-2">
-            <div className="text-[11px] text-[var(--muted)] flex items-center justify-between">
-              <span>Taxa de ocupação de caçamba:</span>
-              <strong className="font-mono text-[var(--foreground)]">92.5%</strong>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onNavigate("rastreamento")}
-              className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg bg-[var(--secondary)] hover:bg-[var(--card-border)] text-[var(--foreground)] transition-colors cursor-pointer"
-            >
-              <span>Abrir Módulo de Rastreamento</span>
-              <ChevronRight size={14} />
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Bloco 3: Gestão Operacional, Equipe & Feed de Eventos Recentes ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna 1 & 2: Produtividade da Equipe e Separação */}
-        <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
-            <div className="flex items-center gap-2">
-              <Users size={18} className="text-[var(--collab-mostarda)]" />
+      {/* ── PILAR 2: KPIS OBRIGATÓRIOS (11 INDICADORES) ─────────────────────── */}
+      {activeSubTab === "kpis" && (
+        <div className="space-y-4">
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[var(--collab-mostarda)]/15 text-[var(--collab-mostarda)] flex items-center justify-center font-bold">
+                <Gauge size={22} />
+              </div>
               <div>
-                <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">
-                  Gestão Operacional de Turno & Produtividade
+                <h3 className="font-heading text-base font-bold text-[var(--foreground)]">
+                  Painel de KPIs Oficiais do CD Big Master
                 </h3>
                 <p className="text-xs text-[var(--muted)]">
-                  Desempenho de separação (picking), conferência e auditoria de qualidade
+                  11 indicadores homologados para governança logística, auditoria e nível de serviço (SLA)
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onNavigate("usuarios")}
-              className="text-xs font-semibold text-[var(--collab-mostarda)] hover:underline cursor-pointer"
-            >
-              Gerenciar Equipe
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)]">
-              <span className="text-[11px] text-[var(--muted)] font-medium block">
-                Colaboradores Ativos
-              </span>
-              <div className="text-xl font-bold font-heading text-[var(--foreground)] mt-0.5">
-                42 <span className="text-xs font-normal text-[var(--muted)]">operadores</span>
-              </div>
-              <span className="text-[10px] text-emerald-500 font-semibold mt-1 block">
-                ● 100% dos postos cobertos
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)]">
-              <span className="text-[11px] text-[var(--muted)] font-medium block">
-                Produtividade Média
-              </span>
-              <div className="text-xl font-bold font-heading text-[var(--foreground)] mt-0.5">
-                185 <span className="text-xs font-normal text-[var(--muted)]">itens/hora</span>
-              </div>
-              <span className="text-[10px] text-emerald-500 font-semibold mt-1 block">
-                ▲ +15% acima da meta (160)
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-[var(--background)] border border-[var(--card-border)]">
-              <span className="text-[11px] text-[var(--muted)] font-medium block">
-                Auditorias de Qualidade
-              </span>
-              <div className="text-xl font-bold font-heading text-[var(--foreground)] mt-0.5">
-                24 / 26
-              </div>
-              <span className="text-[10px] text-emerald-500 font-semibold mt-1 block">
-                ✓ 0 divergências críticas
-              </span>
-            </div>
-          </div>
-
-          {/* Mini Tabela de Operações em Andamento */}
-          <div className="overflow-x-auto pt-1">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[var(--card-border)] text-[var(--muted)] font-semibold">
-                  <th className="pb-2">Rua / Zona</th>
-                  <th className="pb-2">Operação</th>
-                  <th className="pb-2">Responsável</th>
-                  <th className="pb-2">Progresso</th>
-                  <th className="pb-2 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--card-border)]">
-                <tr>
-                  <td className="py-2.5 font-mono font-bold text-[var(--collab-mostarda)]">
-                    R02 (P01..P04)
-                  </td>
-                  <td className="py-2.5 text-[var(--foreground)]">Reabastecimento N01</td>
-                  <td className="py-2.5 text-[var(--muted)]">Mariana Costa</td>
-                  <td className="py-2.5 font-mono">88%</td>
-                  <td className="py-2.5 text-right">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-500">
-                      Em finalização
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 font-mono font-bold text-[var(--collab-mostarda)]">
-                    R05 (P01..P02)
-                  </td>
-                  <td className="py-2.5 text-[var(--foreground)]">Separação de Pedidos Carga Sul</td>
-                  <td className="py-2.5 text-[var(--muted)]">Carlos Eduardo</td>
-                  <td className="py-2.5 font-mono">65%</td>
-                  <td className="py-2.5 text-right">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/10 text-blue-500">
-                      Em andamento
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 font-mono font-bold text-[var(--collab-mostarda)]">
-                    R10 (P01..P08)
-                  </td>
-                  <td className="py-2.5 text-[var(--foreground)]">Inventário Cíclico e Etiquetagem</td>
-                  <td className="py-2.5 text-[var(--muted)]">Juliana Mendes</td>
-                  <td className="py-2.5 font-mono">100%</td>
-                  <td className="py-2.5 text-right">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-500">
-                      Concluído
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Coluna 3: Feed de Alertas & Eventos Recentes */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-[var(--card)] border border-[var(--card-border)] shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
-            <div className="flex items-center gap-2">
-              <Activity size={18} className="text-[var(--collab-mostarda)]" />
-              <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">
-                Feed de Alertas Recentes
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-emerald-500 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Ao Vivo
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle2 size={14} /> 100% das Metas em Faixa Segura
             </span>
           </div>
 
-          <div className="space-y-3">
-            {/* Alerta de Divergência do Módulo 02 WMS (Requisito 2.6) */}
-            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 space-y-1.5 text-xs animate-pulse">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-red-400 flex items-center gap-1.5">
-                  <AlertCircle size={14} />
-                  <span>Divergência de Recebimento (NF 000.012.345)</span>
-                </span>
-                <span className="text-[10px] text-red-400 font-mono font-bold">Quarentena</span>
-              </div>
-              <p className="text-[11px] text-[var(--muted)] leading-relaxed">
-                Falta física de 24 un (2 CX) no descarregamento da Doca 02 (SABÃO EM PÓ 1KG). Requer análise do gestor/supervisor.
-              </p>
-              <button
-                type="button"
-                onClick={() => onNavigate("wms")}
-                className="mt-1 inline-flex items-center gap-1 text-[11px] text-red-400 hover:text-red-300 font-bold hover:underline cursor-pointer"
-              >
-                <span>Analisar Ocorrência no Módulo 02</span>
-                <ChevronRight size={12} />
-              </button>
-            </div>
-
-            {[
-              {
-                time: "Há 12 min",
-                title: "Doca 03 liberada",
-                desc: "Descarga de 32 paletes concluída com 100% de conferência cega.",
-                tone: "emerald",
-              },
-              {
-                time: "Há 28 min",
-                title: "Lote de etiquetas impresso",
-                desc: "Rua R01 nível N01 a N04 finalizada no formato 10 × 5 cm.",
-                tone: "orange",
-              },
-              {
-                time: "Há 45 min",
-                title: "Janela de expedição Rota Campinas",
-                desc: "3 carretas liberadas com lacre auditado e checklist digital.",
-                tone: "blue",
-              },
-              {
-                time: "Há 1h 10m",
-                title: "Reabastecimento de picking",
-                desc: "Transferência automática de 14 paletes do pulmão alto.",
-                tone: "emerald",
-              },
-            ].map((event, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.values(kpis).map((kpi) => (
               <div
-                key={idx}
-                className="p-3 rounded-xl bg-[var(--background)] border border-[var(--card-border)] space-y-1 text-xs"
+                key={kpi.id}
+                className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3 hover:border-[var(--collab-mostarda)]/40 transition-all"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[var(--foreground)]">
-                    {event.title}
-                  </span>
-                  <span className="text-[10px] text-[var(--muted)] font-mono">
-                    {event.time}
-                  </span>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                      {kpi.titulo}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                        kpi.status === "atingida"
+                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                          : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                      }`}
+                    >
+                      {kpi.status === "atingida" ? "Meta Atingida" : "Atenção"}
+                    </span>
+                  </div>
+
+                  <div className="mt-2">
+                    <div className="text-2xl font-black font-heading text-[var(--foreground)] tracking-tight">
+                      {kpi.valor}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold mt-1">
+                      {kpi.tendencia === "subindo" ? (
+                        <span className="text-emerald-400 flex items-center gap-0.5">
+                          <TrendingUp size={13} /> +{kpi.variacaoPercentual}%
+                        </span>
+                      ) : kpi.tendencia === "descendo" ? (
+                        <span className="text-emerald-400 flex items-center gap-0.5">
+                          <TrendingDown size={13} /> {kpi.variacaoPercentual}%
+                        </span>
+                      ) : (
+                        <span className="text-sky-400">Estável</span>
+                      )}
+                      <span className="text-[var(--muted)]">vs. período anterior</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed">
-                  {event.desc}
-                </p>
+
+                <div className="pt-2 border-t border-[var(--card-border)] space-y-1 text-xs">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--muted)]">Meta Contratada:</span>
+                    <span className="font-mono font-bold text-[var(--foreground)]">{kpi.meta}</span>
+                  </div>
+                  <p className="text-[10px] text-[var(--muted)] leading-relaxed italic">{kpi.descricao}</p>
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
 
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => onNavigate("wms")}
-              className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg bg-[var(--secondary)] hover:bg-[var(--card-border)] text-[var(--foreground)] transition-colors cursor-pointer"
-            >
-              <span>Ver Central WMS Completa</span>
-              <ChevronRight size={14} />
-            </button>
+      {/* ── PILAR 3: CENTRAL DE RELATÓRIOS & EXPORTAÇÃO ──────────────────────── */}
+      {activeSubTab === "relatorios" && (
+        <div className="space-y-4">
+          {/* Caixa de Filtros Completos (Item Relatórios) */}
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--card-border)]">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={18} className="text-[var(--collab-mostarda)]" />
+                <div>
+                  <h3 className="font-heading text-sm font-bold text-[var(--foreground)]">
+                    Filtros de Relatório Analítico
+                  </h3>
+                  <p className="text-[11px] text-[var(--muted)]">
+                    Filtre simultaneamente por período, loja, fornecedor, produto, categoria, operador, setor, lote, NF e transportadora
+                  </p>
+                </div>
+              </div>
+
+              {/* Botões de Ação dos Filtros */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={limparFiltros}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[var(--secondary)] cursor-pointer text-[var(--muted)]"
+                >
+                  Limpar Filtros
+                </button>
+                <button
+                  type="button"
+                  onClick={aplicarFiltros}
+                  className="px-4 py-1.5 rounded-lg bg-[var(--collab-mostarda)] text-black text-xs font-bold hover:bg-[var(--collab-mostarda)]/90 cursor-pointer shadow-sm"
+                >
+                  Filtrar Resultados
+                </button>
+              </div>
+            </div>
+
+            {/* Grade de 10 Campos de Filtro */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+              {/* 1. Período */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">1. Período</label>
+                <select
+                  value={filtroPeriodo}
+                  onChange={(e) => setFiltroPeriodo(e.target.value as any)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todos os Dias</option>
+                  <option value="hoje">Hoje (Turno 1)</option>
+                  <option value="7d">Últimos 7 dias</option>
+                  <option value="30d">Mês atual</option>
+                </select>
+              </div>
+
+              {/* 2. Loja Destino */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">2. Loja Destino</label>
+                <select
+                  value={filtroLoja}
+                  onChange={(e) => setFiltroLoja(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todas as Lojas</option>
+                  <option value="Loja 01">Loja 01 - Matriz Centro</option>
+                  <option value="Loja 02">Loja 02 - Barra Funda</option>
+                  <option value="Loja 03">Loja 03 - Tatuapé Boulevard</option>
+                  <option value="Loja 04">Loja 04 - Shopping Morumbi</option>
+                  <option value="Loja 05">Loja 05 - Osasco Plaza</option>
+                  <option value="Loja 07">Loja 07 - Campinas Shopping</option>
+                  <option value="Loja 08">Loja 08 - Shopping Eldorado</option>
+                </select>
+              </div>
+
+              {/* 3. Fornecedor */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">3. Fornecedor</label>
+                <select
+                  value={filtroFornecedor}
+                  onChange={(e) => setFiltroFornecedor(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todos os Fornecedores</option>
+                  <option value="Laticínios Bela Vista">Laticínios Bela Vista</option>
+                  <option value="Danone Brasil">Danone Brasil</option>
+                  <option value="Camil Alimentos">Camil Alimentos</option>
+                  <option value="Distribuidora Nacional">Distribuidora Nacional</option>
+                  <option value="Distribuidora Bebidas Brasil">Bebidas Brasil</option>
+                  <option value="Moinho Paulista">Moinho Paulista</option>
+                  <option value="Hortifrúti Fazenda Sul">Hortifrúti Fazenda Sul</option>
+                </select>
+              </div>
+
+              {/* 4. Categoria */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">4. Categoria</label>
+                <select
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todas as Categorias</option>
+                  <option value="Alimentos Secos">Alimentos Secos</option>
+                  <option value="Laticínios / Frios">Laticínios / Frios</option>
+                  <option value="Bebidas">Bebidas</option>
+                  <option value="Higiene & Limpeza">Higiene & Limpeza</option>
+                  <option value="Hortifrúti">Hortifrúti</option>
+                </select>
+              </div>
+
+              {/* 5. Setor CD */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">5. Setor CD</label>
+                <select
+                  value={filtroSetor}
+                  onChange={(e) => setFiltroSetor(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todos os Setores</option>
+                  <option value="Porta-Paletes">Porta-Paletes</option>
+                  <option value="Flow Rack">Flow Rack</option>
+                  <option value="Pulmão">Pulmão</option>
+                  <option value="Picking">Picking Ativo</option>
+                  <option value="Quarentena">Quarentena</option>
+                  <option value="Doca">Doca</option>
+                </select>
+              </div>
+
+              {/* 6. Operador */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">6. Operador</label>
+                <select
+                  value={filtroOperador}
+                  onChange={(e) => setFiltroOperador(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todos os Operadores</option>
+                  <option value="Lucas Silva">Lucas Silva</option>
+                  <option value="Carlos Eduardo">Carlos Eduardo</option>
+                  <option value="Marcos Vinicius">Marcos Vinicius</option>
+                  <option value="Ana Paula Ramos">Ana Paula Ramos</option>
+                  <option value="Rodrigo Almeida">Rodrigo Almeida</option>
+                </select>
+              </div>
+
+              {/* 7. Transportadora */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">7. Transportadora</label>
+                <select
+                  value={filtroTransportadora}
+                  onChange={(e) => setFiltroTransportadora(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)]"
+                >
+                  <option value="todos">Todas as Frotas</option>
+                  <option value="TransCollab">TransCollab Log</option>
+                  <option value="Frota Própria">Frota Própria Collab</option>
+                  <option value="Rodonaves">Rodonaves Express</option>
+                  <option value="Transpaulo">Transpaulo Logística</option>
+                  <option value="Expresso Frutas">Expresso Frutas</option>
+                </select>
+              </div>
+
+              {/* 8. Produto / SKU */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">8. Produto / SKU</label>
+                <input
+                  type="text"
+                  placeholder="Nome ou SKU..."
+                  value={filtroProduto}
+                  onChange={(e) => setFiltroProduto(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)] font-mono"
+                />
+              </div>
+
+              {/* 9. Lote */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">9. Lote</label>
+                <input
+                  type="text"
+                  placeholder="Código do lote..."
+                  value={filtroLote}
+                  onChange={(e) => setFiltroLote(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)] font-mono"
+                />
+              </div>
+
+              {/* 10. Nota Fiscal */}
+              <div>
+                <label className="block text-[11px] font-semibold text-[var(--muted)] mb-1">10. Nota Fiscal</label>
+                <input
+                  type="text"
+                  placeholder="Número NF..."
+                  value={filtroNotaFiscal}
+                  onChange={(e) => setFiltroNotaFiscal(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-[var(--background)] border border-[var(--card-border)] text-xs text-[var(--foreground)] font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Exportação (Excel, PDF, CSV) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--card)] p-4 rounded-2xl border border-[var(--card-border)] shadow-sm">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet size={18} className="text-emerald-400" />
+              <div>
+                <h4 className="font-bold text-xs text-[var(--foreground)]">
+                  Exportação de Dados Consolidados ({relatorio.length} Registros)
+                </h4>
+                <p className="text-[11px] text-[var(--muted)]">
+                  Baixe os registros filtrados no formato homologado para auditoria ou BI
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow cursor-pointer transition-all"
+              >
+                <FileSpreadsheet size={14} />
+                <span>Exportar Excel (.xls)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-3.5 py-2 rounded-xl bg-[var(--secondary)] hover:bg-[var(--card-border)] text-[var(--foreground)] text-xs font-bold flex items-center gap-2 border border-[var(--card-border)] cursor-pointer transition-all"
+              >
+                <Download size={14} />
+                <span>Exportar CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                className="px-3.5 py-2 rounded-xl bg-[var(--collab-mostarda)] text-black text-xs font-bold hover:bg-[var(--collab-mostarda)]/90 flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+              >
+                <Printer size={14} />
+                <span>Imprimir / PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tabela de Resultados Analíticos */}
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[var(--secondary)] border-b border-[var(--card-border)] text-[var(--muted)] font-semibold">
+                    <th className="p-3">Data / Hora</th>
+                    <th className="p-3">Loja Destino</th>
+                    <th className="p-3">Fornecedor</th>
+                    <th className="p-3">Produto / SKU</th>
+                    <th className="p-3">Categoria</th>
+                    <th className="p-3">Operador</th>
+                    <th className="p-3">Setor / Endereço</th>
+                    <th className="p-3">Lote / Validade</th>
+                    <th className="p-3">NF</th>
+                    <th className="p-3">Transportadora</th>
+                    <th className="p-3 text-right">Qtd</th>
+                    <th className="p-3">Status Operacional</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--card-border)]">
+                  {relatorio.length === 0 ? (
+                    <tr>
+                      <td colSpan={12} className="p-8 text-center text-[var(--muted)]">
+                        Nenhum registro encontrado com a combinação de filtros aplicada.
+                      </td>
+                    </tr>
+                  ) : (
+                    relatorio.map((linha) => (
+                      <tr key={linha.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-3 font-mono text-[11px] text-[var(--muted)] whitespace-nowrap">
+                          {linha.data}
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-[var(--foreground)]">{linha.loja}</div>
+                          <div className="text-[10px] text-[var(--muted)] font-mono">{linha.codLoja}</div>
+                        </td>
+                        <td className="p-3 text-[11px] text-[var(--muted)] max-w-[140px] truncate">
+                          {linha.fornecedor}
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-[var(--foreground)]">{linha.produto}</div>
+                          <div className="text-[10px] text-[var(--muted)] font-mono">SKU: {linha.sku}</div>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-black/20 text-[var(--foreground)] border border-[var(--card-border)]">
+                            {linha.categoria}
+                          </span>
+                        </td>
+                        <td className="p-3 text-[11px] whitespace-nowrap">
+                          {linha.operador}
+                        </td>
+                        <td className="p-3 font-mono">
+                          <div className="font-bold text-[var(--foreground)]">{linha.setor}</div>
+                          <div className="text-[10px] text-amber-400">{linha.endereco}</div>
+                        </td>
+                        <td className="p-3 font-mono">
+                          <div className="font-semibold">{linha.lote}</div>
+                          <div className="text-[10px] text-[var(--muted)]">Val: {linha.validade}</div>
+                        </td>
+                        <td className="p-3 font-mono text-[11px]">
+                          {linha.notaFiscal}
+                        </td>
+                        <td className="p-3 text-[11px] text-[var(--muted)] truncate max-w-[130px]">
+                          {linha.transportadora}
+                        </td>
+                        <td className="p-3 font-mono text-right font-bold text-xs">
+                          {linha.quantidade} <span className="text-[10px] text-[var(--muted)]">{linha.unidadeMedida}</span>
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                              linha.divergencia
+                                ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                                : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            }`}
+                          >
+                            {linha.divergencia ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
+                            {linha.statusOperacional}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

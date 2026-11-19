@@ -303,8 +303,8 @@ export default function Home() {
   // Module titles and descriptions
   const moduleTitles: Record<MainPortalModule, { title: string; subtitle: string }> = {
     dashboard: {
-      title: "Painel de Controle e Indicadores do CD",
-      subtitle: "Visão executiva em tempo real: KPIs logísticos, capacidade do CD e gestão operacional",
+      title: "1. Indicadores e Relatórios — Dashboard Gerencial & KPIs",
+      subtitle: "Visão em tempo real de Recebimento, Armazenagem, Picking, Expedição e Exportação de Relatórios",
     },
     wms: {
       title: "WMS — Warehouse Management System",
