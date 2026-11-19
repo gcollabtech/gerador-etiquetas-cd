@@ -169,7 +169,7 @@ function drawSingleLabel(
   const fontPt = customFontPt > 0 ? customFontPt : defaultFontPt;
 
   // Vertical layout: barcode on top, address text below
-  // Sobe mais as informações de endereço (R01-P01-A01-N01) mantendo alinhado
+  // Sobe mais as informações de endereço (R01-P01-N01-A01) mantendo alinhado
   const textLineHeight = fontPt * 1.15;
   const textBottomMargin = Math.max(16, innerH * 0.16); // eleva o texto de endereço
   const textY = yU + textBottomMargin;

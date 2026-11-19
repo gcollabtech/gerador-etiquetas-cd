@@ -638,8 +638,8 @@ export default function Home() {
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[var(--muted)]">
                       <div>Rua: <strong className="text-[var(--foreground)]">{params.ruaInicio} a {params.ruaFim}</strong></div>
                       <div>Prédio: <strong className="text-[var(--foreground)]">{params.predioInicio} a {params.predioFim}</strong></div>
-                      <div>Apto: <strong className="text-[var(--foreground)]">{params.aptoInicio} a {params.aptoFim}</strong></div>
                       <div>Nível: <strong className="text-[var(--foreground)]">{params.nivelInicio} a {params.nivelFim}</strong></div>
+                      <div>Apto: <strong className="text-[var(--foreground)]">{params.aptoInicio} a {params.aptoFim}</strong></div>
                     </div>
                   </div>
 

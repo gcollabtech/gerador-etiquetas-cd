@@ -22,15 +22,15 @@ export type ArrowDirection = "down" | "up";
 
 export interface StorageAddress {
   id: string;
-  code: string; // Ex: "R01-P01-A01-N01"
+  code: string; // Ex: "R01-P01-N01-A01" (Sequência: Rua, Prédio, Nível, Apartamento)
   rua: number;
   predio: number;
-  apto: number;
   nivel: number;
+  apto: number;
   ruaStr: string;
   predioStr: string;
-  aptoStr: string;
   nivelStr: string;
+  aptoStr: string;
   arrowDirection: ArrowDirection; // N01 -> "down", >N01 -> "up"
   barcode: string;
   index: number;
@@ -39,8 +39,10 @@ export interface StorageAddress {
 export interface GenerationSummary {
   qtdRuas: number;
   qtdPrediosPorRua: number;
-  qtdAptosPorPredio: number;
-  qtdNiveisPorApto: number;
+  qtdNiveisPorPredio: number;
+  qtdAptosPorNivel: number;
+  qtdAptosPorPredio?: number;
+  qtdNiveisPorApto?: number;
   totalEnderecos: number;
   totalEtiquetas: number;
 }

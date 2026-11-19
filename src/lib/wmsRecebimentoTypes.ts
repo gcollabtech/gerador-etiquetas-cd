@@ -124,7 +124,7 @@ export interface RecebimentoItem {
   data_fabricacao?: string; // YYYY-MM-DD
   data_validade?: string; // YYYY-MM-DD
   numero_serie?: string;
-  endereco_destino: string; // Endereço de armazenagem sugerido (ex: R01-P02-A05-N02)
+  endereco_destino: string; // Endereço de armazenagem sugerido (ex: R01-P02-N02-A05)
   status_conferencia: "pendente" | "conferido_ok" | "divergente" | "parcial";
   tipo_leitura?: "caixa_master" | "ean" | "sku" | "qrcode" | "manual";
 }
@@ -258,7 +258,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "UN",
         lote_sugerido: "LT-202611-A",
         validade_meses: 24,
-        endereco_sugerido: "R01-P01-A01-N01",
+        endereco_sugerido: "R01-P01-N01-A01",
       },
       {
         cod_produto: "PRD-1002",
@@ -270,7 +270,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "UN",
         lote_sugerido: "LT-202611-B",
         validade_meses: 36,
-        endereco_sugerido: "R01-P01-A02-N01",
+        endereco_sugerido: "R01-P01-N01-A02",
       },
       {
         cod_produto: "PRD-1003",
@@ -282,7 +282,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "UN",
         lote_sugerido: "LT-202611-C",
         validade_meses: 12,
-        endereco_sugerido: "R01-P02-A01-N01",
+        endereco_sugerido: "R01-P02-N01-A01",
       },
       {
         cod_produto: "PRD-1004",
@@ -294,7 +294,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "UN",
         lote_sugerido: "LT-202611-D",
         validade_meses: 24,
-        endereco_sugerido: "R01-P02-A02-N01",
+        endereco_sugerido: "R01-P02-N01-A02",
       },
     ],
   },
@@ -322,7 +322,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "UN",
         lote_sugerido: "LT-EXP-99",
         validade_meses: 48,
-        endereco_sugerido: "R02-P01-A01-N02",
+        endereco_sugerido: "R02-P01-N02-A01",
       },
       {
         cod_produto: "PRD-1006",
@@ -334,7 +334,7 @@ export const ERP_SIMULADOR_NFES: ErpNfeInfo[] = [
         unidade_medida: "CX",
         lote_sugerido: "LT-PAPEL-01",
         validade_meses: 60,
-        endereco_sugerido: "R02-P01-A02-N01",
+        endereco_sugerido: "R02-P01-N01-A02",
       },
     ],
   },

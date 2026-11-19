@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Gerador de Endereços e Etiquetas CODE 128 (10×5 cm) — Centro de Distribuição",
   description:
-    "Ferramenta web para criação automática de endereços de armazenagem (R01-P01-A01-N01), geração de código de barras CODE 128 e impressão de etiquetas 100×50 mm com posicionamento automático de setas.",
+    "Ferramenta web para criação automática de endereços de armazenagem (R01-P01-N01-A01), geração de código de barras CODE 128 e impressão de etiquetas 100×50 mm com posicionamento automático de setas.",
   keywords: [
     "CODE 128",
     "Etiquetas CD",

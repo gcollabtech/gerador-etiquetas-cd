@@ -55,12 +55,12 @@ export function AcceptanceTestsPortalView({
       nivelFim: "N03",
     };
     const batch1 = generateStorageAddresses(test1Params);
-    const patternRegex = /^R\d{2}-P\d{2}-A\d{2}-N\d{2}$/;
+    const patternRegex = /^R\d{2}-P\d{2}-N\d{2}-A\d{2}$/;
     const allMatchPattern = batch1.every((a) => patternRegex.test(a.code));
     list.push({
       id: 1,
-      name: "Critério 1: Padrão Obrigatório de Identificação (R01-P01-A01-N01)",
-      expected: "Todos os códigos seguem formato Rxx-Pxx-Axx-Nxx rigorosamente",
+      name: "Critério 1: Padrão Obrigatório de Identificação (R01-P01-N01-A01)",
+      expected: "Todos os códigos seguem formato Rxx-Pxx-Nxx-Axx rigorosamente",
       actual: allMatchPattern
         ? `${batch1.length} endereços validados com padrão correto (ex: ${batch1[0]?.code})`
         : "Falha na estrutura de caracteres",
@@ -72,13 +72,13 @@ export function AcceptanceTestsPortalView({
       (a) =>
         a.ruaStr.length === 3 &&
         a.predioStr.length === 3 &&
-        a.aptoStr.length === 3 &&
-        a.nivelStr.length === 3
+        a.nivelStr.length === 3 &&
+        a.aptoStr.length === 3
     );
     list.push({
       id: 2,
       name: "Critério 2: Preservação Obrigatória de Zeros à Esquerda (2 dígitos numéricos)",
-      expected: "Dois dígitos numéricos por bloco com zero à esquerda (R01, P01, A01, N01)",
+      expected: "Dois dígitos numéricos por bloco com zero à esquerda (R01, P01, N01, A01)",
       actual: hasLeadingZeros
         ? "Todos os blocos contêm 2 dígitos numéricos com zeros preservados"
         : "Foram encontrados blocos sem zero à esquerda",
@@ -100,7 +100,7 @@ export function AcceptanceTestsPortalView({
       passed: arrowLogicPassed,
     });
 
-    const sampleCode = "R01-P01-A01-N01";
+    const sampleCode = "R01-P01-N01-A01";
     const encoded = encodeCode128B(sampleCode);
     const barcodePassed =
       encoded.binary.length > 0 &&

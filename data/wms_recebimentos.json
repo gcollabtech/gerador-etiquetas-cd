@@ -32,7 +32,7 @@
         "lote": "LT-202611-A",
         "data_fabricacao": "2026-11-01",
         "data_validade": "2028-11-01",
-        "endereco_destino": "R01-P01-A01-N01",
+        "endereco_destino": "R01-P01-N01-A01",
         "status_conferencia": "conferido_ok",
         "tipo_leitura": "caixa_master"
       },
@@ -50,7 +50,7 @@
         "lote": "LT-202611-B",
         "data_fabricacao": "2026-10-15",
         "data_validade": "2029-10-15",
-        "endereco_destino": "R01-P01-A02-N01",
+        "endereco_destino": "R01-P01-N01-A02",
         "status_conferencia": "divergente",
         "tipo_leitura": "caixa_master"
       },
@@ -68,7 +68,7 @@
         "lote": "LT-202611-C",
         "data_fabricacao": "2026-11-05",
         "data_validade": "2027-11-05",
-        "endereco_destino": "R01-P02-A01-N01",
+        "endereco_destino": "R01-P02-N01-A01",
         "status_conferencia": "conferido_ok",
         "tipo_leitura": "caixa_master"
       },
@@ -84,7 +84,7 @@
         "qtd_caixas_recebidas": 0,
         "unidade_medida": "UN",
         "lote": "LT-202611-D",
-        "endereco_destino": "R01-P02-A02-N01",
+        "endereco_destino": "R01-P02-N01-A02",
         "status_conferencia": "pendente"
       }
     ],

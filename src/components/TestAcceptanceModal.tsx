@@ -86,9 +86,9 @@ export function TestAcceptanceModal({
       passed: test2Passed,
     });
 
-    const sampleBarcode = encodeCode128B("R01-P01-A01-N01");
+    const sampleBarcode = encodeCode128B("R01-P01-N01-A01");
     const test3Passed =
-      sampleBarcode.text === "R01-P01-A01-N01" &&
+      sampleBarcode.text === "R01-P01-N01-A01" &&
       sampleBarcode.codes[0] === 104 &&
       sampleBarcode.codes[sampleBarcode.codes.length - 1] === 106;
 
@@ -116,12 +116,12 @@ export function TestAcceptanceModal({
     });
 
     const expectedSequence = [
-      "R01-P01-A01-N01",
-      "R01-P01-A01-N02",
-      "R01-P01-A01-N03",
-      "R01-P01-A02-N01",
-      "R01-P01-A02-N02",
-      "R01-P01-A02-N03",
+      "R01-P01-N01-A01",
+      "R01-P01-N01-A02",
+      "R01-P01-N02-A01",
+      "R01-P01-N02-A02",
+      "R01-P01-N03-A01",
+      "R01-P01-N03-A02",
     ];
     const test5Passed =
       test1Addrs.length === expectedSequence.length &&

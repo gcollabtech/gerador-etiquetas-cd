@@ -51,17 +51,17 @@ export function LabelPreview({
 
   const sampleAddress: StorageAddress = address || {
     id: "sample",
-    code: "R01-P01-A01-N01",
+    code: "R01-P01-N01-A01",
     rua: 1,
     predio: 1,
-    apto: 1,
     nivel: 1,
+    apto: 1,
     ruaStr: "R01",
     predioStr: "P01",
-    aptoStr: "A01",
     nivelStr: "N01",
+    aptoStr: "A01",
     arrowDirection: "down",
-    barcode: "R01-P01-A01-N01",
+    barcode: "R01-P01-N01-A01",
     index: 1,
   };
 

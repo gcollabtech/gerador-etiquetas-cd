@@ -433,40 +433,6 @@ export function ConfigPanel({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[var(--collab-mostarda)]" />
-                Apartamento (A)
-              </span>
-              <span className="text-[10px] text-[var(--muted)] font-mono">01 a 99</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-[var(--muted)] mb-1">Inicial</label>
-                <input
-                  type="text"
-                  value={params.aptoInicio}
-                  onChange={(e) => onChange({ ...params, aptoInicio: e.target.value })}
-                  onBlur={() => handleBlur("aptoInicio", "A")}
-                  placeholder="A01"
-                  className="w-full px-2.5 py-1.5 text-sm font-mono font-bold bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-[var(--muted)] mb-1">Final</label>
-                <input
-                  type="text"
-                  value={params.aptoFim}
-                  onChange={(e) => onChange({ ...params, aptoFim: e.target.value })}
-                  onBlur={() => handleBlur("aptoFim", "A")}
-                  placeholder="A10"
-                  className="w-full px-2.5 py-1.5 text-sm font-mono font-bold bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[var(--collab-mostarda)]" />
                 Nível (N)
               </span>
               <span className="text-[10px] text-[var(--muted)] font-mono">01 a 99</span>
@@ -496,46 +462,56 @@ export function ConfigPanel({
               </div>
             </div>
           </div>
+
+          <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--collab-mostarda)]" />
+                Apartamento (A)
+              </span>
+              <span className="text-[10px] text-[var(--muted)] font-mono">01 a 99</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] text-[var(--muted)] mb-1">Inicial</label>
+                <input
+                  type="text"
+                  value={params.aptoInicio}
+                  onChange={(e) => onChange({ ...params, aptoInicio: e.target.value })}
+                  onBlur={() => handleBlur("aptoInicio", "A")}
+                  placeholder="A01"
+                  className="w-full px-2.5 py-1.5 text-sm font-mono font-bold bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[var(--muted)] mb-1">Final</label>
+                <input
+                  type="text"
+                  value={params.aptoFim}
+                  onChange={(e) => onChange({ ...params, aptoFim: e.target.value })}
+                  onBlur={() => handleBlur("aptoFim", "A")}
+                  placeholder="A10"
+                  className="w-full px-2.5 py-1.5 text-sm font-mono font-bold bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="pt-4 border-t border-[var(--card-border)]">
         <div className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-3">
-          3.2. Quantidade de Apartamentos e Níveis (Controle de Validação)
+          3.2. Quantidade de Níveis e Apartamentos (Controle de Validação)
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg flex items-center justify-between gap-4">
             <div>
               <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
-                Quantidade de Apartamentos por Prédio
+                Quantidade de Níveis por Prédio
               </label>
               <p className="text-[11px] text-[var(--muted)]">
-                Ex: 10 ou 20 apartamentos previstos
-              </p>
-            </div>
-            <input
-              type="number"
-              min={1}
-              value={params.qtdAptos ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...params,
-                  qtdAptos: e.target.value === "" ? "" : parseInt(e.target.value, 10),
-                })
-              }
-              placeholder="10"
-              className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
-            />
-          </div>
-
-          <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg flex items-center justify-between gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
-                Quantidade de Níveis por Apartamento
-              </label>
-              <p className="text-[11px] text-[var(--muted)]">
-                Ex: 4 níveis (N01 a N04)
+                Ex: 4 níveis previstos (N01 a N04)
               </p>
             </div>
             <input
@@ -549,6 +525,30 @@ export function ConfigPanel({
                 })
               }
               placeholder="4"
+              className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+            />
+          </div>
+
+          <div className="p-3.5 bg-[var(--background)] border border-[var(--card-border)] rounded-lg flex items-center justify-between gap-4">
+            <div>
+              <label className="block text-xs font-bold text-[var(--foreground)] mb-0.5">
+                Quantidade de Apartamentos por Nível
+              </label>
+              <p className="text-[11px] text-[var(--muted)]">
+                Ex: 10 ou 20 apartamentos por nível
+              </p>
+            </div>
+            <input
+              type="number"
+              min={1}
+              value={params.qtdAptos ?? ""}
+              onChange={(e) =>
+                onChange({
+                  ...params,
+                  qtdAptos: e.target.value === "" ? "" : parseInt(e.target.value, 10),
+                })
+              }
+              placeholder="10"
               className="w-24 px-3 py-2 text-sm font-mono font-bold text-center bg-[var(--card)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
             />
           </div>
@@ -672,7 +672,7 @@ export function ConfigPanel({
             <span>3.3. Tipografia das Etiquetas (Ruas, Andares/Prédios, Aptos e Níveis)</span>
           </span>
           <span className="text-[11px] font-normal lowercase text-[var(--muted)]">
-            ex: R01-P01-A01-N01
+            ex: R01-P01-N01-A01
           </span>
         </div>
 
@@ -905,7 +905,7 @@ export function ConfigPanel({
         </button>
 
         <span className="font-mono text-[11px] text-[var(--collab-mostarda)]">
-          Padrão CD: R01-P01-A01-N01
+          Padrão CD: R01-P01-N01-A01
         </span>
       </div>
 

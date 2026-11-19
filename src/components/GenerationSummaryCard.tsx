@@ -45,15 +45,15 @@ export function GenerationSummaryCard({
             <span className="text-[var(--muted)]">×</span>
 
             <div className="px-2.5 py-1 bg-[var(--background)] border border-[var(--card-border)] rounded text-xs font-mono">
-              <span className="text-[var(--muted)]">Aptos/Prédio: </span>
-              <strong className="text-[var(--collab-mostarda)]">{summary.qtdAptosPorPredio}</strong>
+              <span className="text-[var(--muted)]">Níveis/Prédio: </span>
+              <strong className="text-[var(--collab-mostarda)]">{summary.qtdNiveisPorPredio}</strong>
             </div>
 
             <span className="text-[var(--muted)]">×</span>
 
             <div className="px-2.5 py-1 bg-[var(--background)] border border-[var(--card-border)] rounded text-xs font-mono">
-              <span className="text-[var(--muted)]">Níveis/Apto: </span>
-              <strong className="text-[var(--collab-mostarda)]">{summary.qtdNiveisPorApto}</strong>
+              <span className="text-[var(--muted)]">Aptos/Nível: </span>
+              <strong className="text-[var(--collab-mostarda)]">{summary.qtdAptosPorNivel}</strong>
             </div>
           </div>
 

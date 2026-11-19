@@ -132,6 +132,8 @@ export function calculateGenerationSummary(params: AddressParams): GenerationSum
     return {
       qtdRuas: 0,
       qtdPrediosPorRua: 0,
+      qtdNiveisPorPredio: 0,
+      qtdAptosPorNivel: 0,
       qtdAptosPorPredio: 0,
       qtdNiveisPorApto: 0,
       totalEnderecos: 0,
@@ -141,15 +143,17 @@ export function calculateGenerationSummary(params: AddressParams): GenerationSum
 
   const qtdRuas = rFim - rIni + 1;
   const qtdPrediosPorRua = pFim - pIni + 1;
-  const qtdAptosPorPredio = aFim - aIni + 1;
-  const qtdNiveisPorApto = nFim - nIni + 1;
-  const totalEnderecos = qtdRuas * qtdPrediosPorRua * qtdAptosPorPredio * qtdNiveisPorApto;
+  const qtdNiveisPorPredio = nFim - nIni + 1;
+  const qtdAptosPorNivel = aFim - aIni + 1;
+  const totalEnderecos = qtdRuas * qtdPrediosPorRua * qtdNiveisPorPredio * qtdAptosPorNivel;
 
   return {
     qtdRuas,
     qtdPrediosPorRua,
-    qtdAptosPorPredio,
-    qtdNiveisPorApto,
+    qtdNiveisPorPredio,
+    qtdAptosPorNivel,
+    qtdAptosPorPredio: qtdAptosPorNivel,
+    qtdNiveisPorApto: qtdNiveisPorPredio,
     totalEnderecos,
     totalEtiquetas: totalEnderecos,
   };
@@ -165,10 +169,10 @@ export function generateStorageAddresses(params: AddressParams): StorageAddress[
   const rFim = parseComponentNumber(params.ruaFim);
   const pIni = parseComponentNumber(params.predioInicio);
   const pFim = parseComponentNumber(params.predioFim);
-  const aIni = parseComponentNumber(params.aptoInicio);
-  const aFim = parseComponentNumber(params.aptoFim);
   const nIni = parseComponentNumber(params.nivelInicio);
   const nFim = parseComponentNumber(params.nivelFim);
+  const aIni = parseComponentNumber(params.aptoInicio);
+  const aFim = parseComponentNumber(params.aptoFim);
 
   const addresses: StorageAddress[] = [];
   let index = 1;
@@ -179,25 +183,26 @@ export function generateStorageAddresses(params: AddressParams): StorageAddress[
     for (let p = pIni; p <= pFim; p++) {
       const predioStr = formatComponent(p, "P");
 
-      for (let a = aIni; a <= aFim; a++) {
-        const aptoStr = formatComponent(a, "A");
+      for (let n = nIni; n <= nFim; n++) {
+        const nivelStr = formatComponent(n, "N");
+        const arrowDirection: ArrowDirection = n <= 1 ? "down" : "up";
 
-        for (let n = nIni; n <= nFim; n++) {
-          const nivelStr = formatComponent(n, "N");
-          const code = `${ruaStr}-${predioStr}-${aptoStr}-${nivelStr}`;
-          const arrowDirection: ArrowDirection = n <= 1 ? "down" : "up";
+        for (let a = aIni; a <= aFim; a++) {
+          const aptoStr = formatComponent(a, "A");
+          // Sequência homologada: Rua, Prédio, Nível e Apartamento
+          const code = `${ruaStr}-${predioStr}-${nivelStr}-${aptoStr}`;
 
           addresses.push({
             id: code,
             code,
             rua: r,
             predio: p,
-            apto: a,
             nivel: n,
+            apto: a,
             ruaStr,
             predioStr,
-            aptoStr,
             nivelStr,
+            aptoStr,
             arrowDirection,
             barcode: code,
             index,

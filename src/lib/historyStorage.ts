@@ -8,7 +8,7 @@ export const DEFAULT_PRESETS: AddressPreset[] = [
   {
     id: "exemplo-cd-160",
     name: "Porta-Paletes Padrão CD (160 un - 10×5cm)",
-    description: "R01..R02, P01..P02, A01..A10, N01..N04 • 10x5cm • Barras 20mm • Helvetica 16pt",
+    description: "R01..R02, P01..P02, N01..N04, A01..A10 • 10x5cm • Barras 20mm • Helvetica 16pt",
     isCustom: false,
     params: {
       ruaInicio: "R01",
@@ -31,7 +31,7 @@ export const DEFAULT_PRESETS: AddressPreset[] = [
   {
     id: "teste-aceite-6",
     name: "Teste de Aceite Oficial (6 un - Seta Baixo & Cima)",
-    description: "R01..R01, P01..P01, A01..A02, N01..N03 • Validação de setas N01 (baixo) e N02/N03 (cima)",
+    description: "R01..R01, P01..P01, N01..N03, A01..A02 • Validação de setas N01 (baixo) e N02/N03 (cima)",
     isCustom: false,
     params: {
       ruaInicio: "R01",
@@ -54,7 +54,7 @@ export const DEFAULT_PRESETS: AddressPreset[] = [
   {
     id: "rua-completa-400",
     name: "Rua 01 Completa CD (400 un - 10×5cm)",
-    description: "R01..R01, P01..P05, A01..A20, N01..N04 (5 prédios x 20 aptos x 4 níveis)",
+    description: "R01..R01, P01..P05, N01..N04, A01..A20 (5 prédios x 4 níveis x 20 aptos)",
     isCustom: false,
     params: {
       ruaInicio: "R01",
@@ -77,7 +77,7 @@ export const DEFAULT_PRESETS: AddressPreset[] = [
   {
     id: "picking-solo-n01",
     name: "Picking Solo Nível 01 (50 un - Seta Baixo)",
-    description: "R01..R01, P01..P01, A01..A50, N01..N01 • Somente nível solo com seta para BAIXO",
+    description: "R01..R01, P01..P01, N01..N01, A01..A50 • Somente nível solo com seta para BAIXO",
     isCustom: false,
     params: {
       ruaInicio: "R01",

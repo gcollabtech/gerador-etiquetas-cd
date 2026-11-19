@@ -9,12 +9,12 @@ Ferramenta web autônoma e especializada para a criação automática de endere�
 ### 🏷️ 1.1. Padrão Obrigatório de Identificação
 Todos os endereços seguem rigorosamente a nomenclatura:
 ```
-R01-P01-A01-N01
+R01-P01-N01-A01
 ```
 - **R** = Rua (com dois dígitos numéricos, ex: `R01`, `R02` ... `R99`)
 - **P** = Prédio (com dois dígitos numéricos, ex: `P01`, `P02` ... `P99`)
-- **A** = Apartamento (com dois dígitos numéricos, ex: `A01`, `A02` ... `A99`)
 - **N** = Nível (com dois dígitos numéricos, ex: `N01`, `N02` ... `N99`)
+- **A** = Apartamento (com dois dígitos numéricos, ex: `A01`, `A02` ... `A99`)
 - *Preservação estrita dos zeros à esquerda em todas as telas, códigos de barras, PDFs e relatórios.*
 
 ### 🎯 1.2. Regra Obrigatória do Posicionamento das Setas
@@ -25,7 +25,7 @@ Aplicada de forma **100% automática** pelo sistema com base no número do níve
 
 ### 📊 1.3. Padrão do Código de Barras — CODE 128
 - Padrão **CODE 128 (Subset B / ISO/IEC 15417)** de alta densidade alfanumérica.
-- O conteúdo codificado é **exatamente** o código do endereço (ex: `R01-P01-A01-N01`), sem caracteres adicionais.
+- O conteúdo codificado é **exatamente** o código do endereço (ex: `R01-P01-N01-A01`), sem caracteres adicionais.
 - Preservação das margens de silêncio (*quiet zones*) laterais.
 - Leitura testada e compatível com **coletores de dados RF (Zebra, Honeywell, Datalogic)** e leitores ópticos convencionais.
 - Texto do endereço renderizado em fonte negrito de grande porte centralizado logo abaixo das barras.

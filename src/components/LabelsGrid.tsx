@@ -193,24 +193,6 @@ export function LabelsGrid({
 
         <div>
           <select
-            value={filterApto}
-            onChange={(e) => {
-              setFilterApto(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full px-2.5 py-2 text-xs bg-[var(--background)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
-          >
-            <option value="all">Todos os Aptos</option>
-            {uniqueAptos.map((a) => (
-              <option key={a} value={a}>
-                Apto {a}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
             value={filterNivel}
             onChange={(e) => {
               setFilterNivel(e.target.value);
@@ -222,6 +204,24 @@ export function LabelsGrid({
             {uniqueNiveis.map((n) => (
               <option key={n} value={n}>
                 Nível {n} ({n === "N01" ? "↓ Baixo" : "↑ Cima"})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={filterApto}
+            onChange={(e) => {
+              setFilterApto(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full px-2.5 py-2 text-xs bg-[var(--background)] border border-[var(--card-border)] rounded text-[var(--foreground)] focus:outline-none focus:border-[var(--collab-mostarda)]"
+          >
+            <option value="all">Todos os Aptos</option>
+            {uniqueAptos.map((a) => (
+              <option key={a} value={a}>
+                Apto {a}
               </option>
             ))}
           </select>
