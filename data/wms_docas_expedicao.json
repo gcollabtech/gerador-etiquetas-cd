@@ -1,0 +1,50 @@
+[
+  {
+    "id": "doca-01",
+    "codigo": "DOCA-EXP-01",
+    "nome": "Doca 01 — Lojas Capital Express",
+    "tipo": "lojas_capital",
+    "status": "ocupada",
+    "carga_id_atual": "crg-001",
+    "numero_carga_atual": "CRG-2026-0042",
+    "veiculo_atual": "Truck Baú Refrigerado",
+    "placa_atual": "BRA-4D88",
+    "transportadora_atual": "Transportadora TransCollab Log",
+    "horario_ocupacao": "11:00",
+    "capacidade_veiculo_tipo": "Truck (14 Ton)"
+  },
+  {
+    "id": "doca-02",
+    "codigo": "DOCA-EXP-02",
+    "nome": "Doca 02 — Grande SP Oeste / Sul",
+    "tipo": "lojas_capital",
+    "status": "livre",
+    "capacidade_veiculo_tipo": "Toco (8 Ton)"
+  },
+  {
+    "id": "doca-03",
+    "codigo": "DOCA-EXP-03",
+    "nome": "Doca 03 — Interior RMC Campinas",
+    "tipo": "lojas_interior",
+    "status": "reservada",
+    "carga_id_atual": "crg-002",
+    "numero_carga_atual": "CRG-2026-0043",
+    "capacidade_veiculo_tipo": "Carreta (28 Ton)"
+  },
+  {
+    "id": "doca-04",
+    "codigo": "DOCA-EXP-04",
+    "nome": "Doca 04 — Litoral Santos / Baixada",
+    "tipo": "litoral_express",
+    "status": "livre",
+    "capacidade_veiculo_tipo": "Truck (14 Ton)"
+  },
+  {
+    "id": "doca-05",
+    "codigo": "DOCA-EXP-05",
+    "nome": "Doca 05 — Transferência CD Big Master",
+    "tipo": "crossdocking",
+    "status": "livre",
+    "capacidade_veiculo_tipo": "Carreta (32 Ton)"
+  }
+]

@@ -75,6 +75,7 @@ import { WmsArmazenagemView } from "./wms/WmsArmazenagemView";
 import { WmsReabastecimentoView } from "./wms/WmsReabastecimentoView";
 import { WmsPickingView } from "./wms/WmsPickingView";
 import { WmsConferenciaView } from "./wms/WmsConferenciaView";
+import { WmsExpedicaoView } from "./wms/WmsExpedicaoView";
 
 interface WmsPortalViewProps {
   onNavigateToLabels?: () => void;
@@ -83,7 +84,7 @@ interface WmsPortalViewProps {
   currentUser?: PortalUser;
 }
 
-export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "agendamentos" | "indicadores";
+export type WmsSubTab = "janelas" | "portaria" | "recebimento" | "armazenagem" | "reabastecimento" | "picking" | "conferencia" | "expedicao" | "agendamentos" | "indicadores";
 
 export function WmsPortalView({
   onNavigateToLabels,
@@ -507,19 +508,19 @@ export function WmsPortalView({
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>6 Módulos Operacionais Integrados</span>
+            <span>7 Módulos Operacionais Integrados</span>
           </div>
         </div>
 
-        {/* Grade dos 6 Módulos Operacionais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        {/* Grade dos 7 Módulos Operacionais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           {[
             {
               id: "agendamento",
               targetTab: isAgendamentoModule ? activeTab : ("janelas" as WmsSubTab),
               num: "01",
-              title: "Agendamento de Entregas",
-              desc: "Janelas (2h em 2h), portaria, check-in e ocupação docas",
+              title: "Agendamento",
+              desc: "Janelas 2h em 2h, portaria e docas",
               icon: Clock,
               badge: "Portaria & Janelas",
               active: isAgendamentoModule,
@@ -528,8 +529,8 @@ export function WmsPortalView({
               id: "recebimento",
               targetTab: "recebimento" as WmsSubTab,
               num: "02",
-              title: "Recebimento de Mercadorias",
-              desc: "DANFE 44 dígitos, caixa master e conferência física",
+              title: "Recebimento",
+              desc: "DANFE 44 dígitos, caixa master",
               icon: PackageCheck,
               badge: "DANFE & Doca",
               active: activeTab === "recebimento",
@@ -538,8 +539,8 @@ export function WmsPortalView({
               id: "armazenagem",
               targetTab: "armazenagem" as WmsSubTab,
               num: "03",
-              title: "Armazenagem e Endereçamento",
-              desc: "Mapa visual CD, sugestão IA, movimentação e FIFO/FEFO",
+              title: "Armazenagem",
+              desc: "Mapa visual CD, sugestão IA",
               icon: Boxes,
               badge: "Mapa CD & Estoque",
               active: activeTab === "armazenagem",
@@ -549,7 +550,7 @@ export function WmsPortalView({
               targetTab: "reabastecimento" as WmsSubTab,
               num: "04",
               title: "Reabastecimento",
-              desc: "Reposição picking, flow rack fixo e coletor guiado",
+              desc: "Picking, flow rack fixo e coletor",
               icon: RefreshCw,
               badge: "Picking & Coletor",
               active: activeTab === "reabastecimento",
@@ -558,8 +559,8 @@ export function WmsPortalView({
               id: "picking",
               targetTab: "picking" as WmsSubTab,
               num: "05",
-              title: "Picking / Separação",
-              desc: "Pedidos ERP, ondas, cubagem de caixas e coletor RF",
+              title: "Picking",
+              desc: "Pedidos ERP, ondas e cubagem",
               icon: Package,
               badge: "Separação & Coletor",
               active: activeTab === "picking",
@@ -569,10 +570,20 @@ export function WmsPortalView({
               targetTab: "conferencia" as WmsSubTab,
               num: "06",
               title: "Conferência",
-              desc: "Cega/dirigida, volumes, trava de divergências e romaneio",
+              desc: "Cega/dirigida e romaneio",
               icon: ClipboardCheck,
               badge: "Auditoria & Carga",
               active: activeTab === "conferencia",
+            },
+            {
+              id: "expedicao",
+              targetTab: "expedicao" as WmsSubTab,
+              num: "07",
+              title: "Expedição",
+              desc: "Cargas, docas, romaneio e ERP",
+              icon: Truck,
+              badge: "Cargas & Saída",
+              active: activeTab === "expedicao",
             },
           ].map((m) => {
             const ModIcon = m.icon;
@@ -1606,6 +1617,14 @@ export function WmsPortalView({
       {/* ── ABA 9: MÓDULO 06 — CONFERÊNCIA ─────────────────────────────────── */}
       {activeTab === "conferencia" && (
         <WmsConferenciaView
+          currentUser={currentUser}
+          onNavigateToLabels={onNavigateToLabels}
+        />
+      )}
+
+      {/* ── ABA 10: MÓDULO 07 — EXPEDIÇÃO ──────────────────────────────────── */}
+      {activeTab === "expedicao" && (
+        <WmsExpedicaoView
           currentUser={currentUser}
           onNavigateToLabels={onNavigateToLabels}
         />

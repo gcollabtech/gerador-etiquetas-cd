@@ -1,0 +1,214 @@
+[
+  {
+    "id": "crg-001",
+    "numero_carga": "CRG-2026-0042",
+    "data_criacao": "2026-11-19 09:00",
+    "data_entrega_prevista": "2026-11-19",
+    "regiao": "Capital",
+    "rota": "Rota 01 - Zona Sul Express",
+    "transportadora": "Transportadora TransCollab Log",
+    "veiculo_tipo": "Truck Baú",
+    "placa_veiculo": "BRA-4D88",
+    "motorista_nome": "Sebastião Moreira",
+    "motorista_cpf": "142.857.369-01",
+    "motorista_cnh": "04982716352",
+    "doca_id": "doca-01",
+    "doca_nome": "Doca 01 — Lojas Capital Express",
+    "horario_previsto_carregamento": "11:00",
+    "horario_real_inicio": "11:05",
+    "status": "em_carregamento",
+    "pedidos_ids": ["ped-001"],
+    "pedidos_numeros": ["PED-2026-0842"],
+    "lojas_atendidas": [
+      {
+        "cod_loja": "LJ-008",
+        "nome_loja": "Loja 08 - Shopping Eldorado",
+        "total_volumes": 2,
+        "total_itens": 40,
+        "peso_kg": 30.5
+      }
+    ],
+    "total_volumes": 2,
+    "volumes_bipados": 1,
+    "peso_total_kg": 30.5,
+    "cubagem_total_m3": 0.06,
+    "volumes": [
+      {
+        "id": "vol-001-1",
+        "codigo_volume": "VOL-0842-01",
+        "numero_pedido": "PED-2026-0842",
+        "loja_destino": "Loja 08 - Shopping Eldorado",
+        "cod_loja": "LJ-008",
+        "rota": "Rota 01 - Zona Sul Express",
+        "peso_kg": 10.5,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "bipado": true,
+        "bipado_em": "2026-11-19 11:12",
+        "operador_bipagem": "Carlos Rezende"
+      },
+      {
+        "id": "vol-001-2",
+        "codigo_volume": "VOL-0842-02",
+        "numero_pedido": "PED-2026-0842",
+        "loja_destino": "Loja 08 - Shopping Eldorado",
+        "cod_loja": "LJ-008",
+        "rota": "Rota 01 - Zona Sul Express",
+        "peso_kg": 20.0,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "bipado": false
+      }
+    ],
+    "romaneio_digital_gerado": false,
+    "erp_sincronizado": false,
+    "documentos_fiscais": {
+      "mdf_e_numero": "MDF-e 001.482.910",
+      "cte_numero": "CT-e 003.882",
+      "nfs_chaves": ["35261100000000000000550010000008421000008423"]
+    },
+    "observacoes": "Carga prioritária de reposição matinal de lojas."
+  },
+  {
+    "id": "crg-002",
+    "numero_carga": "CRG-2026-0043",
+    "data_criacao": "2026-11-19 09:30",
+    "data_entrega_prevista": "2026-11-19",
+    "regiao": "Interior",
+    "rota": "Rota 10 - Campinas / RMC",
+    "transportadora": "Rápido Paulista Cargas",
+    "veiculo_tipo": "Carreta",
+    "placa_veiculo": "CLB-9E20",
+    "motorista_nome": "Antônio Fernandes",
+    "motorista_cpf": "283.914.520-88",
+    "motorista_cnh": "09283716281",
+    "doca_id": "doca-03",
+    "doca_nome": "Doca 03 — Interior RMC Campinas",
+    "horario_previsto_carregamento": "14:00",
+    "status": "aguardando_carga",
+    "pedidos_ids": ["ped-003"],
+    "pedidos_numeros": ["PED-2026-0844"],
+    "lojas_atendidas": [
+      {
+        "cod_loja": "LJ-003",
+        "nome_loja": "Loja 03 - Campinas Iguatemi",
+        "total_volumes": 2,
+        "total_itens": 40,
+        "peso_kg": 24.0
+      }
+    ],
+    "total_volumes": 2,
+    "volumes_bipados": 0,
+    "peso_total_kg": 24.0,
+    "cubagem_total_m3": 0.042,
+    "volumes": [
+      {
+        "id": "vol-003-1",
+        "codigo_volume": "VOL-0844-01",
+        "numero_pedido": "PED-2026-0844",
+        "loja_destino": "Loja 03 - Campinas Iguatemi",
+        "cod_loja": "LJ-003",
+        "rota": "Rota 10 - Campinas / RMC",
+        "peso_kg": 20.0,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "bipado": false
+      },
+      {
+        "id": "vol-003-2",
+        "codigo_volume": "VOL-0844-02",
+        "numero_pedido": "PED-2026-0844",
+        "loja_destino": "Loja 03 - Campinas Iguatemi",
+        "cod_loja": "LJ-003",
+        "rota": "Rota 10 - Campinas / RMC",
+        "peso_kg": 4.0,
+        "tipo_embalagem": "Caixa Pequena CX-P",
+        "bipado": false
+      }
+    ],
+    "romaneio_digital_gerado": false,
+    "erp_sincronizado": false,
+    "documentos_fiscais": {
+      "mdf_e_numero": "MDF-e 001.482.911",
+      "cte_numero": "CT-e 003.883",
+      "nfs_chaves": ["35261100000000000000550010000008441000008447"]
+    }
+  },
+  {
+    "id": "crg-003",
+    "numero_carga": "CRG-2026-0044",
+    "data_criacao": "2026-11-19 08:00",
+    "data_entrega_prevista": "2026-11-19",
+    "data_saida_real": "2026-11-19 10:20",
+    "regiao": "Litoral",
+    "rota": "Rota 04 - Baixada Santista",
+    "transportadora": "Expresso Litoral Sul",
+    "veiculo_tipo": "Truck Baú",
+    "placa_veiculo": "SAN-8K41",
+    "motorista_nome": "Rodrigo Almeida",
+    "motorista_cpf": "349.182.740-92",
+    "motorista_cnh": "03819273641",
+    "doca_id": "doca-04",
+    "doca_nome": "Doca 04 — Litoral Santos / Baixada",
+    "horario_previsto_carregamento": "09:30",
+    "horario_real_inicio": "09:35",
+    "horario_real_conclusao": "10:10",
+    "status": "em_transito",
+    "pedidos_ids": ["ped-004"],
+    "pedidos_numeros": ["PED-2026-0845"],
+    "lojas_atendidas": [
+      {
+        "cod_loja": "LJ-012",
+        "nome_loja": "Loja 12 - Santos Gonzaga",
+        "total_volumes": 2,
+        "total_itens": 35,
+        "peso_kg": 40.5
+      }
+    ],
+    "total_volumes": 2,
+    "volumes_bipados": 2,
+    "peso_total_kg": 40.5,
+    "cubagem_total_m3": 0.102,
+    "volumes": [
+      {
+        "id": "vol-004-1",
+        "codigo_volume": "VOL-0845-01",
+        "numero_pedido": "PED-2026-0845",
+        "loja_destino": "Loja 12 - Santos Gonzaga",
+        "cod_loja": "LJ-012",
+        "rota": "Rota 04 - Baixada Santista",
+        "peso_kg": 10.5,
+        "tipo_embalagem": "Caixa Média CX-M",
+        "bipado": true,
+        "bipado_em": "2026-11-19 09:45",
+        "operador_bipagem": "Carlos Rezende"
+      },
+      {
+        "id": "vol-004-2",
+        "codigo_volume": "VOL-0845-02",
+        "numero_pedido": "PED-2026-0845",
+        "loja_destino": "Loja 12 - Santos Gonzaga",
+        "cod_loja": "LJ-012",
+        "rota": "Rota 04 - Baixada Santista",
+        "peso_kg": 30.0,
+        "tipo_embalagem": "Caixa Grande CX-G",
+        "bipado": true,
+        "bipado_em": "2026-11-19 09:50",
+        "operador_bipagem": "Carlos Rezende"
+      }
+    ],
+    "romaneio_digital_gerado": true,
+    "data_romaneio": "2026-11-19 10:15",
+    "assinatura_motorista": {
+      "nome": "Rodrigo Almeida",
+      "cpf": "349.182.740-92",
+      "cnh": "03819273641",
+      "data_hora": "2026-11-19 10:18",
+      "assinatura_base64": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='40'><path d='M10 25 Q 30 5 60 20 T 110 25' stroke='blue' stroke-width='2' fill='none'/></svg>"
+    },
+    "erp_sincronizado": true,
+    "erp_protocolo_saida": "ERP-EXP-2026-99381",
+    "documentos_fiscais": {
+      "mdf_e_numero": "MDF-e 001.482.909",
+      "cte_numero": "CT-e 003.880",
+      "nfs_chaves": ["35261100000000000000550010000008451000008452"]
+    }
+  }
+]
